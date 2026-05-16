@@ -509,29 +509,28 @@ async function _loadDataAsync() {
     const sSnap = await getDocs(query(collection(db,"students"),where("classId","==",classId)));
     allStudents = sSnap.docs.map(d=>(Object.assign({id:d.id},d.data()))).sort((a,b)=>(a.number||0)-(b.number||0));
 
-    // โหลด attendance ทีละวันเหมือน attendance.html (query classId + date)
-    // แล้ว filter subjectId ใน JS เพื่อให้ตรงกับข้อมูลที่บันทึกจาก attendance.html
+    // โหลด attendance ด้วย range query เดียว (classId + date range)
+    // ใช้ composite index ที่สร้างไว้แล้ว: classId ASC, date ASC
     attMap = {};
-    const fetchPromises = [];
-    for (let d = 1; d <= daysInMonth; d++) {
-      const dateStr = `${year}-${String(mon).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-      const p = getDocs(query(
-        collection(db,"attendance"),
-        where("classId","==",classId),
-        where("date","==",dateStr)
-      )).then(snap => {
-        snap.docs.forEach(doc => {
-          const x = doc.data();
-          // filter subjectId ให้ตรงกับ attendance.html
-          // ถ้าเลือกวิชา: ต้องตรงกัน / ถ้าไม่เลือก: รับทุกวิชา
-          if (subjectId && x.subjectId !== subjectId) return;
-          if (!attMap[x.date]) attMap[x.date] = {};
-          attMap[x.date][x.studentId] = {status: x.status||"present", note: x.note||""};
-        });
-      });
-      fetchPromises.push(p);
-    }
-    await Promise.all(fetchPromises);
+    const dateFrom = `${year}-${String(mon).padStart(2,"0")}-01`;
+    const dateTo   = `${year}-${String(mon).padStart(2,"0")}-${String(daysInMonth).padStart(2,"0")}`;
+    const attSnap = await getDocs(query(
+      collection(db,"attendance"),
+      where("classId","==",classId),
+      where("date",">=",dateFrom),
+      where("date","<=",dateTo)
+    ));
+    attSnap.docs.forEach(dc => {
+      const x = dc.data();
+      // filter subjectId ใน JS: ถ้าเลือกวิชา ต้องตรงกัน / ถ้าไม่เลือก รับทุกวิชา
+      if (subjectId && x.subjectId !== subjectId) return;
+      if (!attMap[x.date]) attMap[x.date] = {};
+      // ถ้ามีหลาย record ต่อนักเรียนต่อวัน เอาอันล่าสุด (savedAt มากกว่า)
+      const existing = attMap[x.date][x.studentId];
+      if (!existing || (x.savedAt||"") >= (existing.savedAt||"")) {
+        attMap[x.date][x.studentId] = {status: x.status||"present", note: x.note||"", savedAt: x.savedAt||""};
+      }
+    });
 
     renderGrid(year, mon, daysInMonth);
   } catch(err) {
@@ -824,20 +823,20 @@ window.doDeleteMonth = async function() {
   btn.disabled = true; btn.textContent = "กำลังลบ...";
 
   try {
+    const dateFrom = `${year}-${String(mon).padStart(2,"0")}-01`;
+    const dateTo   = `${year}-${String(mon).padStart(2,"0")}-${String(daysInMonth).padStart(2,"0")}`;
+    const snap = await getDocs(query(
+      collection(db,"attendance"),
+      where("classId","==",classId),
+      where("date",">=",dateFrom),
+      where("date","<=",dateTo)
+    ));
     const delPromises = [];
-    for (let d=1; d<=daysInMonth; d++) {
-      const dateStr = `${year}-${String(mon).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-      const snap = await getDocs(query(
-        collection(db,"attendance"),
-        where("classId","==",classId),
-        where("date","==",dateStr)
-      ));
-      snap.docs.forEach(dc => {
-        const x = dc.data();
-        if (subjectId && x.subjectId !== subjectId) return;
-        delPromises.push(deleteDoc(dc.ref));
-      });
-    }
+    snap.docs.forEach(dc => {
+      const x = dc.data();
+      if (subjectId && x.subjectId !== subjectId) return;
+      delPromises.push(deleteDoc(dc.ref));
+    });
     await Promise.all(delPromises);
     attMap = {};
     closeDeleteModal();
