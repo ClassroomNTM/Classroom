@@ -509,22 +509,37 @@ async function _loadDataAsync() {
     const sSnap = await getDocs(query(collection(db,"students"),where("classId","==",classId)));
     allStudents = sSnap.docs.map(d=>(Object.assign({id:d.id},d.data()))).sort((a,b)=>(a.number||0)-(b.number||0));
 
-    // โหลด attendance ด้วย range query เดียว (classId + date range)
-    // ใช้ composite index ที่สร้างไว้แล้ว: classId ASC, date ASC
+    // โหลด attendance — ใช้ index ที่มีอยู่ใน Firestore
+    // index 1: classId ASC, date ASC, __name__ ASC          (ไม่ระบุวิชา)
+    // index 2: classId ASC, date ASC, subjectId ASC, __name__ ASC (ระบุวิชา)
     attMap = {};
     const dateFrom = `${year}-${String(mon).padStart(2,"0")}-01`;
     const dateTo   = `${year}-${String(mon).padStart(2,"0")}-${String(daysInMonth).padStart(2,"0")}`;
-    const attSnap = await getDocs(query(
-      collection(db,"attendance"),
-      where("classId","==",classId),
-      where("date",">=",dateFrom),
-      where("date","<=",dateTo)
-    ));
+
+    let attQuery;
+    if (subjectId) {
+      // ใช้ index: classId + date + subjectId
+      attQuery = query(
+        collection(db,"attendance"),
+        where("classId","==",classId),
+        where("subjectId","==",subjectId),
+        where("date",">=",dateFrom),
+        where("date","<=",dateTo)
+      );
+    } else {
+      // ใช้ index: classId + date
+      attQuery = query(
+        collection(db,"attendance"),
+        where("classId","==",classId),
+        where("date",">=",dateFrom),
+        where("date","<=",dateTo)
+      );
+    }
+
+    const attSnap = await getDocs(attQuery);
     attSnap.docs.forEach(dc => {
       const x = dc.data();
-      // filter subjectId ใน JS: ถ้าเลือกวิชา ต้องตรงกัน / ถ้าไม่เลือก รับทุกวิชา
-      if (subjectId && x.subjectId !== subjectId) return;
-      if (!attMap[x.date]) attMap[x.date] = {};
+      if (!attMap[x.date]) attMap[x.date] = {};  // ไม่ต้อง filter subjectId ใน JS แล้ว (query ทำให้แล้ว)
       // ถ้ามีหลาย record ต่อนักเรียนต่อวัน เอาอันล่าสุด (savedAt มากกว่า)
       const existing = attMap[x.date][x.studentId];
       if (!existing || (x.savedAt||"") >= (existing.savedAt||"")) {
