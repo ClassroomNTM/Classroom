@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>จัดการชั้นเรียน — ระบบจัดการนักเรียน</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{--bg:#f5f4f0;--surface:#ffffff;--blue:#0f3460;--blue-lt:#e6eef7;--text:#1a1a2e;--muted:#6b7280;--border:rgba(0,0,0,0.08);--radius:12px;--sidebar-w:200px;--topbar-h:56px;}
@@ -28,7 +29,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min
 .nav-item.active{background:var(--blue-lt);color:var(--blue);font-weight:500;}
 .nav-sep{height:1px;background:var(--border);margin:8px 0;}
 .main{margin-left:var(--sidebar-w);margin-top:var(--topbar-h);padding:24px;}
-.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
 .page-title{font-size:20px;font-weight:600;}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid var(--border);border-radius:8px;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:500;cursor:pointer;background:var(--surface);color:var(--text);transition:all .15s;}
 .btn:hover{background:var(--bg);}
@@ -38,7 +39,15 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min
 .btn-primary:hover{background:#0a2847;}
 .btn-danger{background:#fef2f2;color:#b91c1c;border-color:#fecaca;}
 .btn-danger:hover{background:#fee2e2;}
+.btn-green{background:#f0fdf4;color:#166534;border-color:#bbf7d0;}
+.btn-green:hover{background:#dcfce7;}
 .btn-sm{padding:5px 10px;font-size:12px;}
+.header-actions{display:flex;gap:8px;flex-wrap:wrap;}
+
+/* Import progress banner */
+.import-banner{display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#1e40af;}
+.import-bar-wrap{height:6px;background:#bfdbfe;border-radius:99px;margin-top:8px;overflow:hidden;}
+.import-bar{height:100%;background:#1e40af;border-radius:99px;transition:width .3s;}
 
 /* Classes grid */
 .classes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:28px;}
@@ -57,8 +66,9 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min
 
 /* Student panel */
 .students-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
-.panel-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.panel-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
 .panel-title{font-size:14px;font-weight:600;}
+.panel-actions{display:flex;gap:8px;flex-wrap:wrap;}
 .tbl-wrap{overflow-x:auto;}
 table{width:100%;border-collapse:collapse;font-size:13px;}
 th{text-align:left;padding:10px 12px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--border);background:#fafafa;}
@@ -66,11 +76,13 @@ td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle
 tr:last-child td{border-bottom:none;}
 tr:hover td{background:#fafafa;}
 .avatar-sm{width:28px;height:28px;border-radius:50%;background:var(--blue);color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;}
+.tag-male{background:#eff6ff;color:#1e40af;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:500;}
+.tag-female{background:#fdf2f8;color:#9d174d;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:500;}
 
 /* Modal */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:200;align-items:center;justify-content:center;}
 .modal-overlay.open{display:flex;}
-.modal{background:white;border-radius:16px;padding:24px 28px;width:460px;max-width:95vw;animation:fadeUp .25s ease;}
+.modal{background:white;border-radius:16px;padding:24px 28px;width:500px;max-width:95vw;animation:fadeUp .25s ease;max-height:90vh;overflow-y:auto;}
 .modal-title{font-size:16px;font-weight:600;margin-bottom:20px;}
 .modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
@@ -79,6 +91,23 @@ tr:hover td{background:#fafafa;}
 .form-label{font-size:12px;font-weight:500;}
 input[type="text"],input[type="number"],select.modal-sel{width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-family:'Sarabun',sans-serif;font-size:13px;color:var(--text);background:#fafafa;outline:none;}
 input:focus,select.modal-sel:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);background:white;}
+
+/* Import modal */
+.drop-zone{border:2px dashed var(--border);border-radius:10px;padding:32px;text-align:center;cursor:pointer;transition:.2s;background:#fafafa;}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--blue);background:var(--blue-lt);}
+.drop-zone svg{width:36px;height:36px;stroke:var(--muted);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;margin-bottom:10px;}
+.drop-zone p{font-size:13px;color:var(--muted);}
+.drop-zone strong{color:var(--blue);}
+#importFileInput{display:none;}
+.preview-table-wrap{max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;margin-top:8px;}
+.preview-table-wrap table{font-size:12px;}
+.preview-table-wrap th{font-size:10px;background:#f9fafb;position:sticky;top:0;z-index:1;}
+.import-info{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px;font-size:12px;color:#166534;margin-top:10px;}
+.import-warn{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;font-size:12px;color:#92400e;margin-top:10px;}
+.sheet-list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+.sheet-btn{padding:5px 12px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;background:white;color:var(--text);font-family:'Sarabun',sans-serif;transition:.15s;}
+.sheet-btn:hover{background:var(--bg);}
+.sheet-btn.active{background:var(--blue);color:white;border-color:var(--blue);}
 
 #toast{position:fixed;bottom:24px;right:24px;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;}
 #toast.show{opacity:1;transform:translateY(0);}
@@ -120,14 +149,29 @@ input:focus,select.modal-sel:focus{border-color:var(--blue);box-shadow:0 0 0 3px
 <main class="main">
   <div class="page-header">
     <div class="page-title">จัดการชั้นเรียน</div>
-    <button class="btn btn-primary" id="addClassBtn" onclick="openAddClass()" style="display:none;">
-      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      เพิ่มชั้นเรียน
-    </button>
+    <div class="header-actions">
+      <button class="btn btn-green" id="importBtn" onclick="openImportModal()" style="display:none;">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        นำเข้า Excel
+      </button>
+      <button class="btn" id="exportAllBtn" onclick="exportAllClasses()" style="display:none;">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export ทั้งหมด
+      </button>
+      <button class="btn btn-primary" id="addClassBtn" onclick="openAddClass()" style="display:none;">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        เพิ่มชั้นเรียน
+      </button>
+    </div>
   </div>
 
   <div class="readonly-notice" id="readonlyNotice">
     <strong>โหมดดูอย่างเดียว:</strong> เฉพาะ Admin เท่านั้นที่สามารถแก้ไขข้อมูลได้
+  </div>
+
+  <div class="import-banner" id="importBanner">
+    <span id="importBannerText">กำลังนำเข้าข้อมูล...</span>
+    <div class="import-bar-wrap"><div class="import-bar" id="importBar" style="width:0%"></div></div>
   </div>
 
   <div class="classes-grid" id="classesGrid">
@@ -138,7 +182,11 @@ input:focus,select.modal-sel:focus{border-color:var(--blue);box-shadow:0 0 0 3px
     <div class="students-panel">
       <div class="panel-header">
         <div class="panel-title" id="studentsPanelTitle">นักเรียน</div>
-        <div style="display:flex;gap:8px;">
+        <div class="panel-actions">
+          <button class="btn btn-sm btn-green" id="exportClassBtn" onclick="exportCurrentClass()" style="display:none;">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export ห้องนี้
+          </button>
           <button class="btn btn-sm btn-primary" id="addStudentBtn" onclick="openAddStudent()" style="display:none;">
             <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             เพิ่มนักเรียน
@@ -148,12 +196,14 @@ input:focus,select.modal-sel:focus{border-color:var(--blue);box-shadow:0 0 0 3px
       <div class="tbl-wrap">
         <table>
           <thead><tr>
-            <th style="width:48px;">เลขที่</th>
+            <th style="width:52px;">เลขที่</th>
+            <th style="width:90px;">เลขประจำตัว</th>
             <th>ชื่อ-สกุล</th>
-            <th style="width:100px;" id="adminActionsHeader"></th>
+            <th style="width:60px;">เพศ</th>
+            <th style="width:120px;" id="adminActionsHeader"></th>
           </tr></thead>
           <tbody id="studentTbody">
-            <tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px;">เลือกชั้นเรียนด้านบน</td></tr>
+            <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">เลือกชั้นเรียนด้านบน</td></tr>
           </tbody>
         </table>
       </div>
@@ -161,7 +211,7 @@ input:focus,select.modal-sel:focus{border-color:var(--blue);box-shadow:0 0 0 3px
   </div>
 </main>
 
-<!-- Class Modal -->
+<!-- ─── Class Modal ─── -->
 <div class="modal-overlay" id="classModal">
   <div class="modal">
     <div class="modal-title" id="classModalTitle">เพิ่มชั้นเรียน</div>
@@ -181,10 +231,6 @@ input:focus,select.modal-sel:focus{border-color:var(--blue);box-shadow:0 0 0 3px
         <label class="form-label">ครูประจำชั้น</label>
         <input type="text" id="classTeacher" placeholder="ชื่อครู">
       </div>
-      <div class="form-group">
-        <label class="form-label">จำนวนนักเรียน</label>
-        <input type="number" id="classCount" placeholder="0" min="0">
-      </div>
     </div>
     <input type="hidden" id="editClassId">
     <div class="modal-footer">
@@ -194,7 +240,7 @@ input:focus,select.modal-sel:focus{border-color:var(--blue);box-shadow:0 0 0 3px
   </div>
 </div>
 
-<!-- Student Modal -->
+<!-- ─── Student Modal ─── -->
 <div class="modal-overlay" id="studentModal">
   <div class="modal">
     <div class="modal-title" id="studentModalTitle">เพิ่มนักเรียน</div>
@@ -203,9 +249,26 @@ input:focus,select.modal-sel:focus{border-color:var(--blue);box-shadow:0 0 0 3px
         <label class="form-label">เลขที่</label>
         <input type="number" id="studentNumber" placeholder="1" min="1">
       </div>
+      <div class="form-group">
+        <label class="form-label">เลขประจำตัว</label>
+        <input type="text" id="studentCode" placeholder="5729">
+      </div>
+      <div class="form-group">
+        <label class="form-label">คำนำหน้า</label>
+        <select class="modal-sel" id="studentPrefix">
+          <option>เด็กชาย</option><option>เด็กหญิง</option><option>นาย</option><option>นางสาว</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">เพศ</label>
+        <select class="modal-sel" id="studentGender">
+          <option value="ชาย">ชาย</option>
+          <option value="หญิง">หญิง</option>
+        </select>
+      </div>
       <div class="form-group full">
-        <label class="form-label">ชื่อ-สกุล</label>
-        <input type="text" id="studentName" placeholder="ชื่อ นามสกุล">
+        <label class="form-label">ชื่อ - สกุล</label>
+        <input type="text" id="studentName" placeholder="สมใจ ใจดี">
       </div>
     </div>
     <input type="hidden" id="editStudentId">
@@ -216,19 +279,53 @@ input:focus,select.modal-sel:focus{border-color:var(--blue);box-shadow:0 0 0 3px
   </div>
 </div>
 
+<!-- ─── Import Modal ─── -->
+<div class="modal-overlay" id="importModal">
+  <div class="modal" style="width:560px;">
+    <div class="modal-title">นำเข้าข้อมูลนักเรียนจาก Excel</div>
+
+    <div id="importStep1">
+      <div class="drop-zone" id="dropZone" onclick="document.getElementById('importFileInput').click()">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <p>คลิกหรือลากไฟล์ Excel มาวางที่นี่</p>
+        <p style="margin-top:4px;font-size:11px;"><strong>รองรับ .xlsx, .xls</strong> — แต่ละ Sheet = 1 ห้องเรียน</p>
+      </div>
+      <input type="file" id="importFileInput" accept=".xlsx,.xls" onchange="handleFileSelect(event)">
+      <div style="margin-top:14px;padding:10px 14px;background:#f9fafb;border-radius:8px;font-size:12px;color:var(--muted);line-height:1.7;">
+        <strong style="color:var(--text);">รูปแบบที่รองรับ:</strong><br>
+        • <strong>รูปแบบ ม.1–ม.2:</strong> ลำดับ | เลขประจำตัว | คำนำหน้า | ชื่อ-สกุล<br>
+        • <strong>รูปแบบ ม.3:</strong> รหัสนักเรียน | เลขที่ | คำนำหน้า | ชื่อ | นามสกุล | เพศ
+      </div>
+    </div>
+
+    <div id="importStep2" style="display:none;">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">เลือก Sheet ที่ต้องการนำเข้า (คลิกเพื่อเลือก/ยกเลิก):</p>
+      <div class="sheet-list" id="sheetList"></div>
+      <div id="previewArea"></div>
+      <div class="modal-footer">
+        <button class="btn" onclick="resetImport()">← เลือกไฟล์ใหม่</button>
+        <button class="btn btn-primary" onclick="confirmImport()">นำเข้าข้อมูล</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
-  getFirestore, collection, doc, getDocs, setDoc, deleteDoc, addDoc, query, where
+  getFirestore, collection, doc, getDocs, setDoc, deleteDoc, addDoc, writeBatch, query, where
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCBXMi3sy-3iDDzHDXVvlmaa6szcmnFbwQ", authDomain: "classroom-93c8b.firebaseapp.com",
-  projectId: "classroom-93c8b", storageBucket: "classroom-93c8b.firebasestorage.app",
-  messagingSenderId: "659092749098", appId: "1:659092749098:web:36f249557c4badc088fc53",
+  apiKey: "AIzaSyCBXMi3sy-3iDDzHDXVvlmaa6szcmnFbwQ",
+  authDomain: "classroom-93c8b.firebaseapp.com",
+  projectId: "classroom-93c8b",
+  storageBucket: "classroom-93c8b.firebasestorage.app",
+  messagingSenderId: "659092749098",
+  appId: "1:659092749098:web:36f249557c4badc088fc53",
   measurementId: "G-EXJVCH9Z4S"
 };
 const app  = initializeApp(firebaseConfig);
@@ -236,7 +333,9 @@ const auth = getAuth(app);
 const db   = getFirestore(app);
 
 let userRole = "", classes = [], currentClassId = "", students = [];
+let importWorkbook = null, importSelectedSheets = new Set(), importParsedData = {};
 
+// ── Auth ──
 onAuthStateChanged(auth, async user => {
   if (!user) { window.location.href = "index.html"; return; }
   userRole = sessionStorage.getItem("userRole") || "user";
@@ -249,6 +348,8 @@ onAuthStateChanged(auth, async user => {
   if (userRole === "admin") {
     document.getElementById("adminNavItem").style.display = "flex";
     document.getElementById("addClassBtn").style.display = "inline-flex";
+    document.getElementById("importBtn").style.display = "inline-flex";
+    document.getElementById("exportAllBtn").style.display = "inline-flex";
   } else {
     document.getElementById("readonlyNotice").style.display = "block";
   }
@@ -257,6 +358,9 @@ onAuthStateChanged(auth, async user => {
 
 window.doLogout = async () => { await signOut(auth); sessionStorage.clear(); window.location.href = "index.html"; };
 
+// ══════════════════════════════
+// CLASSES
+// ══════════════════════════════
 async function loadClasses() {
   const snap = await getDocs(collection(db, "classes"));
   classes = snap.docs.map(d => ({id: d.id, ...d.data()}));
@@ -267,27 +371,25 @@ async function loadClasses() {
 function renderClasses() {
   const grid = document.getElementById("classesGrid");
   if (!classes.length) {
-    grid.innerHTML = `<div style="color:var(--muted);font-size:13px;grid-column:1/-1;padding:20px 0;">ยังไม่มีชั้นเรียน${userRole==="admin"?" กดปุ่มเพิ่มชั้นเรียนเพื่อเริ่มต้น":""}</div>`;
+    grid.innerHTML = `<div style="color:var(--muted);font-size:13px;grid-column:1/-1;padding:20px 0;">ยังไม่มีชั้นเรียน${userRole==="admin"?" — กดนำเข้า Excel หรือเพิ่มชั้นเรียน":""}</div>`;
     return;
   }
   const isAdmin = userRole === "admin";
   grid.innerHTML = classes.map(c => `
-    <div class="class-card ${c.id === currentClassId ? 'active-card':''}" onclick="selectClass('${c.id}')">
+    <div class="class-card ${c.id===currentClassId?'active-card':''}" onclick="selectClass('${c.id}')">
       <div class="cc-top">
         <div class="cc-name">${c.name||"—"}</div>
-        ${isAdmin ? `<div class="cc-actions">
+        ${isAdmin?`<div class="cc-actions">
           <button class="btn btn-sm" onclick="event.stopPropagation();openEditClass('${c.id}')">
             <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </button>
           <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteClass('${c.id}')">
             <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
           </button>
-        </div>` : ''}
+        </div>`:''}
       </div>
       <div class="cc-teacher">ครูประจำชั้น: ${c.teacher||"—"}</div>
-      <div class="cc-chips">
-        <span class="chip chip-blue">นักเรียน ${c.studentCount||0} คน</span>
-      </div>
+      <div class="cc-chips"><span class="chip chip-blue">นักเรียน ${c.studentCount||0} คน</span></div>
     </div>`).join("");
 }
 
@@ -299,6 +401,7 @@ window.selectClass = async function(id) {
   document.getElementById("studentsPanelTitle").textContent = `นักเรียน ${cls?.name||""}`;
   if (userRole === "admin") {
     document.getElementById("addStudentBtn").style.display = "inline-flex";
+    document.getElementById("exportClassBtn").style.display = "inline-flex";
     document.getElementById("adminActionsHeader").textContent = "จัดการ";
   }
   await loadStudents(id);
@@ -306,7 +409,7 @@ window.selectClass = async function(id) {
 
 async function loadStudents(classId) {
   const tbody = document.getElementById("studentTbody");
-  tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:16px;">กำลังโหลด...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px;">กำลังโหลด...</td></tr>`;
   const snap = await getDocs(query(collection(db,"students"), where("classId","==",classId)));
   students = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => (a.number||0)-(b.number||0));
   renderStudents();
@@ -316,154 +419,381 @@ function renderStudents() {
   const isAdmin = userRole === "admin";
   const tbody = document.getElementById("studentTbody");
   if (!students.length) {
-    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px;">ยังไม่มีนักเรียนในชั้นนี้</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">ยังไม่มีนักเรียนในชั้นนี้</td></tr>`;
     return;
   }
-  tbody.innerHTML = students.map(s => `<tr>
-    <td style="color:var(--muted);">${s.number||"—"}</td>
-    <td>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <div class="avatar-sm">${(s.name||"?").charAt(0)}</div>
-        ${s.name||"—"}
-      </div>
-    </td>
-    <td>
-      ${isAdmin ? `<div style="display:flex;gap:6px;">
+  tbody.innerHTML = students.map(s => {
+    const isFemale = s.gender === "หญิง" || (s.prefix||"").includes("หญิง");
+    return `<tr>
+      <td style="color:var(--muted);">${s.number||"—"}</td>
+      <td style="font-size:11px;color:var(--muted);">${s.studentCode||"—"}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="avatar-sm">${(s.name||"?").charAt(0)}</div>
+          <span>${s.prefix?s.prefix+" ":""}${s.name||"—"}</span>
+        </div>
+      </td>
+      <td>${isFemale?'<span class="tag-female">หญิง</span>':'<span class="tag-male">ชาย</span>'}</td>
+      <td>${isAdmin?`<div style="display:flex;gap:6px;">
         <button class="btn btn-sm" onclick="openEditStudent('${s.id}')">
           <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
         <button class="btn btn-sm btn-danger" onclick="deleteStudent('${s.id}')">
           <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
         </button>
-      </div>` : ''}
-    </td>
-  </tr>`).join("");
+      </div>`:""}
+      </td>
+    </tr>`;
+  }).join("");
 }
 
+// ══════════════════════════════
 // CLASS CRUD
+// ══════════════════════════════
 window.openAddClass = function() {
   document.getElementById("classModalTitle").textContent = "เพิ่มชั้นเรียน";
   document.getElementById("classRoom").value = "";
   document.getElementById("classTeacher").value = "";
-  document.getElementById("classCount").value = "";
   document.getElementById("editClassId").value = "";
   document.getElementById("classModal").classList.add("open");
 };
-
 window.openEditClass = function(id) {
-  const c = classes.find(x => x.id === id);
-  if (!c) return;
+  const c = classes.find(x => x.id===id); if (!c) return;
   document.getElementById("classModalTitle").textContent = "แก้ไขชั้นเรียน";
-  // Parse level/room from name
   const parts = (c.name||"").split("/");
-  if (parts.length >= 2) {
-    const lvlEl = document.getElementById("classLevel");
-    [...lvlEl.options].forEach(o => { if (o.value === parts[0]) o.selected = true; });
+  if (parts.length>=2) {
+    const el = document.getElementById("classLevel");
+    [...el.options].forEach(o => { if (o.value===parts[0]) o.selected=true; });
     document.getElementById("classRoom").value = parts[1];
   }
   document.getElementById("classTeacher").value = c.teacher||"";
-  document.getElementById("classCount").value = c.studentCount||"";
   document.getElementById("editClassId").value = id;
   document.getElementById("classModal").classList.add("open");
 };
-
 window.closeClassModal = function() { document.getElementById("classModal").classList.remove("open"); };
-
 window.saveClass = async function() {
-  const level   = document.getElementById("classLevel").value;
-  const room    = document.getElementById("classRoom").value.trim();
-  const teacher = document.getElementById("classTeacher").value.trim();
-  const count   = parseInt(document.getElementById("classCount").value) || 0;
-  const editId  = document.getElementById("editClassId").value;
+  const level=document.getElementById("classLevel").value, room=document.getElementById("classRoom").value.trim();
+  const teacher=document.getElementById("classTeacher").value.trim(), editId=document.getElementById("editClassId").value;
   if (!room) { showToast("กรุณากรอกเลขห้อง","error"); return; }
-  const name = `${level}/${room}`;
+  const name=`${level}/${room}`;
   try {
-    if (editId) {
-      await setDoc(doc(db,"classes",editId), {name, teacher, studentCount:count},{merge:true});
-    } else {
-      await addDoc(collection(db,"classes"), {name, teacher, studentCount:count, createdAt:new Date().toISOString()});
-    }
-    closeClassModal();
-    showToast("บันทึกชั้นเรียนเรียบร้อย ✓","success");
-    await loadClasses();
+    if (editId) await setDoc(doc(db,"classes",editId),{name,teacher},{merge:true});
+    else await addDoc(collection(db,"classes"),{name,teacher,studentCount:0,createdAt:new Date().toISOString()});
+    closeClassModal(); showToast("บันทึกชั้นเรียนเรียบร้อย ✓","success"); await loadClasses();
   } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
 };
-
 window.deleteClass = async function(id) {
-  if (!confirm("ยืนยันลบชั้นเรียนนี้? ข้อมูลนักเรียนทั้งหมดในชั้นนี้จะถูกลบด้วย")) return;
+  if (!confirm("ยืนยันลบชั้นเรียนนี้? ข้อมูลนักเรียนทั้งหมดจะถูกลบด้วย")) return;
   try {
     await deleteDoc(doc(db,"classes",id));
-    const sSnap = await getDocs(query(collection(db,"students"), where("classId","==",id)));
-    await Promise.all(sSnap.docs.map(d => deleteDoc(d.ref)));
+    const sSnap=await getDocs(query(collection(db,"students"),where("classId","==",id)));
+    await Promise.all(sSnap.docs.map(d=>deleteDoc(d.ref)));
     showToast("ลบชั้นเรียนเรียบร้อย","success");
-    if (currentClassId === id) {
-      currentClassId = "";
-      document.getElementById("studentsSection").style.display = "none";
-    }
+    if (currentClassId===id) { currentClassId=""; document.getElementById("studentsSection").style.display="none"; }
     await loadClasses();
   } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
 };
 
+// ══════════════════════════════
 // STUDENT CRUD
+// ══════════════════════════════
 window.openAddStudent = function() {
   document.getElementById("studentModalTitle").textContent = "เพิ่มนักเรียน";
-  document.getElementById("studentNumber").value = students.length + 1;
+  document.getElementById("studentNumber").value = students.length+1;
+  document.getElementById("studentCode").value = "";
+  document.getElementById("studentPrefix").value = "เด็กชาย";
   document.getElementById("studentName").value = "";
+  document.getElementById("studentGender").value = "ชาย";
   document.getElementById("editStudentId").value = "";
   document.getElementById("studentModal").classList.add("open");
 };
-
+// Auto-set gender เมื่อเลือก prefix
+document.getElementById("studentPrefix").addEventListener("change", function() {
+  const v = this.value;
+  document.getElementById("studentGender").value = (v==="เด็กหญิง"||v==="นางสาว"||v==="นาง") ? "หญิง" : "ชาย";
+});
 window.openEditStudent = function(id) {
-  const s = students.find(x => x.id === id);
-  if (!s) return;
+  const s=students.find(x=>x.id===id); if (!s) return;
   document.getElementById("studentModalTitle").textContent = "แก้ไขข้อมูลนักเรียน";
   document.getElementById("studentNumber").value = s.number||"";
+  document.getElementById("studentCode").value = s.studentCode||"";
+  document.getElementById("studentPrefix").value = s.prefix||"เด็กชาย";
   document.getElementById("studentName").value = s.name||"";
+  document.getElementById("studentGender").value = s.gender||"ชาย";
   document.getElementById("editStudentId").value = id;
   document.getElementById("studentModal").classList.add("open");
 };
-
 window.closeStudentModal = function() { document.getElementById("studentModal").classList.remove("open"); };
-
 window.saveStudent = async function() {
-  const number = parseInt(document.getElementById("studentNumber").value) || 0;
-  const name   = document.getElementById("studentName").value.trim();
-  const editId = document.getElementById("editStudentId").value;
+  const number=parseInt(document.getElementById("studentNumber").value)||0;
+  const studentCode=document.getElementById("studentCode").value.trim();
+  const prefix=document.getElementById("studentPrefix").value;
+  const name=document.getElementById("studentName").value.trim();
+  const gender=document.getElementById("studentGender").value;
+  const editId=document.getElementById("editStudentId").value;
   if (!name) { showToast("กรุณากรอกชื่อนักเรียน","error"); return; }
-  const cls = classes.find(c => c.id === currentClassId);
+  const cls=classes.find(c=>c.id===currentClassId);
   try {
-    if (editId) {
-      await setDoc(doc(db,"students",editId), {number, name},{merge:true});
-    } else {
-      await addDoc(collection(db,"students"), {
-        number, name, classId:currentClassId,
-        className: cls?.name||"", createdAt:new Date().toISOString()
-      });
-      // update class student count
-      await setDoc(doc(db,"classes",currentClassId), {studentCount:(cls?.studentCount||0)+1},{merge:true});
+    const data={number,studentCode,prefix,name,gender,classId:currentClassId,className:cls?.name||""};
+    if (editId) await setDoc(doc(db,"students",editId),data,{merge:true});
+    else {
+      await addDoc(collection(db,"students"),{...data,createdAt:new Date().toISOString()});
+      await setDoc(doc(db,"classes",currentClassId),{studentCount:(cls?.studentCount||0)+1},{merge:true});
     }
-    closeStudentModal();
-    showToast("บันทึกนักเรียนเรียบร้อย ✓","success");
-    await loadStudents(currentClassId);
+    closeStudentModal(); showToast("บันทึกนักเรียนเรียบร้อย ✓","success"); await loadStudents(currentClassId);
   } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
 };
-
 window.deleteStudent = async function(id) {
   if (!confirm("ยืนยันลบนักเรียนคนนี้?")) return;
   try {
     await deleteDoc(doc(db,"students",id));
-    const cls = classes.find(c => c.id === currentClassId);
-    if (cls) await setDoc(doc(db,"classes",currentClassId), {studentCount:Math.max(0,(cls.studentCount||1)-1)},{merge:true});
-    showToast("ลบนักเรียนเรียบร้อย","success");
-    await loadStudents(currentClassId);
+    const cls=classes.find(c=>c.id===currentClassId);
+    if (cls) await setDoc(doc(db,"classes",currentClassId),{studentCount:Math.max(0,(cls.studentCount||1)-1)},{merge:true});
+    showToast("ลบนักเรียนเรียบร้อย","success"); await loadStudents(currentClassId);
   } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
 };
 
-function showToast(msg, type) {
-  const t = document.getElementById("toast");
-  t.textContent = msg; t.className = "show " + type;
-  setTimeout(() => { t.className = ""; }, 3000);
+// ══════════════════════════════
+// IMPORT EXCEL
+// ══════════════════════════════
+window.openImportModal = function() {
+  resetImport();
+  document.getElementById("importModal").classList.add("open");
+};
+window.resetImport = function() {
+  importWorkbook=null; importSelectedSheets.clear(); importParsedData={};
+  document.getElementById("importStep1").style.display = "block";
+  document.getElementById("importStep2").style.display = "none";
+  document.getElementById("importFileInput").value = "";
+};
+
+// Drag & Drop
+const dropZone = document.getElementById("dropZone");
+dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("drag-over"); });
+dropZone.addEventListener("dragleave", () => dropZone.classList.remove("drag-over"));
+dropZone.addEventListener("drop", e => {
+  e.preventDefault(); dropZone.classList.remove("drag-over");
+  const f=e.dataTransfer.files[0]; if(f) processExcelFile(f);
+});
+window.handleFileSelect = function(e) { const f=e.target.files[0]; if(f) processExcelFile(f); };
+
+function processExcelFile(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      importWorkbook = XLSX.read(e.target.result, {type:"array", cellDates:true});
+      importParsedData = {};
+      for (const sn of importWorkbook.SheetNames) {
+        importParsedData[sn] = parseSheet(importWorkbook.Sheets[sn]);
+      }
+      showSheetSelector();
+    } catch(err) { showToast("อ่านไฟล์ไม่ได้: "+err.message,"error"); }
+  };
+  reader.readAsArrayBuffer(file);
 }
+
+function parseSheet(ws) {
+  const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:""});
+  const result = [];
+
+  // หา header row
+  let hRow = -1, fmt = "m1";
+  for (let i=0; i<Math.min(rows.length,6); i++) {
+    const r = rows[i].map(c => String(c||"").trim());
+    if (r.includes("ลำดับ") || r.includes("เลขที่")) {
+      hRow = i;
+      if (r.includes("รหัสนักเรียน")) fmt = "m3";
+      break;
+    }
+  }
+  if (hRow < 0) return result;
+
+  const h = rows[hRow].map(c => String(c||"").trim());
+
+  if (fmt === "m1") {
+    // ลำดับ | เลขประจำตัว | คำนำหน้า | ชื่อ-สกุล
+    const iNum=h.indexOf("ลำดับ"), iCode=h.indexOf("เลขประจำตัว");
+    const iPre=h.indexOf("คำนำหน้า"), iName=h.findIndex(x=>x.includes("ชื่อ"));
+    for (let r=hRow+1; r<rows.length; r++) {
+      const row=rows[r];
+      const num=parseInt(row[iNum]||""); if(!num) continue;
+      const code=String(row[iCode]||"").trim();
+      const pre=String(row[iPre]||"").trim();
+      const name=String(row[iName]||"").trim(); if(!name) continue;
+      result.push({number:num, studentCode:code, prefix:pre, name, gender: pre.includes("หญิง")?"หญิง":"ชาย"});
+    }
+  } else {
+    // รหัสนักเรียน | เลขที่ | คำนำหน้า | ชื่อ | นามสกุล | ... | เพศ
+    const iCode=h.indexOf("รหัสนักเรียน"), iNum=h.indexOf("เลขที่");
+    const iPre=iNum+1, iFn=iNum+2, iLn=iNum+3;
+    const iGender=h.findIndex(x=>x==="เพศ");
+    for (let r=hRow+1; r<rows.length; r++) {
+      const row=rows[r];
+      const num=parseInt(row[iNum]||""); if(!num) continue;
+      const fn=String(row[iFn]||"").trim(), ln=String(row[iLn]||"").trim();
+      if(!fn&&!ln) continue;
+      const name=[fn,ln].filter(Boolean).join(" ");
+      const pre=String(row[iPre]||"").trim();
+      const gRaw=iGender>=0?String(row[iGender]||"").trim():"";
+      const gender=(pre.includes("หญิง")||gRaw==="ญ")?"หญิง":"ชาย";
+      result.push({number:num, studentCode:String(row[iCode]||"").trim(), prefix:pre, name, gender});
+    }
+  }
+  return result;
+}
+
+function showSheetSelector() {
+  document.getElementById("importStep1").style.display = "none";
+  document.getElementById("importStep2").style.display = "block";
+  const list = document.getElementById("sheetList");
+  list.innerHTML = "";
+  for (const sn of importWorkbook.SheetNames) {
+    const count = importParsedData[sn]?.length||0;
+    const btn = document.createElement("button");
+    btn.className = "sheet-btn active";
+    btn.textContent = `${sn} (${count} คน)`;
+    importSelectedSheets.add(sn);
+    btn.onclick = function() {
+      if (importSelectedSheets.has(sn)) { importSelectedSheets.delete(sn); btn.classList.remove("active"); }
+      else { importSelectedSheets.add(sn); btn.classList.add("active"); }
+      renderImportPreview();
+    };
+    list.appendChild(btn);
+  }
+  renderImportPreview();
+}
+
+function renderImportPreview() {
+  const area = document.getElementById("previewArea");
+  if (!importSelectedSheets.size) { area.innerHTML=`<div class="import-warn">กรุณาเลือกอย่างน้อย 1 sheet</div>`; return; }
+  let total=0, html="";
+  for (const sn of importWorkbook.SheetNames) {
+    if (!importSelectedSheets.has(sn)) continue;
+    const rows=importParsedData[sn]||[]; total+=rows.length;
+    html+=`<div style="margin-bottom:10px;">
+      <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;">${sn} — ${rows.length} คน</div>
+      <div class="preview-table-wrap"><table>
+        <thead><tr><th>เลขที่</th><th>เลขประจำตัว</th><th>คำนำหน้า + ชื่อ-สกุล</th><th>เพศ</th></tr></thead>
+        <tbody>${rows.slice(0,5).map(s=>`<tr>
+          <td>${s.number}</td><td>${s.studentCode||"—"}</td>
+          <td>${s.prefix?s.prefix+" ":""}${s.name}</td><td>${s.gender}</td>
+        </tr>`).join("")}
+        ${rows.length>5?`<tr><td colspan="4" style="text-align:center;color:var(--muted);font-style:italic;">...อีก ${rows.length-5} คน</td></tr>`:""}
+        </tbody>
+      </table></div>
+    </div>`;
+  }
+  area.innerHTML=`<div class="import-info">✓ พร้อมนำเข้า ${importSelectedSheets.size} ห้อง รวม ${total} คน (จะลบข้อมูลเดิมในห้องที่เลือก)</div>`+html;
+}
+
+window.confirmImport = async function() {
+  if (!importSelectedSheets.size) { showToast("กรุณาเลือก sheet","error"); return; }
+  document.getElementById("importModal").classList.remove("open");
+  const banner=document.getElementById("importBanner"), bannerText=document.getElementById("importBannerText"), bar=document.getElementById("importBar");
+  banner.style.display="block";
+  let done=0, totalStudents=0;
+  const total=importSelectedSheets.size;
+
+  for (const sn of importWorkbook.SheetNames) {
+    if (!importSelectedSheets.has(sn)) continue;
+    const rows=importParsedData[sn]||[];
+    // ชื่อห้อง: "ม.1-1" → "ม.1/1", "ม.3-1 (2)" → "ม.3/1"
+    const className=sn.replace(/\s*\(\d+\)\s*/,"").replace(/-(\d+)$/,"/$1").trim();
+    bannerText.textContent=`กำลังนำเข้า ${className} (${done+1}/${total})...`;
+
+    // หาหรือสร้าง class
+    let classId="";
+    const exist=classes.find(c=>c.name===className);
+    if (exist) { classId=exist.id; }
+    else {
+      const ref=await addDoc(collection(db,"classes"),{name:className,teacher:"",studentCount:0,createdAt:new Date().toISOString()});
+      classId=ref.id;
+    }
+
+    // ลบนักเรียนเดิม
+    const oldSnap=await getDocs(query(collection(db,"students"),where("classId","==",classId)));
+    if (oldSnap.docs.length) {
+      const delBatch=writeBatch(db);
+      oldSnap.docs.forEach(d=>delBatch.delete(d.ref));
+      await delBatch.commit();
+    }
+
+    // เพิ่มนักเรียนใหม่ (batch 400)
+    for (let i=0; i<rows.length; i+=400) {
+      const chunk=rows.slice(i,i+400);
+      const batch=writeBatch(db);
+      for (const s of chunk) {
+        batch.set(doc(collection(db,"students")),{
+          number:s.number, studentCode:s.studentCode||"", prefix:s.prefix||"",
+          name:s.name, gender:s.gender, classId, className, createdAt:new Date().toISOString()
+        });
+      }
+      await batch.commit();
+    }
+    await setDoc(doc(db,"classes",classId),{studentCount:rows.length},{merge:true});
+    totalStudents+=rows.length; done++;
+    bar.style.width=Math.round((done/total)*100)+"%";
+  }
+
+  setTimeout(async()=>{
+    banner.style.display="none"; bar.style.width="0%";
+    showToast(`✓ นำเข้าเรียบร้อย ${total} ห้อง รวม ${totalStudents} คน`,"success");
+    await loadClasses();
+    if (currentClassId) await loadStudents(currentClassId);
+  },500);
+};
+
+// ══════════════════════════════
+// EXPORT EXCEL
+// ══════════════════════════════
+window.exportCurrentClass = async function() {
+  if (!currentClassId) { showToast("กรุณาเลือกชั้นเรียน","error"); return; }
+  const cls=classes.find(c=>c.id===currentClassId);
+  const snap=await getDocs(query(collection(db,"students"),where("classId","==",currentClassId)));
+  const studs=snap.docs.map(d=>d.data()).sort((a,b)=>(a.number||0)-(b.number||0));
+  buildExcel([{name:cls?.name||"ห้อง",students:studs}],`${(cls?.name||"class").replace("/","-")}_นักเรียน`);
+};
+
+window.exportAllClasses = async function() {
+  if (!classes.length) { showToast("ยังไม่มีชั้นเรียน","error"); return; }
+  showToast("กำลังดึงข้อมูล...","success");
+  const data=[];
+  for (const cls of classes) {
+    const snap=await getDocs(query(collection(db,"students"),where("classId","==",cls.id)));
+    data.push({name:cls.name||"ห้อง", students:snap.docs.map(d=>d.data()).sort((a,b)=>(a.number||0)-(b.number||0))});
+  }
+  buildExcel(data,"รายชื่อนักเรียน_ทุกชั้น");
+};
+
+function buildExcel(classData, filename) {
+  const wb=XLSX.utils.book_new();
+  for (const {name, students} of classData) {
+    const sheetName=name.replace(/\//g,"-").slice(0,31);
+    const rows=[
+      [`รายชื่อนักเรียน ${name} ปีการศึกษา 2569`],
+      ["ลำดับ","เลขประจำตัว","คำนำหน้า","ชื่อ - สกุล","เพศ"],
+      ...students.map(s=>[s.number||"",s.studentCode||"",s.prefix||"",s.name||"",s.gender||""])
+    ];
+    const ws=XLSX.utils.aoa_to_sheet(rows);
+    ws["!cols"]=[{wch:8},{wch:14},{wch:12},{wch:30},{wch:8}];
+    ws["!merges"]=[{s:{r:0,c:0},e:{r:0,c:4}}];
+    XLSX.utils.book_append_sheet(wb,ws,sheetName);
+  }
+  XLSX.writeFile(wb,`${filename}.xlsx`);
+  showToast("✓ ดาวน์โหลดเรียบร้อย","success");
+}
+
+// ══════════════════════════════
+// UTILS
+// ══════════════════════════════
+function showToast(msg,type) {
+  const t=document.getElementById("toast");
+  t.textContent=msg; t.className="show "+type;
+  setTimeout(()=>{t.className="";},3500);
+}
+["classModal","studentModal","importModal"].forEach(id=>{
+  document.getElementById(id).addEventListener("click",function(e){if(e.target===this)this.classList.remove("open");});
+});
 </script>
 </body>
 </html>
