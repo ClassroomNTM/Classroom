@@ -404,12 +404,8 @@ const now = new Date();
 document.getElementById("monthInput").value =
   `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
 
-let _initialized = false;
 onAuthStateChanged(auth, async (user) => {
   if (!user) { window.location.href = "index.html"; return; }
-  if (_initialized) return;   // prevent re-run on token refresh
-  _initialized = true;
-
   userRole = sessionStorage.getItem("userRole") || "user";
   const name = sessionStorage.getItem("userName") || user.email;
   document.getElementById("avatarEl").textContent = name.substring(0,2);
@@ -469,8 +465,8 @@ async function loadSubjects() {
     });
   });
 
-  // default to first subject
-  const defId = subjects[0]?.id || "";
+  // default to first subject (or known ID)
+  const defId = subjects.find(s=>s.id==="8Ib9Lkl9iN") ? "8Ib9Lkl9iN" : (subjects[0]?.id || "");
   document.getElementById("subjectSelect").value = defId;
   document.getElementById("sidebarSubjectSelect").value = defId;
 }
@@ -513,48 +509,26 @@ async function _loadDataAsync() {
     const sSnap = await getDocs(query(collection(db,"students"),where("classId","==",classId)));
     allStudents = sSnap.docs.map(d=>(Object.assign({id:d.id},d.data()))).sort((a,b)=>(a.number||0)-(b.number||0));
 
-    // query by classId only — กรอง date + subjectId ใน JS
-    // เหตุผล: attendance.html บันทึก subjectId:"" เมื่อไม่เลือกวิชา
-    // ถ้า query ด้วย subjectId==id จะไม่เจอ record เหล่านั้น
+    // โหลด attendance ด้วย range query เดียว (classId + date range)
+    // ใช้ composite index ที่สร้างไว้แล้ว: classId ASC, date ASC
     attMap = {};
     const dateFrom = `${year}-${String(mon).padStart(2,"0")}-01`;
     const dateTo   = `${year}-${String(mon).padStart(2,"0")}-${String(daysInMonth).padStart(2,"0")}`;
-
-    // ใช้ index: classId ASC, date ASC, __name__ ASC (มีอยู่แล้ว)
-    const attQuery = query(
+    const attSnap = await getDocs(query(
       collection(db,"attendance"),
       where("classId","==",classId),
       where("date",">=",dateFrom),
       where("date","<=",dateTo)
-    );
-
-    const attSnap = await getDocs(attQuery);
-
+    ));
     attSnap.docs.forEach(dc => {
       const x = dc.data();
-      // กรอง subjectId ใน JS อย่างถูกต้อง:
-      // attendance.html บันทึก subjectId:"" เมื่อไม่เลือกวิชา
-      // ถ้า filter เลือกวิชา → รับเฉพาะ record ที่ตรงกัน
-      // ถ้า filter ว่าง → รับทุก record (รวม subjectId:"" ด้วย)
-      if (subjectId) {
-        // match ทั้ง exact id และ "" (เช็คชื่อโดยไม่ระบุวิชา)
-        if (x.subjectId !== subjectId && x.subjectId !== "") return;
-      }
+      // filter subjectId ใน JS: ถ้าเลือกวิชา ต้องตรงกัน / ถ้าไม่เลือก รับทุกวิชา
+      if (subjectId && x.subjectId !== subjectId) return;
       if (!attMap[x.date]) attMap[x.date] = {};
-      // ถ้ามีหลาย record ต่อนักเรียนต่อวัน เอาที่มี subjectId ตรงก่อน ถ้าไม่มีค่อยใช้ ""
+      // ถ้ามีหลาย record ต่อนักเรียนต่อวัน เอาอันล่าสุด (savedAt มากกว่า)
       const existing = attMap[x.date][x.studentId];
-      const newPriority  = x.subjectId === subjectId ? 2 : 1;
-      const prevPriority = existing
-        ? (existing._subjectId === subjectId ? 2 : 1)
-        : 0;
-      if (!existing || newPriority > prevPriority ||
-          (newPriority === prevPriority && (x.savedAt||"") >= (existing.savedAt||""))) {
-        attMap[x.date][x.studentId] = {
-          status: x.status||"present",
-          note: x.note||"",
-          savedAt: x.savedAt||"",
-          _subjectId: x.subjectId
-        };
+      if (!existing || (x.savedAt||"") >= (existing.savedAt||"")) {
+        attMap[x.date][x.studentId] = {status: x.status||"present", note: x.note||"", savedAt: x.savedAt||""};
       }
     });
 
