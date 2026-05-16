@@ -416,27 +416,29 @@ async function _loadDataAsync() {
     const sSnap = await getDocs(query(collection(db,"students"),where("classId","==",classId)));
     allStudents = sSnap.docs.map(d=>(Object.assign({id:d.id},d.data()))).sort((a,b)=>(a.number||0)-(b.number||0));
 
-    // ── FIX: Load attendance without subjectId filter to avoid composite index issue ──
-    // Then filter in JS. This handles both "" (default) and actual subjectId.
-    const attQ = query(
-      collection(db,"attendance"),
-      where("classId","==",classId),
-      where("date",">=",`${month}-01`),
-      where("date","<=",`${month}-${String(daysInMonth).padStart(2,"0")}`)
-    );
-    const aSnap = await getDocs(attQ);
-
+    // โหลด attendance ทีละวันเหมือน attendance.html (query classId + date)
+    // แล้ว filter subjectId ใน JS เพื่อให้ตรงกับข้อมูลที่บันทึกจาก attendance.html
     attMap = {};
-    aSnap.docs.forEach(d => {
-      const x = d.data();
-      // Filter by subjectId in JS (subjectId="" means "default" or any)
-      if (subjectId && x.subjectId && x.subjectId !== subjectId) return;
-      if (!attMap[x.date]) attMap[x.date] = {};
-      // Last write wins (shouldn't have duplicates but just in case)
-      if (!attMap[x.date][x.studentId]) {
-        attMap[x.date][x.studentId] = {status: x.status||"present", note: x.note||""};
-      }
-    });
+    const fetchPromises = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${year}-${String(mon).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+      const p = getDocs(query(
+        collection(db,"attendance"),
+        where("classId","==",classId),
+        where("date","==",dateStr)
+      )).then(snap => {
+        snap.docs.forEach(doc => {
+          const x = doc.data();
+          // filter subjectId ให้ตรงกับ attendance.html
+          // ถ้าเลือกวิชา: ต้องตรงกัน / ถ้าไม่เลือก: รับทุกวิชา
+          if (subjectId && x.subjectId !== subjectId) return;
+          if (!attMap[x.date]) attMap[x.date] = {};
+          attMap[x.date][x.studentId] = {status: x.status||"present", note: x.note||""};
+        });
+      });
+      fetchPromises.push(p);
+    }
+    await Promise.all(fetchPromises);
 
     renderGrid(year, mon, daysInMonth);
   } catch(err) {
@@ -505,7 +507,8 @@ function renderGrid(year, mon, daysInMonth) {
   const daysWithData = new Set(Object.keys(attMap));
 
   let dataRows = "";
-  const sortedStudents = [...activeStudents, ...ghostStudents];
+  // เรียงตามเลขที่รวมกัน ทั้ง active และ ghost
+  const sortedStudents = [...allStudents].sort((a,b)=>(a.number||0)-(b.number||0));
 
   sortedStudents.forEach(s => {
     const isGhost = s.ghost === true;
