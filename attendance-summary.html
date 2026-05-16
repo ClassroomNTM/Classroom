@@ -419,6 +419,7 @@ onAuthStateChanged(auth, async (user) => {
   }
   await loadSubjects();
   await loadClasses();
+  console.log("[summary] auth ready, classId="+document.getElementById("classSelect").value+" subjectId="+document.getElementById("subjectSelect").value);
   loadData();
 });
 
@@ -465,8 +466,8 @@ async function loadSubjects() {
     });
   });
 
-  // default to first subject (or known ID)
-  const defId = subjects.find(s=>s.id==="8Ib9Lkl9iN") ? "8Ib9Lkl9iN" : (subjects[0]?.id || "");
+  // default to first subject
+  const defId = subjects[0]?.id || "";
   document.getElementById("subjectSelect").value = defId;
   document.getElementById("sidebarSubjectSelect").value = defId;
 }
@@ -509,37 +510,25 @@ async function _loadDataAsync() {
     const sSnap = await getDocs(query(collection(db,"students"),where("classId","==",classId)));
     allStudents = sSnap.docs.map(d=>(Object.assign({id:d.id},d.data()))).sort((a,b)=>(a.number||0)-(b.number||0));
 
-    // โหลด attendance — ใช้ index ที่มีอยู่ใน Firestore
-    // index 1: classId ASC, date ASC, __name__ ASC          (ไม่ระบุวิชา)
-    // index 2: classId ASC, date ASC, subjectId ASC, __name__ ASC (ระบุวิชา)
+    // โหลด attendance — ใช้ index classId ASC + date ASC (range filter ต้องอยู่ท้ายสุด)
     attMap = {};
     const dateFrom = `${year}-${String(mon).padStart(2,"0")}-01`;
     const dateTo   = `${year}-${String(mon).padStart(2,"0")}-${String(daysInMonth).padStart(2,"0")}`;
 
-    let attQuery;
-    if (subjectId) {
-      // ใช้ index: classId + date + subjectId
-      attQuery = query(
-        collection(db,"attendance"),
-        where("classId","==",classId),
-        where("subjectId","==",subjectId),
-        where("date",">=",dateFrom),
-        where("date","<=",dateTo)
-      );
-    } else {
-      // ใช้ index: classId + date
-      attQuery = query(
-        collection(db,"attendance"),
-        where("classId","==",classId),
-        where("date",">=",dateFrom),
-        where("date","<=",dateTo)
-      );
-    }
+    const attQuery = query(
+      collection(db,"attendance"),
+      where("classId","==",classId),
+      where("date",">=",dateFrom),
+      where("date","<=",dateTo)
+    );
 
     const attSnap = await getDocs(attQuery);
+    console.log(`[summary] docs=${attSnap.docs.length} classId=${classId} subjectId=${subjectId} range=${dateFrom}~${dateTo}`);
     attSnap.docs.forEach(dc => {
       const x = dc.data();
-      if (!attMap[x.date]) attMap[x.date] = {};  // ไม่ต้อง filter subjectId ใน JS แล้ว (query ทำให้แล้ว)
+      // กรอง subjectId ใน JS: ถ้าเลือกวิชาให้ตรงกัน / ถ้าไม่เลือกรับทุกวิชา
+      if (subjectId && x.subjectId !== subjectId) return;
+      if (!attMap[x.date]) attMap[x.date] = {};
       // ถ้ามีหลาย record ต่อนักเรียนต่อวัน เอาอันล่าสุด (savedAt มากกว่า)
       const existing = attMap[x.date][x.studentId];
       if (!existing || (x.savedAt||"") >= (existing.savedAt||"")) {
