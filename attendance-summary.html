@@ -84,10 +84,14 @@ select:focus,input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,5
 .leg-dot{width:18px;height:18px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;}
 
 /* ── TABLE ── */
-.table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
-.table-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:visible;}
+.table-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;border-radius:var(--radius) var(--radius) 0 0;}
 .table-title{font-size:14px;font-weight:600;}
-.tbl-outer{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.tbl-outer{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:0 0 var(--radius) var(--radius);scrollbar-width:thin;scrollbar-color:rgba(0,0,0,0.2) transparent;}
+.tbl-outer::-webkit-scrollbar{height:8px;}
+.tbl-outer::-webkit-scrollbar-track{background:transparent;}
+.tbl-outer::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.18);border-radius:99px;}
+.tbl-outer::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,0.3);}
 .att-table{border-collapse:collapse;font-size:12px;width:max-content;min-width:100%;}
 .att-table th,.att-table td{border:1px solid var(--border);text-align:center;white-space:nowrap;}
 .col-no{width:36px;min-width:36px;}
@@ -98,21 +102,25 @@ select:focus,input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,5
 .th-dayname{background:#fafaf8;font-size:10px;color:var(--muted);padding:4px 2px;}
 .th-daynum{background:#fafaf8;font-size:11px;font-weight:600;color:var(--text);padding:4px 2px;}
 .th-name{background:#f8f8f6;padding:8px 10px;text-align:left;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.05em;}
-.col-weekend .th-dayname,.col-weekend .th-daynum{background:#f5f0f0;color:#b91c1c;}
-.col-weekend td.cell{background:#fdf8f8!important;}
-.col-today .th-daynum{color:var(--blue)!important;}
+.col-weekend.th-dayname{background:#fde0e0!important;color:#b91c1c!important;font-weight:700;}
+.col-weekend.th-daynum{background:#fde0e0!important;color:#b91c1c!important;font-weight:700;}
+td.cell.col-weekend{background:#fff0f0!important;}
+tr.ghost-row td.cell.col-weekend{background:#fceaea!important;}
+.col-today.th-daynum{color:var(--blue)!important;font-weight:700;}
 td.cell{padding:3px 2px;background:#fafafa;}
 td.cell-name{padding:6px 10px;text-align:left;background:white;position:sticky;left:0;z-index:2;border-right:2px solid rgba(0,0,0,0.1);}
 td.cell-no{padding:6px 4px;background:#fafafa;color:var(--muted);font-size:11px;}
 tr.ghost-row td{background:#f9f9f9!important;opacity:.7;}
 tr.ghost-row td.cell-name{color:#9ca3af;}
 .ghost-strikethrough{text-decoration:line-through;color:#b91c1c;}
-.dot{display:inline-flex;width:20px;height:20px;border-radius:4px;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
+.dot{display:inline-flex;width:22px;height:22px;border-radius:4px;align-items:center;justify-content:center;font-size:11px;font-weight:700;transition:transform .1s,box-shadow .1s;}
 .dot-present{background:var(--present-lt);color:var(--present);}
 .dot-late{background:var(--late-lt);color:var(--late);}
 .dot-absent{background:var(--absent-lt);color:var(--absent);}
 .dot-ghost{background:var(--ghost-lt);color:var(--ghost);}
-.dot-empty{background:transparent;color:transparent;}
+.dot-empty{background:#f3f4f6;color:#d1d5db;}
+td.cell.editable{cursor:pointer;}
+td.cell.editable:hover .dot{transform:scale(1.18);box-shadow:0 2px 8px rgba(0,0,0,0.15);}
 td.sum-present{background:#e1f5ee;color:#0F6E56;font-weight:600;}
 td.sum-late{background:#faeeda;color:#854F0B;font-weight:600;}
 td.sum-absent{background:#fef2f2;color:#A32D2D;font-weight:600;}
@@ -126,6 +134,26 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
 .pct-fill.low{background:var(--absent);}
 .pct-fill.mid{background:var(--late);}
 .state-box{text-align:center;padding:48px 20px;color:var(--muted);font-size:14px;}
+
+/* ── SCROLLBAR ── */
+.tbl-outer{scrollbar-width:thin;scrollbar-color:rgba(0,0,0,0.25) #f0eeea;}
+.tbl-outer::-webkit-scrollbar{height:10px;}
+.tbl-outer::-webkit-scrollbar-track{background:#f0eeea;border-radius:99px;}
+.tbl-outer::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.22);border-radius:99px;border:2px solid #f0eeea;}
+.tbl-outer::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,0.38);}
+
+/* ── STATUS POPUP ── */
+.status-popup{position:fixed;z-index:500;background:white;border:1px solid var(--border);border-radius:12px;padding:10px;box-shadow:0 8px 30px rgba(0,0,0,0.16);display:none;flex-direction:column;gap:5px;min-width:138px;}
+.status-popup.open{display:flex;}
+.popup-title{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:0 4px 4px;border-bottom:1px solid var(--border);margin-bottom:2px;}
+.popup-btn{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;border:none;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:filter .12s;text-align:left;width:100%;}
+.popup-btn:hover{filter:brightness(.93);}
+.popup-btn.p-present{background:#f0fdf4;color:#166534;}
+.popup-btn.p-late   {background:#fffbeb;color:#92400e;}
+.popup-btn.p-absent {background:#fef2f2;color:#b91c1c;}
+.popup-btn.p-ghost  {background:#f3f4f6;color:#6b7280;}
+.popup-btn.p-clear  {background:#f9fafb;color:#9ca3af;border:1px solid #e5e7eb;font-size:12px;}
+.popup-saving{font-size:11px;color:var(--muted);text-align:center;padding:4px;display:none;}
 
 /* ── BTN ── */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid var(--border);border-radius:8px;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:500;cursor:pointer;background:var(--surface);color:var(--text);transition:all .15s;}
@@ -282,10 +310,21 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
 
 <div id="toast"></div>
 
+<!-- Status edit popup -->
+<div class="status-popup" id="statusPopup">
+  <div class="popup-title" id="popupTitle">เปลี่ยนสถานะ</div>
+  <button class="popup-btn p-present" onclick="applyStatus('present')">✓ มาเรียน</button>
+  <button class="popup-btn p-late"    onclick="applyStatus('late')">⏱ สาย</button>
+  <button class="popup-btn p-absent"  onclick="applyStatus('absent')">✗ ขาด</button>
+  <button class="popup-btn p-ghost"   onclick="applyStatus('ghost')">— ไม่มีตัวตน</button>
+  <button class="popup-btn p-clear"   onclick="applyStatus(null)">ลบสถานะ</button>
+  <div class="popup-saving" id="popupSaving">กำลังบันทึก...</div>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, getDocs, query, where }
+import { getFirestore, collection, getDocs, query, where, doc, setDoc, deleteDoc }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -309,6 +348,9 @@ const THAI_DAYS_SHORT = ["อา","จ","อ","พ","พฤ","ศ","ส"];
 let userRole = "user";
 let allStudents = [];
 let attMap = {};
+
+// popup state
+let _popup = { studentId:null, dateStr:null, subjectId:null, classId:null, studentName:"", tdEl:null };
 
 const now = new Date();
 document.getElementById("monthInput").value =
@@ -463,6 +505,7 @@ function statusDot(status) {
 }
 
 function renderGrid(year, mon, daysInMonth) {
+  const isAdmin = userRole === 'admin';
   const today = new Date().toISOString().split("T")[0];
   const days = [];
   for (let d=1; d<=daysInMonth; d++) {
@@ -516,7 +559,9 @@ function renderGrid(year, mon, daysInMonth) {
     let cells = "";
 
     days.forEach(({dateStr, isWeekend, isToday}) => {
-      const cls = [isWeekend?"col-weekend":"", isToday?"col-today":""].filter(Boolean).join(" ");
+      const wkCls = isWeekend ? "col-weekend" : "";
+      const tdyCls = isToday ? "col-today" : "";
+      const cls = [wkCls, tdyCls].filter(Boolean).join(" ");
       if (isGhost) {
         cells += `<td class="cell ${cls}"><span class="dot dot-ghost">—</span></td>`;
         return;
@@ -527,7 +572,10 @@ function renderGrid(year, mon, daysInMonth) {
       if (status === "present") { sPresent++; dayPresent[dateStr]=(dayPresent[dateStr]||0)+1; }
       if (status === "late")    { sLate++;    dayLate[dateStr]=(dayLate[dateStr]||0)+1; }
       if (status === "absent")  { sAbsent++;  dayAbsent[dateStr]=(dayAbsent[dateStr]||0)+1; }
-      cells += `<td class="cell ${cls}">${statusDot(status)}</td>`;
+      const editAttr = isAdmin
+        ? `data-sid="${s.id}" data-date="${dateStr}" data-name="${(s.prefix?s.prefix+" ":"")+s.name}" class="cell ${cls} editable" onclick="openPopup(this)"`
+        : `class="cell ${cls}"`;
+      cells += `<td ${editAttr}>${statusDot(status)}</td>`;
     });
 
     totalPresent += sPresent;
@@ -612,6 +660,82 @@ function renderGrid(year, mon, daysInMonth) {
 window.exportTable = function() {
   showToast("กำลังพัฒนา Export Excel...","success");
 };
+
+// ── Popup open / close ──
+window.openPopup = function(td) {
+  const sid   = td.dataset.sid;
+  const date  = td.dataset.date;
+  const name  = td.dataset.name;
+  const classId   = document.getElementById("classSelect").value;
+  const subjectId = document.getElementById("subjectSelect").value;
+  _popup = { studentId:sid, dateStr:date, subjectId, classId, studentName:name, tdEl:td };
+
+  document.getElementById("popupTitle").textContent = name + " · " + date.split("-").reverse().join("/");
+  document.getElementById("popupSaving").style.display = "none";
+
+  const pop = document.getElementById("statusPopup");
+  pop.classList.add("open");
+
+  // position near the clicked cell
+  const rect = td.getBoundingClientRect();
+  const popW = 145, popH = 220;
+  let left = rect.left + window.scrollX;
+  let top  = rect.bottom + window.scrollY + 4;
+  if (left + popW > window.innerWidth - 8) left = window.innerWidth - popW - 8;
+  if (top + popH > window.innerHeight + window.scrollY - 8) top = rect.top + window.scrollY - popH - 4;
+  pop.style.left = left + "px";
+  pop.style.top  = top  + "px";
+};
+
+window.applyStatus = async function(newStatus) {
+  const { studentId, dateStr, subjectId, classId, studentName, tdEl } = _popup;
+  if (!studentId || !dateStr || !classId) return;
+
+  const pop = document.getElementById("statusPopup");
+  document.getElementById("popupSaving").style.display = "block";
+
+  try {
+    const docId = `${studentId}_${subjectId||"default"}_${dateStr}`;
+    if (newStatus === null) {
+      // ลบสถานะ
+      await deleteDoc(doc(db, "attendance", docId));
+      if (!attMap[dateStr]) attMap[dateStr] = {};
+      delete attMap[dateStr][studentId];
+    } else {
+      await setDoc(doc(db, "attendance", docId), {
+        studentId, studentName,
+        classId, subjectId: subjectId||"",
+        date: dateStr, status: newStatus, note: "",
+        savedAt: new Date().toISOString()
+      });
+      if (!attMap[dateStr]) attMap[dateStr] = {};
+      attMap[dateStr][studentId] = { status: newStatus, note: "" };
+    }
+
+    // update dot in cell
+    if (tdEl) tdEl.innerHTML = statusDot(newStatus);
+
+    // re-render grid to update totals
+    const [year, mon] = document.getElementById("monthInput").value.split("-").map(Number);
+    const daysInMonth = new Date(year, mon, 0).getDate();
+    renderGrid(year, mon, daysInMonth);
+
+    showToast("บันทึกเรียบร้อย ✓", "success");
+  } catch(e) {
+    showToast("เกิดข้อผิดพลาด: " + e.message, "error");
+  }
+
+  pop.classList.remove("open");
+};
+
+// close popup when clicking outside
+document.addEventListener("click", e => {
+  const pop = document.getElementById("statusPopup");
+  if (!pop) return;
+  if (!pop.contains(e.target) && !e.target.closest(".editable")) {
+    pop.classList.remove("open");
+  }
+});
 
 function showToast(msg, type) {
   const t = document.getElementById("toast");
