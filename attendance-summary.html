@@ -573,7 +573,7 @@ function renderGrid(year, mon, daysInMonth) {
       if (status === "late")    { sLate++;    dayLate[dateStr]=(dayLate[dateStr]||0)+1; }
       if (status === "absent")  { sAbsent++;  dayAbsent[dateStr]=(dayAbsent[dateStr]||0)+1; }
       const editAttr = isAdmin
-        ? `data-sid="${s.id}" data-date="${dateStr}" data-name="${(s.prefix?s.prefix+" ":"")+s.name}" class="cell ${cls} editable" onclick="openPopup(this)"`
+        ? `data-sid="${s.id}" data-date="${dateStr}" data-name="${(s.prefix?s.prefix+" ":"")+s.name}" class="cell ${cls} editable" onclick="openPopup(this,event)"`
         : `class="cell ${cls}"`;
       cells += `<td ${editAttr}>${statusDot(status)}</td>`;
     });
@@ -662,7 +662,11 @@ window.exportTable = function() {
 };
 
 // ── Popup open / close ──
-window.openPopup = function(td) {
+let _popupClickGuard = false;
+
+window.openPopup = function(td, event) {
+  if (event) event.stopPropagation();
+
   const sid   = td.dataset.sid;
   const date  = td.dataset.date;
   const name  = td.dataset.name;
@@ -676,13 +680,20 @@ window.openPopup = function(td) {
   const pop = document.getElementById("statusPopup");
   pop.classList.add("open");
 
-  // position near the clicked cell
+  // use fixed positioning (viewport-relative) — no scroll offset needed
   const rect = td.getBoundingClientRect();
-  const popW = 145, popH = 220;
-  let left = rect.left + window.scrollX;
-  let top  = rect.bottom + window.scrollY + 4;
+  const popW = 148, popH = 230;
+
+  let left = rect.left;
+  let top  = rect.bottom + 6;
+
+  // ถ้าออกขอบขวา — เลื่อนซ้าย
   if (left + popW > window.innerWidth - 8) left = window.innerWidth - popW - 8;
-  if (top + popH > window.innerHeight + window.scrollY - 8) top = rect.top + window.scrollY - popH - 4;
+  // ถ้าออกขอบล่าง — แสดงด้านบน cell แทน
+  if (top + popH > window.innerHeight - 8) top = rect.top - popH - 6;
+  // ถ้ายังออกขอบบน — ยึดไว้ที่ 8px
+  if (top < 8) top = 8;
+
   pop.style.left = left + "px";
   pop.style.top  = top  + "px";
 };
@@ -728,12 +739,19 @@ window.applyStatus = async function(newStatus) {
   pop.classList.remove("open");
 };
 
-// close popup when clicking outside
-document.addEventListener("click", e => {
+// close popup on mousedown outside (mousedown fires before click, avoids same-event race)
+document.addEventListener("mousedown", e => {
   const pop = document.getElementById("statusPopup");
-  if (!pop) return;
+  if (!pop || !pop.classList.contains("open")) return;
   if (!pop.contains(e.target) && !e.target.closest(".editable")) {
     pop.classList.remove("open");
+  }
+});
+// also close on Escape key
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") {
+    const pop = document.getElementById("statusPopup");
+    if (pop) pop.classList.remove("open");
   }
 });
 
