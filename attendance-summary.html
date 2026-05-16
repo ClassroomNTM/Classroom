@@ -314,7 +314,8 @@ async function loadClasses() {
   });
 }
 
-window.loadData = async function() {
+window.loadData = loadData;
+async function loadData() {
   const classId = document.getElementById("classSelect").value;
   const month   = document.getElementById("monthInput").value; // "YYYY-MM"
   if (!classId || !month) return;
@@ -346,7 +347,7 @@ window.loadData = async function() {
   });
 
   renderGrid(year, mon, daysInMonth);
-};
+}
 
 function getDayLabel(year, mon, day) {
   const d = new Date(year, mon-1, day);

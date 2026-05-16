@@ -206,7 +206,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
   getFirestore, collection, doc, getDocs, setDoc, deleteDoc, addDoc,
-  query, where, getStorage
+  query, where
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getStorage as initStorage, ref, uploadBytes, getDownloadURL }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
@@ -246,11 +246,18 @@ window.doLogout = async () => { await signOut(auth); sessionStorage.clear(); win
 async function loadClasses() {
   const snap = await getDocs(collection(db, "classes"));
   const sel = document.getElementById("classSelectPanel");
-  snap.docs.forEach(d => {
+  const classes = snap.docs.map(d => ({id: d.id, ...d.data()}))
+    .sort((a,b) => (a.name||"").localeCompare(b.name||"","th"));
+  classes.forEach(d => {
     const opt = document.createElement("option");
-    opt.value = d.id; opt.textContent = d.data().name;
+    opt.value = d.id; opt.textContent = d.name;
     sel.appendChild(opt);
   });
+  // auto-select ชั้นแรก
+  if (classes.length > 0) {
+    sel.value = classes[0].id;
+    await window.onClassChange();
+  }
 }
 
 window.onClassChange = async function() {

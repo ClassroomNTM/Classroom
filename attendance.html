@@ -178,7 +178,7 @@ tr:last-child td{border-bottom:none;}
 import { initializeApp }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, getDocs, doc, setDoc, query, where, deleteDoc }
+import { getFirestore, collection, getDocs, doc, setDoc, query, where, deleteDoc, updateDoc }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -321,6 +321,19 @@ window.setStatus = function(sid, status) {
   if (status === "ghost") row.style.background = "#fff8f8";
   else row.style.background = "";
   updateSummary();
+
+  // อัพเดต ghost field ใน students collection ด้วย
+  if (userRole === "admin") {
+    const isGhost = status === "ghost";
+    const student = students.find(s => s.id === sid);
+    // เฉพาะเมื่อสถานะ ghost เปลี่ยนจากค่าเดิม
+    if (student && student.ghost !== isGhost) {
+      student.ghost = isGhost;
+      updateDoc(doc(db, "students", sid), { ghost: isGhost }).catch(e => {
+        console.error("อัพเดต ghost ไม่สำเร็จ:", e.message);
+      });
+    }
+  }
 };
 
 window.markAllPresent = function() {
