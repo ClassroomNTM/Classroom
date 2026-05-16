@@ -154,6 +154,11 @@ input:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15
           <option value="">— เลือกชั้น —</option>
         </select>
       </div>
+      <div class="fgroup" style="padding:4px 2px 4px;">
+        <select id="subjectSelect" onchange="onClassChange()" style="font-size:12px;height:34px;">
+          <option value="">— เลือกวิชา —</option>
+        </select>
+      </div>
       <div id="assignList">
         <div style="padding:12px 8px;font-size:12px;color:var(--muted);">เลือกชั้นเรียนก่อน</div>
       </div>
@@ -222,7 +227,7 @@ const auth    = getAuth(app);
 const db      = getFirestore(app);
 const storage = initStorage(app);
 
-let userRole = "", currentClassId = "", currentAssignId = "";
+let userRole = "", currentClassId = "", currentSubjectId = "", currentAssignId = "";
 let assignments = [], students = [], currentFile = null;
 
 onAuthStateChanged(auth, async user => {
@@ -238,22 +243,38 @@ onAuthStateChanged(auth, async user => {
     document.getElementById("adminNavItem").style.display = "flex";
     document.getElementById("addAssignBtn").style.display = "inline-flex";
   }
+  await loadSubjects();
   await loadClasses();
 });
 
 window.doLogout = async () => { await signOut(auth); sessionStorage.clear(); window.location.href = "index.html"; };
 
+
+async function loadSubjects() {
+  const snap = await getDocs(collection(db,"subjects"));
+  const sel  = document.getElementById("subjectSelect");
+  const subjects = snap.docs.map(d=>{return {id:d.id,...d.data()}})
+    .sort((a,b)=>(a.name||"").localeCompare(b.name||"","th"));
+  subjects.forEach(s => {
+    const opt = document.createElement("option");
+    opt.value = s.id; opt.textContent = s.name;
+    sel.appendChild(opt);
+  });
+  // default คณิตศาสตร์
+  if (subjects.find(s=>s.id==="8Ib9Lkl9iN")) sel.value = "8Ib9Lkl9iN";
+  else if (subjects.length > 0) sel.value = subjects[0].id;
+}
+
 async function loadClasses() {
   const snap = await getDocs(collection(db, "classes"));
   const sel = document.getElementById("classSelectPanel");
-  const classes = snap.docs.map(d => ({id: d.id, ...d.data()}))
-    .sort((a,b) => (a.name||"").localeCompare(b.name||"","th"));
-  classes.forEach(d => {
+  const classes = snap.docs.map(d=>{return {id:d.id,...d.data()}})
+    .sort((a,b)=>(a.name||"").localeCompare(b.name||"","th"));
+  classes.forEach(c => {
     const opt = document.createElement("option");
-    opt.value = d.id; opt.textContent = d.name;
+    opt.value = c.id; opt.textContent = c.name;
     sel.appendChild(opt);
   });
-  // auto-select ชั้นแรก
   if (classes.length > 0) {
     sel.value = classes[0].id;
     await window.onClassChange();
@@ -262,6 +283,7 @@ async function loadClasses() {
 
 window.onClassChange = async function() {
   currentClassId = document.getElementById("classSelectPanel").value;
+  currentSubjectId = document.getElementById("subjectSelect").value;
   currentAssignId = "";
   if (!currentClassId) return;
   const sSnap = await getDocs(query(collection(db,"students"), where("classId","==",currentClassId)));
@@ -270,7 +292,9 @@ window.onClassChange = async function() {
 };
 
 async function loadAssignments() {
-  const snap = await getDocs(query(collection(db,"assignments"), where("classId","==",currentClassId)));
+  const asgFilters = [where("classId","==",currentClassId)];
+  if (currentSubjectId) asgFilters.push(where("subjectId","==",currentSubjectId));
+  const snap = await getDocs(query(collection(db,"assignments"), ...asgFilters));
   assignments = snap.docs.map(d => ({id: d.id, ...d.data()}));
   assignments.sort((a,b) => (a.dueDate||"") > (b.dueDate||"") ? 1 : -1);
   renderAssignList();
@@ -496,9 +520,9 @@ window.saveAssignment = async function() {
   if (!title) { showToast("กรุณากรอกชื่องาน","error"); return; }
   try {
     if (editId) {
-      await setDoc(doc(db,"assignments",editId), {title, description:desc, dueDate:due, classId:currentClassId},{merge:true});
+      await setDoc(doc(db,"assignments",editId), {title, description:desc, dueDate:due, classId:currentClassId, subjectId:currentSubjectId||""},{merge:true});
     } else {
-      await addDoc(collection(db,"assignments"), {title, description:desc, dueDate:due, classId:currentClassId, createdAt:new Date().toISOString()});
+      await addDoc(collection(db,"assignments"), {title, description:desc, dueDate:due, classId:currentClassId, subjectId:currentSubjectId||"", createdAt:new Date().toISOString()});
     }
     closeAssignModal();
     showToast("บันทึกงานเรียบร้อย ✓","success");

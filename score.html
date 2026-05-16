@@ -156,6 +156,9 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);bac
     <div class="filters">
       <div class="fgroup">
         <div class="flabel">ชั้นเรียน</div>
+        <select id="subjectSelect" onchange="onClassChange()" style="font-size:12px;height:34px;margin-bottom:6px;">
+          <option value="">— เลือกวิชา —</option>
+        </select>
         <select id="classSelect" onchange="onClassChange()">
           <option value="">— เลือกชั้น —</option>
         </select>
@@ -236,23 +239,45 @@ onAuthStateChanged(auth, async user => {
   } else {
     document.getElementById("readonlyBanner").style.display = "block";
   }
+  await loadSubjects();
   await loadClasses();
+  window.onClassChange();
 });
 
 window.doLogout = async () => { await signOut(auth); sessionStorage.clear(); window.location.href = "index.html"; };
 
+
+async function loadSubjects() {
+  const snap = await getDocs(collection(db,"subjects"));
+  const sel  = document.getElementById("subjectSelect");
+  const subjects = snap.docs.map(d=>{return {id:d.id,...d.data()}})
+    .sort((a,b)=>(a.name||"").localeCompare(b.name||"","th"));
+  subjects.forEach(s => {
+    const opt = document.createElement("option");
+    opt.value = s.id; opt.textContent = s.name;
+    sel.appendChild(opt);
+  });
+  // default คณิตศาสตร์
+  if (subjects.find(s=>s.id==="8Ib9Lkl9iN")) sel.value = "8Ib9Lkl9iN";
+  else if (subjects.length > 0) sel.value = subjects[0].id;
+}
+
 async function loadClasses() {
   const snap = await getDocs(collection(db, "classes"));
   const sel = document.getElementById("classSelect");
-  snap.docs.forEach(d => {
+  const classes = snap.docs.map(d=>{return {id:d.id,...d.data()}})
+    .sort((a,b)=>(a.name||"").localeCompare(b.name||"","th"));
+  classes.forEach(c => {
     const opt = document.createElement("option");
-    opt.value = d.id; opt.textContent = d.data().name;
+    opt.value = c.id; opt.textContent = c.name;
     sel.appendChild(opt);
   });
+  if (classes.length > 0) sel.value = classes[0].id;
 }
 
 window.onClassChange = async function() {
   currentClassId = document.getElementById("classSelect").value;
+  currentSubjectId = document.getElementById("subjectSelect").value;
   if (!currentClassId) return;
   // load students
   const sSnap = await getDocs(query(collection(db,"students"), where("classId","==",currentClassId)));
@@ -262,7 +287,9 @@ window.onClassChange = async function() {
 };
 
 async function loadTopics() {
-  const snap = await getDocs(query(collection(db,"scoreTopics"), where("classId","==",currentClassId)));
+  const topicFilters = [where("classId","==",currentClassId)];
+  if (currentSubjectId) topicFilters.push(where("subjectId","==",currentSubjectId));
+  const snap = await getDocs(query(collection(db,"scoreTopics"), ...topicFilters));
   topics = snap.docs.map(d => ({id: d.id, ...d.data()}));
   renderTopicsList();
   if (topics.length > 0) selectTopic(topics[0].id);
@@ -454,9 +481,9 @@ window.saveTopic = async function() {
   if (!title) { showToast("กรุณากรอกชื่อหัวข้อ","error"); return; }
   try {
     if (editId) {
-      await setDoc(doc(db,"scoreTopics",editId), { title, maxScore: max, classId: currentClassId }, {merge:true});
+      await setDoc(doc(db,"scoreTopics",editId), { title, maxScore: max, classId: currentClassId, subjectId: currentSubjectId||"" }, {merge:true});
     } else {
-      await addDoc(collection(db,"scoreTopics"), { title, maxScore: max, classId: currentClassId, createdAt: new Date().toISOString() });
+      await addDoc(collection(db,"scoreTopics"), { title, maxScore: max, classId: currentClassId, subjectId: currentSubjectId||"", createdAt: new Date().toISOString() });
     }
     closeTopicModal();
     showToast("บันทึกหัวข้อเรียบร้อย ✓","success");
