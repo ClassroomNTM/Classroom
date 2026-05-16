@@ -117,12 +117,14 @@ input:focus,select.modal-sel:focus{border-color:var(--blue);box-shadow:0 0 0 3px
   <div class="sidebar-label">เมนูหลัก</div>
   <a href="dashboard.html" class="nav-item"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
   <a href="attendance.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>เช็คชื่อ</a>
+  <a href="attendance-summary.html" class="nav-item"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>สรุปเช็คชื่อ</a>
   <a href="score.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>คะแนน</a>
   <a href="submit.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>ส่งงาน</a>
   <div class="nav-sep"></div>
   <div class="sidebar-label">จัดการ</div>
   <a href="class.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>ชั้นเรียน</a>
-  <a href="admin.html" class="nav-item active"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>จัดการผู้ใช้</a>
+  <a href="subject.html" class="nav-item" id="subjectNavItem"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>รายวิชา</a>
+  <a href="admin.html" class="nav-item active" id="adminNavItem" style="display:none;"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>จัดการผู้ใช้</a>
 </nav>
 
 <main class="main">
@@ -148,7 +150,6 @@ input:focus,select.modal-sel:focus{border-color:var(--blue);box-shadow:0 0 0 3px
     <div class="tabs">
       <button class="tab active" id="tabUsers" onclick="switchTab('users')">ผู้ใช้ทั้งหมด</button>
       <button class="tab" id="tabActivity" onclick="switchTab('activity')">สรุปสิทธิ์</button>
-      <button class="tab" id="tabSubjects" onclick="switchTab('subjects')">รายวิชา</button>
     </div>
 
     <!-- Users tab -->
@@ -176,32 +177,6 @@ input:focus,select.modal-sel:focus{border-color:var(--blue);box-shadow:0 0 0 3px
             </tr></thead>
             <tbody id="activityTbody">
               <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">กำลังโหลด...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Subjects tab -->
-    <div id="panelSubjects" style="display:none;">
-      <div class="card">
-        <div class="card-head">
-          รายวิชาทั้งหมด
-          <button class="btn btn-sm btn-primary" onclick="openAddSubject()">
-            <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            เพิ่มวิชา
-          </button>
-        </div>
-        <div class="tbl-wrap">
-          <table>
-            <thead><tr>
-              <th>รหัสวิชา</th>
-              <th>ชื่อวิชา</th>
-              <th>คำอธิบาย</th>
-              <th style="width:100px;">จัดการ</th>
-            </tr></thead>
-            <tbody id="subjectsTbody">
-              <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px;">กำลังโหลด...</td></tr>
             </tbody>
           </table>
         </div>
@@ -267,30 +242,6 @@ input:focus,select.modal-sel:focus{border-color:var(--blue);box-shadow:0 0 0 3px
   </div>
 </div>
 
-<!-- Subject Modal -->
-<div class="modal-overlay" id="subjectModal">
-  <div class="modal">
-    <div class="modal-title" id="subjectModalTitle">เพิ่มรายวิชา</div>
-    <div class="form-group">
-      <label class="form-label">ชื่อวิชา *</label>
-      <input type="text" id="subjectName" placeholder="เช่น คณิตศาสตร์">
-    </div>
-    <div class="form-group">
-      <label class="form-label">รหัสวิชา (ถ้ามี)</label>
-      <input type="text" id="subjectCode" placeholder="เช่น MATH101">
-    </div>
-    <div class="form-group">
-      <label class="form-label">คำอธิบาย</label>
-      <input type="text" id="subjectDesc" placeholder="คำอธิบายสั้น ๆ">
-    </div>
-    <input type="hidden" id="editSubjectId">
-    <div class="modal-footer">
-      <button class="btn" onclick="closeSubjectModal()">ยกเลิก</button>
-      <button class="btn btn-primary" onclick="saveSubject()">บันทึก</button>
-    </div>
-  </div>
-</div>
-
 <div id="toast"></div>
 
 <script type="module">
@@ -298,7 +249,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, updateProfile }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
-  getFirestore, collection, doc, getDocs, setDoc, deleteDoc, addDoc, query, orderBy
+  getFirestore, collection, doc, getDocs, setDoc, deleteDoc, query, orderBy
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -311,7 +262,7 @@ const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
 
-let userRole = "", users = [], subjects = [], currentTab = "users";
+let userRole = "", users = [], currentTab = "users";
 
 onAuthStateChanged(auth, async user => {
   if (!user) { window.location.href = "index.html"; return; }
@@ -325,7 +276,8 @@ onAuthStateChanged(auth, async user => {
     return;
   }
   document.getElementById("adminContent").style.display = "block";
-  document.getElementById("adminNavItem") && (document.getElementById("adminNavItem").style.display = "flex");
+  document.getElementById("adminNavItem") && (
+    document.getElementById("adminNavItem").style.display = "flex");
   await loadUsers();
 });
 
@@ -404,11 +356,8 @@ window.switchTab = function(tab) {
   currentTab = tab;
   document.getElementById("tabUsers").classList.toggle("active", tab==="users");
   document.getElementById("tabActivity").classList.toggle("active", tab==="activity");
-  document.getElementById("tabSubjects").classList.toggle("active", tab==="subjects");
   document.getElementById("panelUsers").style.display = tab==="users" ? "block" : "none";
   document.getElementById("panelActivity").style.display = tab==="activity" ? "block" : "none";
-  document.getElementById("panelSubjects").style.display = tab==="subjects" ? "block" : "none";
-  if (tab === "subjects") loadSubjects();
 };
 
 // CREATE USER
@@ -474,87 +423,6 @@ window.removeUser = async function(id, name) {
     await deleteDoc(doc(db,"users",id));
     showToast("ลบข้อมูลผู้ใช้เรียบร้อย","success");
     await loadUsers();
-  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
-};
-
-// ── SUBJECTS ──
-async function loadSubjects() {
-  document.getElementById("subjectsTbody").innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px;">กำลังโหลด...</td></tr>`;
-  const snap = await getDocs(collection(db, "subjects"));
-  subjects = snap.docs.map(d => ({id: d.id, ...d.data()}))
-    .sort((a,b) => (a.name||"").localeCompare(b.name||"","th"));
-  renderSubjects();
-}
-
-function renderSubjects() {
-  const tbody = document.getElementById("subjectsTbody");
-  if (!subjects.length) {
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">ยังไม่มีรายวิชา — กดปุ่ม "+ เพิ่มวิชา" เพื่อเริ่มต้น</td></tr>`;
-    return;
-  }
-  tbody.innerHTML = subjects.map(s => `<tr>
-    <td style="font-size:12px;color:var(--muted);">${s.code||"—"}</td>
-    <td style="font-weight:500;">${s.name||"—"}</td>
-    <td style="font-size:12px;color:var(--muted);">${s.description||"—"}</td>
-    <td>
-      <div style="display:flex;gap:6px;">
-        <button class="btn btn-sm" onclick="openEditSubject('${s.id}')">
-          <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        </button>
-        <button class="btn btn-sm btn-danger" onclick="deleteSubject('${s.id}','${(s.name||"").replace(/'/g,"\\'")}')">
-          <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-        </button>
-      </div>
-    </td>
-  </tr>`).join("");
-}
-
-window.openAddSubject = function() {
-  document.getElementById("subjectModalTitle").textContent = "เพิ่มรายวิชา";
-  document.getElementById("subjectName").value = "";
-  document.getElementById("subjectCode").value = "";
-  document.getElementById("subjectDesc").value = "";
-  document.getElementById("editSubjectId").value = "";
-  document.getElementById("subjectModal").classList.add("open");
-};
-
-window.openEditSubject = function(id) {
-  const s = subjects.find(x => x.id === id);
-  if (!s) return;
-  document.getElementById("subjectModalTitle").textContent = "แก้ไขรายวิชา";
-  document.getElementById("subjectName").value = s.name||"";
-  document.getElementById("subjectCode").value = s.code||"";
-  document.getElementById("subjectDesc").value = s.description||"";
-  document.getElementById("editSubjectId").value = id;
-  document.getElementById("subjectModal").classList.add("open");
-};
-
-window.closeSubjectModal = function() { document.getElementById("subjectModal").classList.remove("open"); };
-
-window.saveSubject = async function() {
-  const name = document.getElementById("subjectName").value.trim();
-  const code = document.getElementById("subjectCode").value.trim();
-  const desc = document.getElementById("subjectDesc").value.trim();
-  const editId = document.getElementById("editSubjectId").value;
-  if (!name) { showToast("กรุณากรอกชื่อวิชา","error"); return; }
-  try {
-    if (editId) {
-      await setDoc(doc(db,"subjects",editId), {name, code, description:desc}, {merge:true});
-    } else {
-      await addDoc(collection(db,"subjects"), {name, code, description:desc, createdAt:new Date().toISOString()});
-    }
-    closeSubjectModal();
-    showToast("บันทึกรายวิชาเรียบร้อย ✓","success");
-    await loadSubjects();
-  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
-};
-
-window.deleteSubject = async function(id, name) {
-  if (!confirm(`ยืนยันลบวิชา "${name}"?\nข้อมูลเช็คชื่อและคะแนนที่อ้างถึงวิชานี้จะยังอยู่ แต่จะไม่แสดงในตัวกรอง`)) return;
-  try {
-    await deleteDoc(doc(db,"subjects",id));
-    showToast("ลบรายวิชาเรียบร้อย","success");
-    await loadSubjects();
   } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
 };
 

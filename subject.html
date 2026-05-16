@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>รายวิชา — ระบบจัดการนักเรียน</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--bg:#f5f4f0;--surface:#ffffff;--blue:#0f3460;--blue-lt:#e6eef7;--text:#1a1a2e;--muted:#6b7280;--border:rgba(0,0,0,0.08);--radius:12px;--sidebar-w:200px;--topbar-h:56px;}
+body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+.topbar{position:fixed;top:0;left:0;right:0;height:var(--topbar-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:100;}
+.brand{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;color:var(--text);text-decoration:none;}
+.brand-dot{width:32px;height:32px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;}
+.brand-dot svg{width:18px;height:18px;fill:white;}
+.topbar-right{display:flex;align-items:center;gap:14px;}
+.user-info{font-size:13px;display:flex;align-items:center;gap:8px;}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--blue);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;}
+.role-badge{padding:2px 8px;border-radius:99px;font-size:11px;font-weight:500;}
+.role-admin{background:#fef2f2;color:#b91c1c;}.role-user{background:#f0fdf4;color:#166534;}
+.btn-logout{padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:transparent;font-family:'Sarabun',sans-serif;font-size:13px;color:var(--muted);cursor:pointer;}
+.btn-logout:hover{background:var(--bg);}
+.sidebar{position:fixed;top:var(--topbar-h);left:0;bottom:0;width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);padding:16px 10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;}
+.sidebar-label{font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--muted);padding:8px 10px 4px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;font-size:13px;color:var(--muted);text-decoration:none;transition:all .15s;}
+.nav-item svg{width:17px;height:17px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.nav-item:hover{background:var(--bg);color:var(--text);}
+.nav-item.active{background:var(--blue-lt);color:var(--blue);font-weight:500;}
+.nav-sep{height:1px;background:var(--border);margin:8px 0;}
+.main{margin-left:var(--sidebar-w);margin-top:var(--topbar-h);padding:24px;}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.page-title{font-size:20px;font-weight:600;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid var(--border);border-radius:8px;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:500;cursor:pointer;background:var(--surface);color:var(--text);transition:all .15s;}
+.btn:hover{background:var(--bg);}
+.btn:active{transform:scale(.97);}
+.btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.btn-primary{background:var(--blue);color:white;border-color:var(--blue);}
+.btn-primary:hover{background:#0a2847;}
+.btn-danger{background:#fef2f2;color:#b91c1c;border-color:#fecaca;}
+.btn-danger:hover{background:#fee2e2;}
+.btn-sm{padding:5px 10px;font-size:12px;}
+
+/* notice bar for non-admin */
+.notice-bar{background:#fffbeb;border:1px solid #fde68a;border-radius:var(--radius);padding:10px 16px;font-size:13px;color:#92400e;margin-bottom:20px;display:none;}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.card-head{padding:14px 18px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between;}
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;padding:10px 12px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--border);background:#fafafa;}
+td{padding:11px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#fafafa;}
+.chip{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:500;}
+.chip-blue{background:#eff6ff;color:#1e40af;}
+
+/* Subject cards grid */
+.subjects-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
+.subject-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;transition:.2s;position:relative;}
+.subject-card:hover{box-shadow:0 2px 10px rgba(0,0,0,.07);}
+.sc-icon{width:36px;height:36px;border-radius:8px;background:var(--blue-lt);display:flex;align-items:center;justify-content:center;margin-bottom:10px;}
+.sc-icon svg{width:18px;height:18px;stroke:var(--blue);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.sc-code{font-size:11px;color:var(--muted);font-weight:500;margin-bottom:2px;}
+.sc-name{font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px;}
+.sc-desc{font-size:12px;color:var(--muted);line-height:1.5;}
+.sc-actions{display:flex;gap:6px;margin-top:12px;}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:200;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:white;border-radius:16px;padding:24px 28px;width:440px;max-width:95vw;animation:fadeUp .25s ease;}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:20px;}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;}
+.form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.form-label{font-size:12px;font-weight:500;}
+input[type="text"]{width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-family:'Sarabun',sans-serif;font-size:13px;color:var(--text);background:#fafafa;outline:none;}
+textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:'Sarabun',sans-serif;font-size:13px;color:var(--text);background:#fafafa;outline:none;resize:vertical;min-height:70px;}
+input:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);background:white;}
+
+.empty-state{text-align:center;padding:56px 20px;color:var(--muted);}
+.empty-state svg{width:44px;height:44px;stroke:var(--muted);fill:none;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;margin-bottom:12px;}
+.empty-state p{font-size:14px;margin-bottom:4px;}
+.empty-state small{font-size:12px;}
+
+#toast{position:fixed;bottom:24px;right:24px;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;}
+#toast.show{opacity:1;transform:translateY(0);}
+#toast.success{background:#052e16;color:#86efac;}
+#toast.error{background:#450a0a;color:#fca5a5;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a href="dashboard.html" class="brand">
+    <div class="brand-dot"><svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg></div>
+    ระบบจัดการนักเรียน
+  </a>
+  <div class="topbar-right">
+    <div class="user-info">
+      <div class="avatar" id="avatarEl">?</div>
+      <span id="userNameEl">ผู้ใช้</span>
+      <span class="role-badge" id="roleBadgeEl">—</span>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">ออกจากระบบ</button>
+  </div>
+</header>
+
+<nav class="sidebar">
+  <div class="sidebar-label">เมนูหลัก</div>
+  <a href="dashboard.html" class="nav-item"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
+  <a href="attendance.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>เช็คชื่อ</a>
+  <a href="attendance-summary.html" class="nav-item"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>สรุปเช็คชื่อ</a>
+  <a href="score.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>คะแนน</a>
+  <a href="submit.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>ส่งงาน</a>
+  <div class="nav-sep"></div>
+  <div class="sidebar-label">จัดการ</div>
+  <a href="class.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>ชั้นเรียน</a>
+  <a href="subject.html" class="nav-item active" id="subjectNavItem"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>รายวิชา</a>
+  <a href="admin.html" class="nav-item" id="adminNavItem" style="display:none;"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>จัดการผู้ใช้</a>
+</nav>
+
+<main class="main">
+  <div class="page-header">
+    <div class="page-title">รายวิชา</div>
+    <button class="btn btn-primary" id="addSubjectBtn" onclick="openAddSubject()" style="display:none;">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      เพิ่มวิชา
+    </button>
+  </div>
+
+  <div class="notice-bar" id="noticeBar">
+    ℹ️ คุณมีสิทธิ์ดูรายวิชาเท่านั้น — ติดต่อ Admin เพื่อเพิ่ม/แก้ไข/ลบวิชา
+  </div>
+
+  <div id="subjectsArea">
+    <div class="empty-state">
+      <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+      <p>กำลังโหลดรายวิชา...</p>
+    </div>
+  </div>
+</main>
+
+<!-- Subject Modal -->
+<div class="modal-overlay" id="subjectModal">
+  <div class="modal">
+    <div class="modal-title" id="subjectModalTitle">เพิ่มรายวิชา</div>
+    <div class="form-group">
+      <label class="form-label">ชื่อวิชา *</label>
+      <input type="text" id="subjectName" placeholder="เช่น คณิตศาสตร์">
+    </div>
+    <div class="form-group">
+      <label class="form-label">รหัสวิชา (ถ้ามี)</label>
+      <input type="text" id="subjectCode" placeholder="เช่น MATH101">
+    </div>
+    <div class="form-group">
+      <label class="form-label">คำอธิบาย</label>
+      <textarea id="subjectDesc" placeholder="คำอธิบายสั้น ๆ เกี่ยวกับวิชานี้"></textarea>
+    </div>
+    <input type="hidden" id="editSubjectId">
+    <div class="modal-footer">
+      <button class="btn" onclick="closeSubjectModal()">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveSubject()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  getFirestore, collection, doc, getDocs, addDoc, setDoc, deleteDoc
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCBXMi3sy-3iDDzHDXVvlmaa6szcmnFbwQ",
+  authDomain: "classroom-93c8b.firebaseapp.com",
+  projectId: "classroom-93c8b",
+  storageBucket: "classroom-93c8b.firebasestorage.app",
+  messagingSenderId: "659092749098",
+  appId: "1:659092749098:web:36f249557c4badc088fc53",
+  measurementId: "G-EXJVCH9Z4S"
+};
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+let userRole = "", subjects = [];
+
+onAuthStateChanged(auth, async user => {
+  if (!user) { window.location.href = "index.html"; return; }
+  userRole = sessionStorage.getItem("userRole") || "user";
+  const name = sessionStorage.getItem("userName") || user.email;
+  document.getElementById("avatarEl").textContent = name.charAt(0).toUpperCase();
+  document.getElementById("userNameEl").textContent = name;
+  const rb = document.getElementById("roleBadgeEl");
+  rb.textContent = userRole === "admin" ? "Admin" : "User";
+  rb.className = "role-badge " + (userRole === "admin" ? "role-admin" : "role-user");
+
+  if (userRole === "admin") {
+    document.getElementById("adminNavItem").style.display = "flex";
+    document.getElementById("addSubjectBtn").style.display = "inline-flex";
+  } else {
+    document.getElementById("noticeBar").style.display = "block";
+  }
+  await loadSubjects();
+});
+
+window.doLogout = async () => { await signOut(auth); sessionStorage.clear(); window.location.href = "index.html"; };
+
+async function loadSubjects() {
+  document.getElementById("subjectsArea").innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg><p>กำลังโหลด...</p></div>`;
+  try {
+    const snap = await getDocs(collection(db, "subjects"));
+    subjects = snap.docs.map(d => ({id: d.id, ...d.data()}))
+      .sort((a,b) => (a.name||"").localeCompare(b.name||"","th"));
+    renderSubjects();
+  } catch(e) {
+    document.getElementById("subjectsArea").innerHTML = `<div class="empty-state" style="color:#b91c1c;">โหลดข้อมูลไม่ได้: ${e.message}</div>`;
+  }
+}
+
+function renderSubjects() {
+  const area = document.getElementById("subjectsArea");
+  if (!subjects.length) {
+    area.innerHTML = `<div class="empty-state">
+      <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+      <p>ยังไม่มีรายวิชา</p>
+      <small>${userRole === "admin" ? "กดปุ่ม \"+ เพิ่มวิชา\" เพื่อเริ่มต้น" : "ติดต่อ Admin เพื่อเพิ่มรายวิชา"}</small>
+    </div>`;
+    return;
+  }
+  const isAdmin = userRole === "admin";
+  area.innerHTML = `<div class="subjects-grid">${subjects.map(s => `
+    <div class="subject-card">
+      <div class="sc-icon"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg></div>
+      ${s.code ? `<div class="sc-code">${s.code}</div>` : ""}
+      <div class="sc-name">${s.name||"—"}</div>
+      ${s.description ? `<div class="sc-desc">${s.description}</div>` : ""}
+      ${isAdmin ? `<div class="sc-actions">
+        <button class="btn btn-sm" onclick="openEditSubject('${s.id}')">
+          <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          แก้ไข
+        </button>
+        <button class="btn btn-sm btn-danger" onclick="deleteSubject('${s.id}','${(s.name||"").replace(/'/g,"\\'")}')">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+          ลบ
+        </button>
+      </div>` : ""}
+    </div>`).join("")}</div>`;
+}
+
+window.openAddSubject = function() {
+  document.getElementById("subjectModalTitle").textContent = "เพิ่มรายวิชา";
+  document.getElementById("subjectName").value = "";
+  document.getElementById("subjectCode").value = "";
+  document.getElementById("subjectDesc").value = "";
+  document.getElementById("editSubjectId").value = "";
+  document.getElementById("subjectModal").classList.add("open");
+};
+
+window.openEditSubject = function(id) {
+  const s = subjects.find(x => x.id === id);
+  if (!s) return;
+  document.getElementById("subjectModalTitle").textContent = "แก้ไขรายวิชา";
+  document.getElementById("subjectName").value = s.name||"";
+  document.getElementById("subjectCode").value = s.code||"";
+  document.getElementById("subjectDesc").value = s.description||"";
+  document.getElementById("editSubjectId").value = id;
+  document.getElementById("subjectModal").classList.add("open");
+};
+
+window.closeSubjectModal = function() { document.getElementById("subjectModal").classList.remove("open"); };
+
+window.saveSubject = async function() {
+  const name = document.getElementById("subjectName").value.trim();
+  const code = document.getElementById("subjectCode").value.trim();
+  const desc = document.getElementById("subjectDesc").value.trim();
+  const editId = document.getElementById("editSubjectId").value;
+  if (!name) { showToast("กรุณากรอกชื่อวิชา","error"); return; }
+  try {
+    if (editId) {
+      await setDoc(doc(db,"subjects",editId), {name, code, description:desc}, {merge:true});
+      showToast("แก้ไขรายวิชาเรียบร้อย ✓","success");
+    } else {
+      await addDoc(collection(db,"subjects"), {name, code, description:desc, createdAt:new Date().toISOString()});
+      showToast("เพิ่มรายวิชาเรียบร้อย ✓","success");
+    }
+    closeSubjectModal();
+    await loadSubjects();
+  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
+};
+
+window.deleteSubject = async function(id, name) {
+  if (!confirm(`ยืนยันลบวิชา "${name}"?\n\nข้อมูลเช็คชื่อและคะแนนที่อ้างถึงวิชานี้จะยังคงอยู่ แต่จะไม่แสดงในตัวกรองวิชา`)) return;
+  try {
+    await deleteDoc(doc(db,"subjects",id));
+    showToast("ลบรายวิชาเรียบร้อย","success");
+    await loadSubjects();
+  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
+};
+
+function showToast(msg, type) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.className = "show " + type;
+  setTimeout(() => { t.className = ""; }, 3000);
+}
+</script>
+</body>
+</html>

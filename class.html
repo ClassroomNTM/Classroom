@@ -150,6 +150,7 @@ input:focus,select.modal-sel:focus{border-color:var(--blue);box-shadow:0 0 0 3px
   <div class="nav-sep"></div>
   <div class="sidebar-label">จัดการ</div>
   <a href="class.html" class="nav-item active"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>ชั้นเรียน</a>
+  <a href="subject.html" class="nav-item" id="subjectNavItem"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>รายวิชา</a>
   <a href="admin.html" class="nav-item" id="adminNavItem" style="display:none;"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>จัดการผู้ใช้</a>
 </nav>
 
@@ -358,6 +359,7 @@ onAuthStateChanged(auth, async user => {
   rb.textContent = userRole === "admin" ? "Admin" : "User";
   rb.className = "role-badge " + (userRole === "admin" ? "role-admin" : "role-user");
   if (userRole === "admin") {
+    
     document.getElementById("adminNavItem").style.display = "flex";
     document.getElementById("addClassBtn").style.display = "inline-flex";
     document.getElementById("importBtn").style.display = "inline-flex";

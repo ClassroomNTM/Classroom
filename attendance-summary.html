@@ -175,6 +175,7 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
   <div class="nav-sep"></div>
   <div class="sidebar-label">จัดการ</div>
   <a href="class.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>ชั้นเรียน</a>
+  <a href="subject.html" class="nav-item" id="subjectNavItem"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>รายวิชา</a>
   <a href="admin.html" class="nav-item" id="adminNavItem" style="display:none;"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>จัดการผู้ใช้</a>
 </nav>
 
@@ -303,7 +304,8 @@ onAuthStateChanged(auth, async (user) => {
   const badge = document.getElementById("roleBadgeEl");
   badge.textContent = userRole === "admin" ? "Admin" : "User";
   badge.className = "role-badge " + (userRole==="admin"?"role-admin":"role-user");
-  if (userRole === "admin") document.getElementById("adminNavItem").style.display = "flex";
+  if (userRole === "admin") 
+    document.getElementById("adminNavItem").style.display = "flex";
   await loadSubjects();
   await loadClasses();
   loadData();
@@ -345,6 +347,7 @@ async function _loadDataAsync() {
   const classId   = document.getElementById("classSelect").value;
   const subjectId = document.getElementById("subjectSelect").value;
   const month     = document.getElementById("monthInput").value; // "YYYY-MM"
+
   if (!classId || !month) {
     document.getElementById("tableArea").innerHTML = `<div class="state-box">เลือกชั้นเรียนและเดือนที่ต้องการดู</div>`;
     document.getElementById("metricsEl").style.display = "none";
@@ -354,33 +357,38 @@ async function _loadDataAsync() {
 
   document.getElementById("tableArea").innerHTML = `<div class="state-box">กำลังโหลดข้อมูล...</div>`;
 
-  const [year, mon] = month.split("-").map(Number);
-
   try {
-  // load students
-  const sSnap = await getDocs(query(collection(db,"students"),where("classId","==",classId)));
-  allStudents = sSnap.docs.map(d=>(Object.assign({id:d.id},d.data()))).sort((a,b)=>(a.number||0)-(b.number||0));
+    const [year, mon] = month.split("-").map(Number);
 
-  // load attendance for the whole month
-  const daysInMonth = new Date(year, mon, 0).getDate();
+    // load students
+    const sSnap = await getDocs(query(collection(db,"students"),where("classId","==",classId)));
+    allStudents = sSnap.docs.map(d=>(Object.assign({id:d.id},d.data()))).sort((a,b)=>(a.number||0)-(b.number||0));
 
-  // query with optional subjectId filter
-  const attFilters = [
-    where("classId","==",classId),
-    where("date",">=",`${month}-01`),
-    where("date","<=",`${month}-${String(daysInMonth).padStart(2,"0")}`)
-  ];
-  if (subjectId) attFilters.push(where("subjectId","==",subjectId));
-  const aSnap = await getDocs(query(collection(db,"attendance"), ...attFilters));
+    // load attendance for the whole month
+    const daysInMonth = new Date(year, mon, 0).getDate();
 
-  attMap = {};
-  aSnap.docs.forEach(d => {
-    const x = d.data();
-    if (!attMap[x.date]) attMap[x.date] = {};
-    attMap[x.date][x.studentId] = {status: x.status||"present", note: x.note||""};
-  });
+    // query with optional subjectId filter
+    const attFilters = [
+      where("classId","==",classId),
+      where("date",">=",`${month}-01`),
+      where("date","<=",`${month}-${String(daysInMonth).padStart(2,"0")}`)
+    ];
+    if (subjectId) attFilters.push(where("subjectId","==",subjectId));
+    const aSnap = await getDocs(query(collection(db,"attendance"), ...attFilters));
 
-  renderGrid(year, mon, daysInMonth);
+    attMap = {};
+    aSnap.docs.forEach(d => {
+      const x = d.data();
+      if (!attMap[x.date]) attMap[x.date] = {};
+      attMap[x.date][x.studentId] = {status: x.status||"present", note: x.note||""};
+    });
+
+    renderGrid(year, mon, daysInMonth);
+  } catch(err) {
+    document.getElementById("tableArea").innerHTML =
+      `<div class="state-box" style="color:#b91c1c;">⚠ โหลดข้อมูลไม่ได้: ${err.message}</div>`;
+    console.error("attendance-summary error:", err);
+  }
 }
 
 function getDayLabel(year, mon, day) {
@@ -541,32 +549,20 @@ function renderGrid(year, mon, daysInMonth) {
 
   // ── metrics ──
   const recordedDays = daysWithData.size;
-  const today = new Date();
-  const isCurrentMonth = (today.getFullYear() === year && today.getMonth()+1 === mon);
-  const daysSoFar = isCurrentMonth ? today.getDate() : daysInMonth;
-
-  document.getElementById("mDays").textContent = recordedDays > 0 ? recordedDays : "—";
-  document.getElementById("mDaysSub").textContent = recordedDays > 0
-    ? (isCurrentMonth && recordedDays < daysSoFar ? `วัน (มีข้อมูล ${recordedDays} จาก ${daysSoFar} วัน)` : `วัน (ไม่รวมเสาร์-อาทิตย์)`)
-    : "ยังไม่มีข้อมูลเช็คชื่อ";
+  document.getElementById("mDays").textContent = recordedDays;
   document.getElementById("mPresent").textContent = recordedDays > 0
     ? (totalPresent/recordedDays).toFixed(1) : "—";
-  document.getElementById("mAbsent").textContent = recordedDays > 0 ? totalAbsent : "—";
-  document.getElementById("mPct").textContent = totDenom > 0 ? totPct + "%" : "—";
+  document.getElementById("mAbsent").textContent = totalAbsent;
+  document.getElementById("mPct").textContent = totPct + "%";
 
   const clsName = document.getElementById("classSelect").selectedOptions[0]?.text || "";
   const subName = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
   document.getElementById("tableTitle").textContent = `${clsName}${subName?" — "+subName:""} — ${THAI_MONTHS[mon]} ${year+543}`;
-  const noDataNote = daysWithData.size === 0 ? " · ⚠ ยังไม่มีข้อมูลเช็คชื่อในเดือนนี้" : (daysWithData.size < daysInMonth ? ` · มีข้อมูล ${daysWithData.size} วัน` : "");
   document.getElementById("tableSubtitle").textContent =
-    `นักเรียน ${activeStudents.length} คน (ไม่มีตัวตน ${ghostStudents.length} คน)${noDataNote}`;
+    `นักเรียน ${activeStudents.length} คน (ไม่มีตัวตน ${ghostStudents.length} คน)`;
 
   document.getElementById("metricsEl").style.display = "grid";
   document.getElementById("legendEl").style.display  = "flex";
-  } catch(err) {
-    document.getElementById("tableArea").innerHTML = `<div class="state-box" style="color:#b91c1c;">เกิดข้อผิดพลาดในการโหลดข้อมูล: ${err.message}</div>`;
-    console.error(err);
-  }
 }
 
 window.exportTable = function() {

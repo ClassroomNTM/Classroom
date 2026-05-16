@@ -133,11 +133,13 @@ input:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15
   <div class="sidebar-label">เมนูหลัก</div>
   <a href="dashboard.html" class="nav-item"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
   <a href="attendance.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>เช็คชื่อ</a>
+  <a href="attendance-summary.html" class="nav-item"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>สรุปเช็คชื่อ</a>
   <a href="score.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>คะแนน</a>
   <a href="submit.html" class="nav-item active"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>ส่งงาน</a>
   <div class="nav-sep"></div>
   <div class="sidebar-label">จัดการ</div>
   <a href="class.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>ชั้นเรียน</a>
+  <a href="subject.html" class="nav-item" id="subjectNavItem"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>รายวิชา</a>
   <a href="admin.html" class="nav-item" id="adminNavItem" style="display:none;"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>จัดการผู้ใช้</a>
 </nav>
 
@@ -240,6 +242,7 @@ onAuthStateChanged(auth, async user => {
   rb.textContent = userRole === "admin" ? "Admin" : "User";
   rb.className = "role-badge " + (userRole === "admin" ? "role-admin" : "role-user");
   if (userRole === "admin") {
+    
     document.getElementById("adminNavItem").style.display = "flex";
     document.getElementById("addAssignBtn").style.display = "inline-flex";
   }
@@ -375,9 +378,9 @@ function renderAssignDetail(assign, subs) {
         ondrop="handleDrop(event)">
         <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         <p>ลากไฟล์มาวางที่นี่ หรือคลิกเลือกไฟล์</p>
-        <small>รองรับ PDF, ZIP, รูปภาพ (JPG, PNG, GIF) สูงสุด 20 MB</small>
+        <small>รองรับ PDF, DOCX, ZIP สูงสุด 20 MB</small>
       </div>
-      <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.zip,.pptx,.xlsx,.jpg,.jpeg,.png,.gif,.webp" onchange="handleFile(this.files[0])">
+      <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.zip,.pptx,.xlsx" onchange="handleFile(this.files[0])">
       <div class="file-selected" id="fileSelected">
         <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         <span id="fileName"></span>
@@ -398,24 +401,15 @@ function renderAssignDetail(assign, subs) {
             ? `<span class="chip chip-green">ส่งแล้ว</span>`
             : `<span class="chip chip-red">เลยกำหนด</span>`
           : `<span class="chip chip-gray">ยังไม่ส่ง</span>`;
-        const isImage = sub?.fileName && /\.(jpg|jpeg|png|gif|webp)$/i.test(sub.fileName);
         const link = sub?.fileUrl
-          ? isImage
-            ? `<a href="${sub.fileUrl}" target="_blank" class="btn btn-sm" style="font-size:11px;">ดูรูป</a>`
-            : `<a href="${sub.fileUrl}" target="_blank" class="btn btn-sm" style="font-size:11px;">ดูไฟล์</a>`
-          : "—";
-        const delBtn = sub
-          ? `<button class="btn btn-sm btn-danger" onclick="deleteSubmission('${sub.id}','${s.id}')" style="margin-left:4px;">
-              <svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-            </button>`
-          : "";
+          ? `<a href="${sub.fileUrl}" target="_blank" class="btn btn-sm" style="font-size:11px;">ดูไฟล์</a>` : "—";
         const time = sub?.submittedAt ? new Date(sub.submittedAt).toLocaleString("th-TH",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}) : "—";
         return `<tr>
           <td style="color:var(--muted);font-size:12px;">${s.number||"—"}</td>
           <td>${s.name}</td>
           <td>${chip}</td>
           <td style="font-size:12px;color:var(--muted);">${time}</td>
-          <td><div style="display:flex;align-items:center;">${link}${delBtn}</div></td>
+          <td>${link}</td>
         </tr>`;
       }).join("")
     : "";
@@ -454,17 +448,8 @@ function renderAssignDetail(assign, subs) {
 window.handleFile = function(file) {
   if (!file) return;
   if (file.size > 20*1024*1024) { showToast("ไฟล์ใหญ่เกิน 20 MB","error"); return; }
-  const allowed = /\.(pdf|docx|doc|zip|pptx|xlsx|jpg|jpeg|png|gif|webp)$/i;
-  if (!allowed.test(file.name)) { showToast("ไม่รองรับไฟล์ประเภทนี้","error"); return; }
   currentFile = file;
-  const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(file.name);
-  const nameEl = document.getElementById("fileName");
-  if (isImage) {
-    const url = URL.createObjectURL(file);
-    nameEl.innerHTML = `<img src="${url}" style="height:40px;border-radius:4px;object-fit:cover;margin-right:6px;"> ${file.name}`;
-  } else {
-    nameEl.textContent = file.name;
-  }
+  document.getElementById("fileName").textContent = file.name;
   document.getElementById("fileSelected").style.display = "flex";
 };
 
@@ -505,15 +490,6 @@ window.submitFile = async function() {
   } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
   btn.disabled = false;
   btn.innerHTML = `<svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:white;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> ส่งงาน`;
-};
-
-window.deleteSubmission = async function(subId, studentId) {
-  if (!confirm("ยืนยันลบงานที่ส่งของนักเรียนคนนี้?")) return;
-  try {
-    await deleteDoc(doc(db,"submissions",subId));
-    showToast("ลบงานที่ส่งเรียบร้อย","success");
-    await selectAssignment(currentAssignId);
-  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
 };
 
 window.openAddAssign = function() {
