@@ -143,10 +143,14 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
 .tbl-outer::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,0.38);}
 
 /* ── STATUS POPUP ── */
-.status-popup{position:fixed;z-index:500;background:white;border:1px solid var(--border);border-radius:12px;padding:10px;box-shadow:0 8px 30px rgba(0,0,0,0.16);display:none;flex-direction:column;gap:5px;min-width:138px;}
+.status-popup{position:fixed;z-index:500;background:white;border:1px solid var(--border);border-radius:12px;padding:12px;box-shadow:0 8px 30px rgba(0,0,0,0.16);display:none;flex-direction:column;gap:5px;min-width:160px;}
 .status-popup.open{display:flex;}
-.popup-title{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:0 4px 4px;border-bottom:1px solid var(--border);margin-bottom:2px;}
-.popup-btn{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;border:none;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:filter .12s;text-align:left;width:100%;}
+.popup-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.popup-name{font-size:13px;font-weight:600;color:var(--text);line-height:1.3;flex:1;}
+.popup-date{font-size:11px;color:var(--muted);margin-top:2px;}
+.popup-close-btn{width:24px;height:24px;border-radius:6px;border:none;background:#f3f4f6;color:var(--muted);font-size:16px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .12s;}
+.popup-close-btn:hover{background:#e5e7eb;color:var(--text);}
+.popup-btn{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:none;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:filter .12s;text-align:left;width:100%;}
 .popup-btn:hover{filter:brightness(.93);}
 .popup-btn.p-present{background:#f0fdf4;color:#166534;}
 .popup-btn.p-late   {background:#fffbeb;color:#92400e;}
@@ -154,6 +158,21 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
 .popup-btn.p-ghost  {background:#f3f4f6;color:#6b7280;}
 .popup-btn.p-clear  {background:#f9fafb;color:#9ca3af;border:1px solid #e5e7eb;font-size:12px;}
 .popup-saving{font-size:11px;color:var(--muted);text-align:center;padding:4px;display:none;}
+
+/* ── DELETE MONTH MODAL ── */
+.del-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:600;align-items:center;justify-content:center;}
+.del-overlay.open{display:flex;}
+.del-modal{background:white;border-radius:16px;padding:28px;width:380px;max-width:92vw;box-shadow:0 16px 48px rgba(0,0,0,.18);animation:fadeUp .2s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.del-modal h3{font-size:16px;font-weight:600;margin-bottom:8px;color:#b91c1c;}
+.del-modal p{font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6;}
+.del-modal strong{color:var(--text);}
+.del-confirm-input{width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-family:'Sarabun',sans-serif;font-size:13px;outline:none;margin-bottom:14px;transition:border-color .2s;}
+.del-confirm-input:focus{border-color:#b91c1c;box-shadow:0 0 0 3px rgba(185,28,28,.08);}
+.del-footer{display:flex;gap:8px;justify-content:flex-end;}
+.btn-danger{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;}
+.btn-danger:hover{background:#fee2e2;}
+.btn-danger:disabled{opacity:.5;cursor:not-allowed;}
 
 /* ── BTN ── */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid var(--border);border-radius:8px;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:500;cursor:pointer;background:var(--surface);color:var(--text);transition:all .15s;}
@@ -240,10 +259,16 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
 <main class="main">
   <div class="page-header">
     <div class="page-title">สรุปการเช็คชื่อรายเดือน</div>
-    <button class="btn" onclick="exportTable()">
-      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Export
-    </button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-danger" id="deleteMonthBtn" onclick="openDeleteModal()" style="display:none;">
+        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        ลบข้อมูลทั้งเดือน
+      </button>
+      <button class="btn" id="exportBtn" onclick="exportTable()">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export Excel
+      </button>
+    </div>
   </div>
 
   <div class="filters">
@@ -312,13 +337,36 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
 
 <!-- Status edit popup -->
 <div class="status-popup" id="statusPopup">
-  <div class="popup-title" id="popupTitle">เปลี่ยนสถานะ</div>
+  <div class="popup-header">
+    <div>
+      <div class="popup-name" id="popupName">—</div>
+      <div class="popup-date" id="popupDate">—</div>
+    </div>
+    <button class="popup-close-btn" onclick="closePopup()" title="ปิด">✕</button>
+  </div>
   <button class="popup-btn p-present" onclick="applyStatus('present')">✓ มาเรียน</button>
   <button class="popup-btn p-late"    onclick="applyStatus('late')">⏱ สาย</button>
   <button class="popup-btn p-absent"  onclick="applyStatus('absent')">✗ ขาด</button>
   <button class="popup-btn p-ghost"   onclick="applyStatus('ghost')">— ไม่มีตัวตน</button>
-  <button class="popup-btn p-clear"   onclick="applyStatus(null)">ลบสถานะ</button>
+  <button class="popup-btn p-clear"   onclick="applyStatus(null)">🗑 ลบสถานะ</button>
   <div class="popup-saving" id="popupSaving">กำลังบันทึก...</div>
+</div>
+
+<!-- Delete month modal -->
+<div class="del-overlay" id="delOverlay">
+  <div class="del-modal">
+    <h3>⚠ ลบข้อมูลการเช็คชื่อทั้งเดือน</h3>
+    <p>จะลบข้อมูลทุกรายการใน<br>
+      <strong id="delMonthLabel">—</strong><br>
+      ออกจากระบบถาวร ไม่สามารถกู้คืนได้
+    </p>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">พิมพ์ <strong style="color:#b91c1c;">ยืนยันลบ</strong> เพื่อยืนยัน</p>
+    <input type="text" class="del-confirm-input" id="delConfirmInput" placeholder="พิมพ์ ยืนยันลบ ที่นี่" oninput="checkDelConfirm()">
+    <div class="del-footer">
+      <button class="btn" onclick="closeDeleteModal()">ยกเลิก</button>
+      <button class="btn btn-danger" id="delConfirmBtn" onclick="doDeleteMonth()" disabled>ลบข้อมูล</button>
+    </div>
+  </div>
 </div>
 
 <script type="module">
@@ -365,7 +413,10 @@ onAuthStateChanged(auth, async (user) => {
   const badge = document.getElementById("roleBadgeEl");
   badge.textContent = userRole === "admin" ? "Admin" : "User";
   badge.className = "role-badge " + (userRole==="admin"?"role-admin":"role-user");
-  if (userRole === "admin") document.getElementById("adminNavItem").style.display = "flex";
+  if (userRole === "admin") {
+    document.getElementById("adminNavItem").style.display = "flex";
+    document.getElementById("deleteMonthBtn").style.display = "inline-flex";
+  }
   await loadSubjects();
   await loadClasses();
   loadData();
@@ -657,8 +708,146 @@ function renderGrid(year, mon, daysInMonth) {
   document.getElementById("legendEl").style.display  = "flex";
 }
 
-window.exportTable = function() {
-  showToast("กำลังพัฒนา Export Excel...","success");
+// ── Export Excel ──
+window.exportTable = async function() {
+  const classId   = document.getElementById("classSelect").value;
+  const subjectId = document.getElementById("subjectSelect").value;
+  const month     = document.getElementById("monthInput").value;
+  if (!classId || !month) { showToast("กรุณาเลือกชั้นเรียนและเดือนก่อน","error"); return; }
+
+  const btn = document.getElementById("exportBtn");
+  btn.disabled = true; btn.textContent = "กำลัง Export...";
+
+  try {
+    const [year, mon] = month.split("-").map(Number);
+    const daysInMonth = new Date(year, mon, 0).getDate();
+    const THAI_MONTHS_EX = ["","มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน",
+      "กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+
+    // build header row
+    const days = [];
+    for (let d=1; d<=daysInMonth; d++) {
+      const dt = new Date(year, mon-1, d);
+      days.push({ d, isWeekend: dt.getDay()===0||dt.getDay()===6 });
+    }
+
+    const clsName = document.getElementById("classSelect").selectedOptions[0]?.text || "";
+    const subName = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
+
+    // CSV rows
+    const headerRow1 = ["ที่","ชื่อ-สกุล",...days.map(x=>x.d),"รวมมา","รวมสาย","รวมขาด","%มา"];
+    const rows = [headerRow1];
+
+    const sortedSt = [...allStudents].sort((a,b)=>(a.number||0)-(b.number||0));
+    sortedSt.forEach(s => {
+      const isGhost = s.ghost===true;
+      const name = (s.prefix?s.prefix+" ":"") + (s.name||"");
+      let p=0, l=0, a=0;
+      const cells = days.map(({d, isWeekend}) => {
+        if (isGhost) return "—";
+        const dateStr = `${year}-${String(mon).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+        const st = attMap[dateStr]?.[s.id]?.status;
+        if (st==="present") { p++; return "ม"; }
+        if (st==="late")    { l++; return "ส"; }
+        if (st==="absent")  { a++; return "ข"; }
+        if (st==="ghost")   return "—";
+        return "";
+      });
+      const tot = p+l+a;
+      const pct = tot>0 ? Math.round((p+l)/tot*100)+"%" : "—";
+      rows.push([s.number||"—", isGhost?"[ไม่มีตัวตน] "+name:name, ...cells,
+        isGhost?"—":p, isGhost?"—":l, isGhost?"—":a, isGhost?"—":pct]);
+    });
+
+    // convert to CSV
+    const csvContent = [
+      `สรุปการเช็คชื่อ — ${clsName}${subName?" — "+subName:""} — ${THAI_MONTHS_EX[mon]} ${year+543}`,
+      "",
+      ...rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(","))
+    ].join("
+");
+
+    // BOM for Thai Excel
+    const bom = "﻿";
+    const blob = new Blob([bom + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href = url;
+    a.download = `เช็คชื่อ_${clsName}_${THAI_MONTHS_EX[mon]}${year+543}.csv`;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast("Export สำเร็จ ✓", "success");
+  } catch(e) {
+    showToast("Export ไม่สำเร็จ: "+e.message, "error");
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = `<svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export Excel`;
+};
+
+// ── Delete Month ──
+window.openDeleteModal = function() {
+  const classId = document.getElementById("classSelect").value;
+  const month   = document.getElementById("monthInput").value;
+  if (!classId || !month) { showToast("กรุณาเลือกชั้นเรียนและเดือนก่อน","error"); return; }
+  const [year, mon] = month.split("-").map(Number);
+  const THAI_M = ["","มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน",
+    "กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+  const clsName = document.getElementById("classSelect").selectedOptions[0]?.text || "";
+  const subName = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
+  document.getElementById("delMonthLabel").textContent =
+    `${clsName}${subName?" — "+subName:""} เดือน${THAI_M[mon]} ${year+543}`;
+  document.getElementById("delConfirmInput").value = "";
+  document.getElementById("delConfirmBtn").disabled = true;
+  document.getElementById("delOverlay").classList.add("open");
+};
+
+window.closeDeleteModal = function() {
+  document.getElementById("delOverlay").classList.remove("open");
+};
+
+window.checkDelConfirm = function() {
+  const val = document.getElementById("delConfirmInput").value.trim();
+  document.getElementById("delConfirmBtn").disabled = val !== "ยืนยันลบ";
+};
+
+window.doDeleteMonth = async function() {
+  const classId   = document.getElementById("classSelect").value;
+  const subjectId = document.getElementById("subjectSelect").value;
+  const month     = document.getElementById("monthInput").value;
+  const [year, mon] = month.split("-").map(Number);
+  const daysInMonth = new Date(year, mon, 0).getDate();
+
+  const btn = document.getElementById("delConfirmBtn");
+  btn.disabled = true; btn.textContent = "กำลังลบ...";
+
+  try {
+    const delPromises = [];
+    for (let d=1; d<=daysInMonth; d++) {
+      const dateStr = `${year}-${String(mon).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+      const snap = await getDocs(query(
+        collection(db,"attendance"),
+        where("classId","==",classId),
+        where("date","==",dateStr)
+      ));
+      snap.docs.forEach(dc => {
+        const x = dc.data();
+        if (subjectId && x.subjectId !== subjectId) return;
+        delPromises.push(deleteDoc(dc.ref));
+      });
+    }
+    await Promise.all(delPromises);
+    attMap = {};
+    closeDeleteModal();
+    const [y2, m2] = month.split("-").map(Number);
+    renderGrid(y2, m2, new Date(y2, m2, 0).getDate());
+    showToast(`ลบข้อมูลทั้งหมดเรียบร้อย (${delPromises.length} รายการ)`, "success");
+  } catch(e) {
+    showToast("เกิดข้อผิดพลาด: "+e.message, "error");
+    btn.disabled = false; btn.textContent = "ลบข้อมูล";
+  }
 };
 
 // ── Popup open / close ──
@@ -674,7 +863,9 @@ window.openPopup = function(td, event) {
   const subjectId = document.getElementById("subjectSelect").value;
   _popup = { studentId:sid, dateStr:date, subjectId, classId, studentName:name, tdEl:td };
 
-  document.getElementById("popupTitle").textContent = name + " · " + date.split("-").reverse().join("/");
+  const [dy, dm, dd] = date.split("-");
+  document.getElementById("popupName").textContent = name;
+  document.getElementById("popupDate").textContent = `${dd}/${dm}/${parseInt(dy)+543}`;
   document.getElementById("popupSaving").style.display = "none";
 
   const pop = document.getElementById("statusPopup");
@@ -737,6 +928,10 @@ window.applyStatus = async function(newStatus) {
   }
 
   pop.classList.remove("open");
+};
+
+window.closePopup = function() {
+  document.getElementById("statusPopup").classList.remove("open");
 };
 
 // close popup on mousedown outside (mousedown fires before click, avoids same-event race)
