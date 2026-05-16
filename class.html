@@ -114,6 +114,12 @@ input:focus,select.modal-sel:focus{border-color:var(--blue);box-shadow:0 0 0 3px
 #toast.success{background:#052e16;color:#86efac;}
 #toast.error{background:#450a0a;color:#fca5a5;}
 .readonly-notice{background:#fffbeb;border:1px solid #fde68a;color:#92400e;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:16px;display:none;}
+/* ghost styles */
+.ghost-row td{color:#9ca3af!important;}
+.ghost-name{color:#b91c1c!important;text-decoration:line-through;font-style:italic;}
+.ghost-tag{background:#fef2f2;color:#b91c1c;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:500;margin-left:6px;}
+.dup-warn{background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;font-size:13px;color:#92400e;margin-top:10px;display:none;align-items:center;gap:8px;}
+.dup-warn svg{flex-shrink:0;width:16px;height:16px;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
 </style>
 </head>
@@ -138,6 +144,7 @@ input:focus,select.modal-sel:focus{border-color:var(--blue);box-shadow:0 0 0 3px
   <div class="sidebar-label">เมนูหลัก</div>
   <a href="dashboard.html" class="nav-item"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
   <a href="attendance.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>เช็คชื่อ</a>
+  <a href="attendance-summary.html" class="nav-item"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>สรุปเช็คชื่อ</a>
   <a href="score.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>คะแนน</a>
   <a href="submit.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>ส่งงาน</a>
   <div class="nav-sep"></div>
@@ -200,6 +207,7 @@ input:focus,select.modal-sel:focus{border-color:var(--blue);box-shadow:0 0 0 3px
             <th style="width:90px;">เลขประจำตัว</th>
             <th>ชื่อ-สกุล</th>
             <th style="width:60px;">เพศ</th>
+            <th style="width:80px;">สถานะ</th>
             <th style="width:120px;" id="adminActionsHeader"></th>
           </tr></thead>
           <tbody id="studentTbody">
@@ -272,6 +280,10 @@ input:focus,select.modal-sel:focus{border-color:var(--blue);box-shadow:0 0 0 3px
       </div>
     </div>
     <input type="hidden" id="editStudentId">
+    <div class="dup-warn" id="dupWarn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span id="dupWarnText">พบชื่อซ้ำ</span>
+    </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeStudentModal()">ยกเลิก</button>
       <button class="btn btn-primary" onclick="saveStudent()">บันทึก</button>
@@ -419,24 +431,35 @@ function renderStudents() {
   const isAdmin = userRole === "admin";
   const tbody = document.getElementById("studentTbody");
   if (!students.length) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">ยังไม่มีนักเรียนในชั้นนี้</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">ยังไม่มีนักเรียนในชั้นนี้</td></tr>`;
     return;
   }
   tbody.innerHTML = students.map(s => {
     const isFemale = s.gender === "หญิง" || (s.prefix||"").includes("หญิง");
-    return `<tr>
+    const isGhost = s.ghost === true;
+    const nameHtml = isGhost
+      ? `<span class="ghost-name">${s.prefix?s.prefix+" ":""}${s.name||"—"}</span><span class="ghost-tag">ไม่มีตัวตน</span>`
+      : `${s.prefix?s.prefix+" ":""}${s.name||"—"}`;
+    return `<tr class="${isGhost?"ghost-row":""}">
       <td style="color:var(--muted);">${s.number||"—"}</td>
       <td style="font-size:11px;color:var(--muted);">${s.studentCode||"—"}</td>
       <td>
         <div style="display:flex;align-items:center;gap:8px;">
-          <div class="avatar-sm">${(s.name||"?").charAt(0)}</div>
-          <span>${s.prefix?s.prefix+" ":""}${s.name||"—"}</span>
+          <div class="avatar-sm" style="${isGhost?"background:#e5e7eb;color:#9ca3af;":""}">${(s.name||"?").charAt(0)}</div>
+          <span>${nameHtml}</span>
         </div>
       </td>
       <td>${isFemale?'<span class="tag-female">หญิง</span>':'<span class="tag-male">ชาย</span>'}</td>
+      <td>${isGhost?'<span style="background:#fef2f2;color:#b91c1c;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:500;">ไม่มีตัวตน</span>':'<span style="font-size:11px;color:var(--muted);">ปกติ</span>'}</td>
       <td>${isAdmin?`<div style="display:flex;gap:6px;">
         <button class="btn btn-sm" onclick="openEditStudent('${s.id}')">
           <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="btn btn-sm ${isGhost?"":"btn-danger"}" style="${isGhost?"background:#eff6ff;color:#1e40af;border-color:#bfdbfe;":""}" onclick="toggleGhost('${s.id}',${!isGhost})" title="${isGhost?"คืนสถานะปกติ":"มาร์กไม่มีตัวตน"}">
+          <svg viewBox="0 0 24 24">${isGhost
+            ?'<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>'
+            :'<path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>'
+          }</svg>
         </button>
         <button class="btn btn-sm btn-danger" onclick="deleteStudent('${s.id}')">
           <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
@@ -523,7 +546,18 @@ window.openEditStudent = function(id) {
   document.getElementById("editStudentId").value = id;
   document.getElementById("studentModal").classList.add("open");
 };
-window.closeStudentModal = function() { document.getElementById("studentModal").classList.remove("open"); };
+window.closeStudentModal = function() {
+  document.getElementById("studentModal").classList.remove("open");
+  document.getElementById("dupWarn").style.display = "none";
+};
+
+// duplicate check on name input
+let dupConfirmed = false;
+document.getElementById("studentName").addEventListener("input", function() {
+  dupConfirmed = false;
+  document.getElementById("dupWarn").style.display = "none";
+});
+
 window.saveStudent = async function() {
   const number=parseInt(document.getElementById("studentNumber").value)||0;
   const studentCode=document.getElementById("studentCode").value.trim();
@@ -532,17 +566,39 @@ window.saveStudent = async function() {
   const gender=document.getElementById("studentGender").value;
   const editId=document.getElementById("editStudentId").value;
   if (!name) { showToast("กรุณากรอกชื่อนักเรียน","error"); return; }
+
+  // duplicate check (same class, same name, not editing same record)
+  const dup = students.find(s => s.name === name && s.id !== editId);
+  if (dup && !dupConfirmed) {
+    dupConfirmed = true;
+    const warn = document.getElementById("dupWarn");
+    document.getElementById("dupWarnText").textContent = `พบชื่อ "${name}" ซ้ำกับเลขที่ ${dup.number||"?"} ในห้องนี้ — กดบันทึกอีกครั้งเพื่อยืนยัน`;
+    warn.style.display = "flex";
+    return;
+  }
+
   const cls=classes.find(c=>c.id===currentClassId);
   try {
     const data={number,studentCode,prefix,name,gender,classId:currentClassId,className:cls?.name||""};
     if (editId) await setDoc(doc(db,"students",editId),data,{merge:true});
     else {
-      await addDoc(collection(db,"students"),{...data,createdAt:new Date().toISOString()});
+      await addDoc(collection(db,"students"),{...data,ghost:false,createdAt:new Date().toISOString()});
       await setDoc(doc(db,"classes",currentClassId),{studentCount:(cls?.studentCount||0)+1},{merge:true});
     }
+    dupConfirmed = false;
+    document.getElementById("dupWarn").style.display = "none";
     closeStudentModal(); showToast("บันทึกนักเรียนเรียบร้อย ✓","success"); await loadStudents(currentClassId);
   } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
 };
+
+window.toggleGhost = async function(id, isGhost) {
+  try {
+    await setDoc(doc(db,"students",id),{ghost:isGhost},{merge:true});
+    showToast(isGhost ? "มาร์ก 'ไม่มีตัวตน' เรียบร้อย" : "คืนสถานะปกติแล้ว","success");
+    await loadStudents(currentClassId);
+  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
+};
+
 window.deleteStudent = async function(id) {
   if (!confirm("ยืนยันลบนักเรียนคนนี้?")) return;
   try {

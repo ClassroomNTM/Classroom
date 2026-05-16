@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สรุปการเช็คชื่อรายเดือน — ระบบจัดการนักเรียน</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#f5f4f0;--surface:#ffffff;--blue:#0f3460;--blue-lt:#e6eef7;
+  --text:#1a1a2e;--muted:#6b7280;--border:rgba(0,0,0,0.08);
+  --radius:12px;--sidebar-w:200px;--topbar-h:56px;
+  --present:#1D9E75;--present-lt:#e1f5ee;
+  --late:#EF9F27;--late-lt:#faeeda;
+  --absent:#E24B4A;--absent-lt:#fef2f2;
+  --ghost:#9ca3af;--ghost-lt:#f3f4f6;
+}
+body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* ── TOPBAR ── */
+.topbar{position:fixed;top:0;left:0;right:0;height:var(--topbar-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:100;}
+.brand{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;color:var(--text);text-decoration:none;}
+.brand-dot{width:32px;height:32px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;}
+.brand-dot svg{width:18px;height:18px;fill:white;}
+.topbar-right{display:flex;align-items:center;gap:14px;}
+.user-info{font-size:13px;display:flex;align-items:center;gap:8px;}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--blue);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;}
+.role-badge{padding:2px 8px;border-radius:99px;font-size:11px;font-weight:500;}
+.role-admin{background:#fef2f2;color:#b91c1c;}.role-user{background:#f0fdf4;color:#166534;}
+.btn-logout{padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:transparent;font-family:'Sarabun',sans-serif;font-size:13px;color:var(--muted);cursor:pointer;}
+.btn-logout:hover{background:var(--bg);}
+
+/* ── SIDEBAR ── */
+.sidebar{position:fixed;top:var(--topbar-h);left:0;bottom:0;width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);padding:16px 10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;}
+.sidebar-label{font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--muted);padding:8px 10px 4px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;font-size:13px;color:var(--muted);text-decoration:none;transition:all .15s;}
+.nav-item svg{width:17px;height:17px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.nav-item:hover{background:var(--bg);color:var(--text);}
+.nav-item.active{background:var(--blue-lt);color:var(--blue);font-weight:500;}
+.nav-sep{height:1px;background:var(--border);margin:8px 0;}
+
+/* ── MAIN ── */
+.main{margin-left:var(--sidebar-w);margin-top:var(--topbar-h);padding:24px;}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+.page-title{font-size:20px;font-weight:600;}
+
+/* ── FILTERS ── */
+.filters{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;align-items:flex-end;}
+.fgroup{display:flex;flex-direction:column;gap:4px;}
+.flabel{font-size:11px;font-weight:500;color:var(--muted);}
+select,input[type="month"]{height:38px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-family:'Sarabun',sans-serif;font-size:13px;color:var(--text);background:white;outline:none;}
+select:focus,input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);}
+
+/* ── METRIC CARDS ── */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;}
+.metric-label{font-size:11px;color:var(--muted);margin-bottom:6px;}
+.metric-val{font-size:26px;font-weight:600;line-height:1;}
+.metric-sub{font-size:11px;color:var(--muted);margin-top:4px;}
+
+/* ── LEGEND ── */
+.legend{display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);}
+.leg-dot{width:18px;height:18px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;}
+
+/* ── SUMMARY TABLE (GRID) ── */
+.table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.table-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.table-title{font-size:14px;font-weight:600;}
+
+.tbl-outer{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+
+/* The main grid table */
+.att-table{border-collapse:collapse;font-size:12px;width:max-content;min-width:100%;}
+.att-table th,.att-table td{border:1px solid var(--border);text-align:center;white-space:nowrap;}
+
+/* column: student name — fixed left */
+.col-no{width:36px;min-width:36px;}
+.col-name{min-width:160px;text-align:left!important;padding-left:10px!important;}
+.col-sum{width:38px;font-weight:600;}
+.col-day{width:30px;}
+
+/* header rows */
+.th-group{background:#f8f8f6;font-size:10px;font-weight:600;color:var(--muted);padding:6px 4px;letter-spacing:.04em;}
+.th-dayname{background:#fafaf8;font-size:10px;color:var(--muted);padding:4px 2px;}
+.th-daynum{background:#fafaf8;font-size:11px;font-weight:600;color:var(--text);padding:4px 2px;}
+.th-name{background:#f8f8f6;padding:8px 10px;text-align:left;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.05em;}
+
+/* weekend col */
+.col-weekend .th-dayname,.col-weekend .th-daynum{background:#f5f0f0;color:#b91c1c;}
+.col-weekend td.cell{background:#fdf8f8!important;}
+
+/* today col */
+.col-today .th-daynum{color:var(--blue)!important;}
+
+/* data cells */
+td.cell{padding:3px 2px;background:#fafafa;}
+td.cell-name{padding:6px 10px;text-align:left;background:white;position:sticky;left:0;z-index:2;border-right:2px solid rgba(0,0,0,0.1);}
+td.cell-no{padding:6px 4px;background:#fafafa;color:var(--muted);font-size:11px;}
+
+/* ghost row */
+tr.ghost-row td{background:#f9f9f9!important;opacity:.7;}
+tr.ghost-row td.cell-name{color:#9ca3af;}
+.ghost-strikethrough{text-decoration:line-through;color:#b91c1c;}
+
+/* status dots */
+.dot{display:inline-flex;width:20px;height:20px;border-radius:4px;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
+.dot-present{background:var(--present-lt);color:var(--present);}
+.dot-late{background:var(--late-lt);color:var(--late);}
+.dot-absent{background:var(--absent-lt);color:var(--absent);}
+.dot-ghost{background:var(--ghost-lt);color:var(--ghost);}
+.dot-empty{background:transparent;color:transparent;}
+
+/* summary cols */
+td.sum-present{background:#e1f5ee;color:#0F6E56;font-weight:600;}
+td.sum-late{background:#faeeda;color:#854F0B;font-weight:600;}
+td.sum-absent{background:#fef2f2;color:#A32D2D;font-weight:600;}
+td.sum-pct{background:#eff6ff;color:#185FA5;font-weight:600;}
+
+/* totals footer row */
+tr.footer-row td{background:#f3f4f6;font-weight:600;font-size:11px;color:var(--muted);}
+tr.footer-row td.f-present{background:#e1f5ee;color:#0F6E56;}
+tr.footer-row td.f-late{background:#faeeda;color:#854F0B;}
+tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
+
+/* percent bar */
+.pct-bar{height:3px;background:#e5e7eb;border-radius:99px;margin-top:3px;overflow:hidden;}
+.pct-fill{height:100%;border-radius:99px;background:var(--present);}
+.pct-fill.low{background:var(--absent);}
+.pct-fill.mid{background:var(--late);}
+
+/* loading / empty states */
+.state-box{text-align:center;padding:48px 20px;color:var(--muted);font-size:14px;}
+
+/* toast */
+#toast{position:fixed;bottom:24px;right:24px;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;}
+#toast.show{opacity:1;transform:translateY(0);}
+#toast.success{background:#052e16;color:#86efac;}
+#toast.error{background:#450a0a;color:#fca5a5;}
+
+/* btn */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid var(--border);border-radius:8px;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:500;cursor:pointer;background:var(--surface);color:var(--text);transition:all .15s;}
+.btn:hover{background:var(--bg);}
+.btn:active{transform:scale(.97);}
+.btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.btn-primary{background:var(--blue);color:white;border-color:var(--blue);}
+.btn-primary:hover{background:#0a2847;}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a href="dashboard.html" class="brand">
+    <div class="brand-dot"><svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg></div>
+    ระบบจัดการนักเรียน
+  </a>
+  <div class="topbar-right">
+    <div class="user-info">
+      <div class="avatar" id="avatarEl">?</div>
+      <span id="userNameEl">ผู้ใช้</span>
+      <span class="role-badge" id="roleBadgeEl">—</span>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">ออกจากระบบ</button>
+  </div>
+</header>
+
+<nav class="sidebar">
+  <div class="sidebar-label">เมนูหลัก</div>
+  <a href="dashboard.html" class="nav-item"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
+  <a href="attendance.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>เช็คชื่อ</a>
+  <a href="attendance-summary.html" class="nav-item active"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>สรุปเช็คชื่อ</a>
+  <a href="score.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>คะแนน</a>
+  <a href="submit.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>ส่งงาน</a>
+  <div class="nav-sep"></div>
+  <div class="sidebar-label">จัดการ</div>
+  <a href="class.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>ชั้นเรียน</a>
+  <a href="admin.html" class="nav-item" id="adminNavItem" style="display:none;"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>จัดการผู้ใช้</a>
+</nav>
+
+<main class="main">
+  <div class="page-header">
+    <div class="page-title">สรุปการเช็คชื่อรายเดือน</div>
+    <button class="btn" onclick="exportTable()">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export Excel
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <div class="fgroup">
+      <div class="flabel">ชั้นเรียน</div>
+      <select id="classSelect" onchange="loadData()">
+        <option value="">— เลือกชั้น —</option>
+      </select>
+    </div>
+    <div class="fgroup">
+      <div class="flabel">เดือน / ปี</div>
+      <input type="month" id="monthInput" onchange="loadData()">
+    </div>
+  </div>
+
+  <!-- Metric cards -->
+  <div class="metrics" id="metricsEl" style="display:none;">
+    <div class="metric">
+      <div class="metric-label">วันเรียนในเดือนนี้</div>
+      <div class="metric-val" id="mDays">—</div>
+      <div class="metric-sub" id="mDaysSub">วัน (ไม่รวมเสาร์-อาทิตย์)</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">มาเรียนเฉลี่ย</div>
+      <div class="metric-val" style="color:var(--present);" id="mPresent">—</div>
+      <div class="metric-sub" id="mPresentSub">คนต่อวัน</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">ขาดเรียนรวม</div>
+      <div class="metric-val" style="color:var(--absent);" id="mAbsent">—</div>
+      <div class="metric-sub">ครั้ง (ทุกคน)</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">เข้าเรียนเฉลี่ย</div>
+      <div class="metric-val" style="color:var(--blue);" id="mPct">—</div>
+      <div class="metric-sub">ของนักเรียนปกติ</div>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend" id="legendEl" style="display:none;">
+    <div class="leg-item"><div class="leg-dot dot-present">ม</div> มาเรียน</div>
+    <div class="leg-item"><div class="leg-dot dot-late">ส</div> สาย</div>
+    <div class="leg-item"><div class="leg-dot dot-absent">ข</div> ขาด</div>
+    <div class="leg-item"><div class="leg-dot dot-ghost">—</div> ไม่มีตัวตน</div>
+    <div class="leg-item" style="margin-left:auto;font-size:11px;">
+      <span style="background:#e1f5ee;color:#0F6E56;padding:2px 8px;border-radius:4px;font-weight:600;">รวม ม</span> &nbsp;
+      <span style="background:#faeeda;color:#854F0B;padding:2px 8px;border-radius:4px;font-weight:600;">รวม ส</span> &nbsp;
+      <span style="background:#fef2f2;color:#A32D2D;padding:2px 8px;border-radius:4px;font-weight:600;">รวม ข</span> &nbsp;
+      <span style="background:#eff6ff;color:#185FA5;padding:2px 8px;border-radius:4px;font-weight:600;">%มา</span>
+    </div>
+  </div>
+
+  <!-- Main grid table -->
+  <div class="table-card">
+    <div class="table-header">
+      <div class="table-title" id="tableTitle">ตารางเช็คชื่อรายวัน</div>
+      <div id="tableSubtitle" style="font-size:12px;color:var(--muted);"></div>
+    </div>
+    <div class="tbl-outer">
+      <div id="tableArea">
+        <div class="state-box">เลือกชั้นเรียนและเดือนที่ต้องการดู</div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, getDocs, query, where }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCBXMi3sy-3iDDzHDXVvlmaa6szcmnFbwQ",
+  authDomain: "classroom-93c8b.firebaseapp.com",
+  projectId: "classroom-93c8b",
+  storageBucket: "classroom-93c8b.firebasestorage.app",
+  messagingSenderId: "659092749098",
+  appId: "1:659092749098:web:36f249557c4badc088fc53",
+  measurementId: "G-EXJVCH9Z4S"
+};
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+const THAI_MONTHS = ["","มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน",
+  "กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+const THAI_DAYS_SHORT = ["อา","จ","อ","พ","พฤ","ศ","ส"];
+
+let userRole = "user";
+let allStudents = [];   // [{id, name, prefix, number, ghost}, ...]
+let attMap = {};        // date(YYYY-MM-DD) -> studentId -> {status}
+
+// set default month = current month
+const now = new Date();
+document.getElementById("monthInput").value =
+  `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) { window.location.href = "index.html"; return; }
+  userRole = sessionStorage.getItem("userRole") || "user";
+  const name = sessionStorage.getItem("userName") || user.email;
+  document.getElementById("avatarEl").textContent = name.substring(0,2);
+  document.getElementById("userNameEl").textContent = name;
+  const badge = document.getElementById("roleBadgeEl");
+  badge.textContent = userRole === "admin" ? "Admin" : "User";
+  badge.className = "role-badge " + (userRole==="admin"?"role-admin":"role-user");
+  if (userRole === "admin") document.getElementById("adminNavItem").style.display = "flex";
+  await loadClasses();
+});
+
+window.doLogout = async () => { await signOut(auth); sessionStorage.clear(); window.location.href="index.html"; };
+
+async function loadClasses() {
+  const snap = await getDocs(collection(db,"classes"));
+  const sel  = document.getElementById("classSelect");
+  const classes = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.name||"").localeCompare(b.name||"","th"));
+  classes.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c.id; opt.textContent = c.name;
+    sel.appendChild(opt);
+  });
+}
+
+window.loadData = async function() {
+  const classId = document.getElementById("classSelect").value;
+  const month   = document.getElementById("monthInput").value; // "YYYY-MM"
+  if (!classId || !month) return;
+
+  document.getElementById("tableArea").innerHTML = `<div class="state-box">กำลังโหลดข้อมูล...</div>`;
+
+  const [year, mon] = month.split("-").map(Number);
+
+  // load students
+  const sSnap = await getDocs(query(collection(db,"students"),where("classId","==",classId)));
+  allStudents = sSnap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.number||0)-(b.number||0));
+
+  // load attendance for the whole month
+  const daysInMonth = new Date(year, mon, 0).getDate();
+  const datePrefix  = month; // "YYYY-MM"
+
+  // query all attendance in month for this class
+  const aSnap = await getDocs(query(collection(db,"attendance"),
+    where("classId","==",classId),
+    where("date",">=",`${month}-01`),
+    where("date","<=",`${month}-${String(daysInMonth).padStart(2,"0")}`)
+  ));
+
+  attMap = {};
+  aSnap.docs.forEach(d => {
+    const x = d.data();
+    if (!attMap[x.date]) attMap[x.date] = {};
+    attMap[x.date][x.studentId] = {status: x.status||"present", note: x.note||""};
+  });
+
+  renderGrid(year, mon, daysInMonth);
+};
+
+function getDayLabel(year, mon, day) {
+  const d = new Date(year, mon-1, day);
+  return {dow: d.getDay(), name: THAI_DAYS_SHORT[d.getDay()]};
+}
+
+function statusDot(status) {
+  if (!status) return `<span class="dot dot-empty">·</span>`;
+  if (status==="present") return `<span class="dot dot-present">ม</span>`;
+  if (status==="late")    return `<span class="dot dot-late">ส</span>`;
+  if (status==="absent")  return `<span class="dot dot-absent">ข</span>`;
+  if (status==="ghost")   return `<span class="dot dot-ghost">—</span>`;
+  return `<span class="dot dot-empty">·</span>`;
+}
+
+function renderGrid(year, mon, daysInMonth) {
+  const today = new Date().toISOString().split("T")[0];
+
+  // build day array (1..daysInMonth)
+  const days = [];
+  for (let d=1; d<=daysInMonth; d++) {
+    const dateStr = `${year}-${String(mon).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const {dow, name} = getDayLabel(year, mon, d);
+    const isWeekend = dow===0 || dow===6;
+    const isToday   = dateStr === today;
+    days.push({d, dateStr, dow, name, isWeekend, isToday});
+  }
+
+  // ── header row 1: day names ──
+  let headerDayName = `<tr>
+    <th class="th-name col-no" rowspan="1">#</th>
+    <th class="th-name col-name" rowspan="1">ชื่อ-สกุล</th>`;
+  days.forEach(({name, isWeekend, isToday, d}) => {
+    const cls = [isWeekend?"col-weekend":"", isToday?"col-today":""].filter(Boolean).join(" ");
+    headerDayName += `<th class="th-dayname col-day ${cls}" data-day="${d}">${name}</th>`;
+  });
+  headerDayName += `<th class="th-name sum-present" style="font-size:10px;letter-spacing:.04em;">รวม<br>ม</th>
+    <th class="th-name sum-late" style="font-size:10px;">รวม<br>ส</th>
+    <th class="th-name sum-absent" style="font-size:10px;">รวม<br>ข</th>
+    <th class="th-name sum-pct" style="font-size:10px;">%มา</th>
+  </tr>`;
+
+  // ── header row 2: day numbers ──
+  let headerDayNum = `<tr>
+    <th class="th-daynum col-no" style="font-size:10px;color:var(--muted);">ที่</th>
+    <th class="th-daynum col-name" style="text-align:left;padding-left:10px;font-size:10px;color:var(--muted);">เดือน ${THAI_MONTHS[mon]} ${year+543}</th>`;
+  days.forEach(({d, isWeekend, isToday}) => {
+    const cls = [isWeekend?"col-weekend":"", isToday?"col-today":""].filter(Boolean).join(" ");
+    const style = isToday ? `style="color:var(--blue);font-weight:700;"` : "";
+    headerDayNum += `<th class="th-daynum col-day ${cls}" ${style}>${d}</th>`;
+  });
+  headerDayNum += `<th class="th-daynum sum-present">—</th>
+    <th class="th-daynum sum-late">—</th>
+    <th class="th-daynum sum-absent">—</th>
+    <th class="th-daynum sum-pct">—</th>
+  </tr>`;
+
+  // ── data rows ──
+  // compute per-day totals
+  const dayPresent = {}, dayLate = {}, dayAbsent = {};
+
+  let totalPresent=0, totalLate=0, totalAbsent=0, totalDaysWithData=0;
+  const activeStudents = allStudents.filter(s=>!s.ghost);
+  const ghostStudents  = allStudents.filter(s=>s.ghost);
+
+  // check which days have any data
+  const daysWithData = new Set(Object.keys(attMap));
+
+  let dataRows = "";
+
+  // active students first, then ghost
+  const sortedStudents = [...activeStudents, ...ghostStudents];
+
+  sortedStudents.forEach(s => {
+    const isGhost = s.ghost === true;
+    let sPresent=0, sLate=0, sAbsent=0, sDays=0;
+    let cells = "";
+
+    days.forEach(({dateStr, isWeekend, isToday}) => {
+      const cls = [isWeekend?"col-weekend":"", isToday?"col-today":""].filter(Boolean).join(" ");
+      if (isGhost) {
+        cells += `<td class="cell ${cls}"><span class="dot dot-ghost">—</span></td>`;
+        return;
+      }
+      const dayData = attMap[dateStr];
+      const rec = dayData?.[s.id];
+      const status = rec?.status;
+      if (status === "present") { sPresent++; dayPresent[dateStr]=(dayPresent[dateStr]||0)+1; }
+      if (status === "late")    { sLate++;    dayLate[dateStr]=(dayLate[dateStr]||0)+1; }
+      if (status === "absent")  { sAbsent++;  dayAbsent[dateStr]=(dayAbsent[dateStr]||0)+1; }
+      if (status) sDays++;
+      cells += `<td class="cell ${cls}">${statusDot(status)}</td>`;
+    });
+
+    totalPresent += sPresent;
+    totalLate    += sLate;
+    totalAbsent  += sAbsent;
+
+    const sDenom = sPresent + sLate + sAbsent;
+    const sPct   = sDenom > 0 ? Math.round((sPresent+sLate)/sDenom*100) : null;
+    const pctColor = sPct===null?"":sPct>=80?"":sPct>=60?"mid":"low";
+
+    const nameHtml = isGhost
+      ? `<span class="ghost-strikethrough">${s.prefix?s.prefix+" ":""}${s.name||"—"}</span> <span style="font-size:10px;color:#9ca3af;">(ไม่มีตัวตน)</span>`
+      : `${s.prefix?s.prefix+" ":""}${s.name||"—"}`;
+
+    const sumPresent = isGhost ? `<td class="cell sum-present">—</td>` : `<td class="cell sum-present">${sPresent||"—"}</td>`;
+    const sumLate    = isGhost ? `<td class="cell sum-late">—</td>` : `<td class="cell sum-late">${sLate||"—"}</td>`;
+    const sumAbsent  = isGhost ? `<td class="cell sum-absent">—</td>` : `<td class="cell sum-absent">${sAbsent||"—"}</td>`;
+    const sumPct     = isGhost
+      ? `<td class="cell sum-pct">—</td>`
+      : sPct !== null
+        ? `<td class="cell sum-pct"><div>${sPct}%</div><div class="pct-bar"><div class="pct-fill ${pctColor}" style="width:${sPct}%"></div></div></td>`
+        : `<td class="cell sum-pct" style="color:var(--muted);">—</td>`;
+
+    dataRows += `<tr class="${isGhost?"ghost-row":""}">
+      <td class="cell-no">${s.number||"—"}</td>
+      <td class="cell-name">${nameHtml}</td>
+      ${cells}
+      ${sumPresent}${sumLate}${sumAbsent}${sumPct}
+    </tr>`;
+  });
+
+  // ── footer row: totals per day ──
+  let footerCells = "";
+  days.forEach(({dateStr, isWeekend}) => {
+    const p = dayPresent[dateStr]||0;
+    const l = dayLate[dateStr]||0;
+    const a = dayAbsent[dateStr]||0;
+    const tot = p+l+a;
+    if (tot === 0) {
+      footerCells += `<td class="cell" style="color:#d1d5db;font-size:10px;">—</td>`;
+    } else {
+      footerCells += `<td class="cell" style="font-size:10px;"><span style="color:var(--present);font-weight:600;">${p}</span>${l?`<span style="color:var(--late);">/${l}</span>`:""}${a?`<span style="color:var(--absent);">/${a}</span>`:""}</td>`;
+    }
+  });
+
+  const totDenom = totalPresent+totalLate+totalAbsent;
+  const totPct   = totDenom > 0 ? Math.round((totalPresent+totalLate)/totDenom*100) : 0;
+
+  const footerRow = `<tr class="footer-row">
+    <td class="cell-no">—</td>
+    <td class="cell-name" style="font-size:11px;font-weight:600;color:var(--muted);">รวมแต่ละวัน</td>
+    ${footerCells}
+    <td class="f-present">${totalPresent}</td>
+    <td class="f-late">${totalLate}</td>
+    <td class="f-absent">${totalAbsent}</td>
+    <td style="background:#eff6ff;color:#185FA5;font-weight:600;">${totPct}%</td>
+  </tr>`;
+
+  const html = `<table class="att-table">
+    <thead>${headerDayName}${headerDayNum}</thead>
+    <tbody>${dataRows}${footerRow}</tbody>
+  </table>`;
+
+  document.getElementById("tableArea").innerHTML = html;
+
+  // ── metrics ──
+  const recordedDays = daysWithData.size;
+  document.getElementById("mDays").textContent = recordedDays;
+  document.getElementById("mPresent").textContent = recordedDays > 0
+    ? (totalPresent/recordedDays).toFixed(1) : "—";
+  document.getElementById("mAbsent").textContent = totalAbsent;
+  document.getElementById("mPct").textContent = totPct + "%";
+
+  const clsName = document.getElementById("classSelect").selectedOptions[0]?.text || "";
+  document.getElementById("tableTitle").textContent = `${clsName} — ${THAI_MONTHS[mon]} ${year+543}`;
+  document.getElementById("tableSubtitle").textContent =
+    `นักเรียน ${activeStudents.length} คน (ไม่มีตัวตน ${ghostStudents.length} คน)`;
+
+  document.getElementById("metricsEl").style.display = "grid";
+  document.getElementById("legendEl").style.display  = "flex";
+}
+
+window.exportTable = function() {
+  showToast("กำลังพัฒนา Export Excel...","success");
+};
+
+function showToast(msg, type) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.className = "show " + type;
+  setTimeout(() => { t.className = ""; }, 3000);
+}
+</script>
+</body>
+</html>

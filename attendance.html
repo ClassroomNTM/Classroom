@@ -79,6 +79,11 @@ tr:last-child td{border-bottom:none;}
 
 /* read-only overlay */
 .readonly-banner{background:#fffbeb;border:1px solid #fde68a;color:#92400e;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:16px;display:none;}
+/* ghost student row */
+.ghost-name-att{color:#b91c1c;text-decoration:line-through;font-style:italic;}
+.ghost-tag-att{background:#fef2f2;color:#b91c1c;padding:2px 6px;border-radius:99px;font-size:10px;font-weight:500;margin-left:5px;}
+.stat-btn.ghost{background:#fef2f2;color:#b91c1c;border-color:#fecaca;}
+.stat-btn.active-ghost{background:#b91c1c;color:white;}
 </style>
 </head>
 <body>
@@ -102,6 +107,7 @@ tr:last-child td{border-bottom:none;}
   <div class="sidebar-label">เมนูหลัก</div>
   <a href="dashboard.html"  class="nav-item"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
   <a href="attendance.html" class="nav-item active"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>เช็คชื่อ</a>
+  <a href="attendance-summary.html" class="nav-item"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>สรุปเช็คชื่อ</a>
   <a href="score.html"      class="nav-item"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>คะแนน</a>
   <a href="submit.html"     class="nav-item"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>ส่งงาน</a>
   <div class="nav-sep"></div>
@@ -263,21 +269,26 @@ function renderTable() {
   }
 
   tbody.innerHTML = students.map(s => {
-    const cur = attendance[s.id] || {status:"present",note:""};
-    if (!attendance[s.id]) attendance[s.id] = {status:"present", note:""};
+    const isGhost = s.ghost === true;
+    const cur = attendance[s.id] || {status: isGhost ? "ghost" : "present", note:""};
+    if (!attendance[s.id]) attendance[s.id] = {status: isGhost ? "ghost" : "present", note:""};
+
+    const nameHtml = isGhost
+      ? `<span class="ghost-name-att">${s.prefix?s.prefix+" ":""}${s.name}</span><span class="ghost-tag-att">ไม่มีตัวตน</span>`
+      : `${s.prefix?s.prefix+" ":""}${s.name}`;
 
     if (!isAdmin) {
-      const chip = cur.status==="present"
-        ? '<span style="background:#f0fdf4;color:#166534;padding:3px 10px;border-radius:99px;font-size:12px;">มาเรียน</span>'
-        : cur.status==="late"
-          ? '<span style="background:#fffbeb;color:#92400e;padding:3px 10px;border-radius:99px;font-size:12px;">สาย</span>'
-          : '<span style="background:#fef2f2;color:#b91c1c;padding:3px 10px;border-radius:99px;font-size:12px;">ขาด</span>';
-      return `<tr><td>${s.number||"—"}</td><td>${s.name}</td><td>${chip}</td><td style="color:var(--muted);font-size:12px;">${cur.note||"—"}</td></tr>`;
+      let chip;
+      if (isGhost || cur.status==="ghost") chip = '<span style="background:#fef2f2;color:#b91c1c;padding:3px 10px;border-radius:99px;font-size:12px;">ไม่มีตัวตน</span>';
+      else if (cur.status==="present") chip = '<span style="background:#f0fdf4;color:#166534;padding:3px 10px;border-radius:99px;font-size:12px;">มาเรียน</span>';
+      else if (cur.status==="late")    chip = '<span style="background:#fffbeb;color:#92400e;padding:3px 10px;border-radius:99px;font-size:12px;">สาย</span>';
+      else chip = '<span style="background:#fef2f2;color:#b91c1c;padding:3px 10px;border-radius:99px;font-size:12px;">ขาด</span>';
+      return `<tr style="${isGhost?"opacity:.6;":""}"><td>${s.number||"—"}</td><td>${nameHtml}</td><td>${chip}</td><td style="color:var(--muted);font-size:12px;">${cur.note||"—"}</td></tr>`;
     }
 
-    return `<tr id="row-${s.id}">
+    return `<tr id="row-${s.id}" style="${isGhost?"background:#fff8f8;":""}">
       <td>${s.number||"—"}</td>
-      <td>${s.name}</td>
+      <td>${nameHtml}</td>
       <td>
         <div class="status-btns">
           <button class="stat-btn present ${cur.status==='present'?'active-present':''}"
@@ -286,6 +297,8 @@ function renderTable() {
             onclick="setStatus('${s.id}','late')">สาย</button>
           <button class="stat-btn absent ${cur.status==='absent'?'active-absent':''}"
             onclick="setStatus('${s.id}','absent')">ขาด</button>
+          <button class="stat-btn ghost ${cur.status==='ghost'?'active-ghost':''}"
+            onclick="setStatus('${s.id}','ghost')">ไม่มีตัวตน</button>
         </div>
       </td>
       <td>
@@ -300,16 +313,22 @@ window.setStatus = function(sid, status) {
   attendance[sid].status = status;
   const row = document.getElementById("row-"+sid);
   row.querySelectorAll(".stat-btn").forEach(b => {
-    b.classList.remove("active-present","active-late","active-absent");
+    b.classList.remove("active-present","active-late","active-absent","active-ghost");
   });
-  const map = {present:"active-present",late:"active-late",absent:"active-absent"};
-  row.querySelector(".stat-btn."+status).classList.add(map[status]);
+  const map = {present:"active-present",late:"active-late",absent:"active-absent",ghost:"active-ghost"};
+  const btn = row.querySelector(".stat-btn."+status);
+  if (btn) btn.classList.add(map[status]);
+  if (status === "ghost") row.style.background = "#fff8f8";
+  else row.style.background = "";
   updateSummary();
 };
 
 window.markAllPresent = function() {
   if (userRole !== "admin") return;
-  students.forEach(s => { attendance[s.id] = {status:"present", note:""}; });
+  students.forEach(s => {
+    if (s.ghost) attendance[s.id] = {status:"ghost", note:attendance[s.id]?.note||""};
+    else attendance[s.id] = {status:"present", note:""};
+  });
   renderTable();
   updateSummary();
 };
@@ -319,10 +338,11 @@ function updateSummary() {
   const p = vals.filter(v=>v.status==="present").length;
   const l = vals.filter(v=>v.status==="late").length;
   const a = vals.filter(v=>v.status==="absent").length;
+  const g = vals.filter(v=>v.status==="ghost").length;
   document.getElementById("presentCount").textContent = "มา: "+p;
   document.getElementById("lateCount").textContent    = "สาย: "+l;
   document.getElementById("absentCount").textContent  = "ขาด: "+a;
-  document.getElementById("totalCount").textContent   = "ทั้งหมด: "+students.length;
+  document.getElementById("totalCount").textContent   = "ทั้งหมด: "+(students.length-g)+" (ไม่มีตัวตน: "+g+")";
 }
 
 window.saveAll = async function() {
@@ -337,7 +357,7 @@ window.saveAll = async function() {
 
   try {
     const writes = students.map(s => {
-      const a  = attendance[s.id] || {status:"present",note:""};
+      const a  = attendance[s.id] || {status: s.ghost?"ghost":"present", note:""};
       const id = `${s.id}_${date}`;
       return setDoc(doc(db,"attendance",id),{
         studentId: s.id, studentName: s.name,
