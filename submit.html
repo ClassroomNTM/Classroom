@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ส่งงาน — ระบบจัดการนักเรียน</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--bg:#f5f4f0;--surface:#ffffff;--blue:#0f3460;--blue-lt:#e6eef7;--text:#1a1a2e;--muted:#6b7280;--border:rgba(0,0,0,0.08);--radius:12px;--sidebar-w:200px;--topbar-h:56px;}
+body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+.topbar{position:fixed;top:0;left:0;right:0;height:var(--topbar-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:100;}
+.brand{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;color:var(--text);text-decoration:none;}
+.brand-dot{width:32px;height:32px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;}
+.brand-dot svg{width:18px;height:18px;fill:white;}
+.topbar-right{display:flex;align-items:center;gap:14px;}
+.user-info{font-size:13px;display:flex;align-items:center;gap:8px;}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--blue);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;}
+.role-badge{padding:2px 8px;border-radius:99px;font-size:11px;font-weight:500;}
+.role-admin{background:#fef2f2;color:#b91c1c;}.role-user{background:#f0fdf4;color:#166534;}
+.btn-logout{padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:transparent;font-family:'Sarabun',sans-serif;font-size:13px;color:var(--muted);cursor:pointer;}
+.btn-logout:hover{background:var(--bg);}
+.sidebar{position:fixed;top:var(--topbar-h);left:0;bottom:0;width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);padding:16px 10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;}
+.sidebar-label{font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--muted);padding:8px 10px 4px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;font-size:13px;color:var(--muted);text-decoration:none;transition:all .15s;}
+.nav-item svg{width:17px;height:17px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.nav-item:hover{background:var(--bg);color:var(--text);}
+.nav-item.active{background:var(--blue-lt);color:var(--blue);font-weight:500;}
+.nav-sep{height:1px;background:var(--border);margin:8px 0;}
+.main{margin-left:var(--sidebar-w);margin-top:var(--topbar-h);padding:24px;display:grid;grid-template-columns:240px 1fr;gap:20px;align-items:start;}
+
+/* Assignments panel */
+.assign-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;position:sticky;top:calc(var(--topbar-h) + 24px);}
+.panel-head{padding:14px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between;}
+.assign-list{padding:8px;}
+.assign-item{padding:10px 10px;border-radius:8px;cursor:pointer;transition:all .15s;border:1px solid transparent;margin-bottom:2px;}
+.assign-item:hover{background:var(--bg);}
+.assign-item.active{background:var(--blue-lt);border-color:rgba(15,52,96,.12);}
+.assign-item .a-title{font-size:13px;font-weight:500;color:var(--text);}
+.assign-item.active .a-title{color:var(--blue);}
+.assign-item .a-due{font-size:11px;color:var(--muted);margin-top:2px;}
+.assign-item .a-meta{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;}
+
+/* Content */
+.content-area{min-width:0;}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.page-title{font-size:20px;font-weight:600;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid var(--border);border-radius:8px;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:500;cursor:pointer;background:var(--surface);color:var(--text);transition:all .15s;}
+.btn:hover{background:var(--bg);}
+.btn:active{transform:scale(.97);}
+.btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.btn-primary{background:var(--blue);color:white;border-color:var(--blue);}
+.btn-primary:hover{background:#0a2847;}
+.btn-danger{background:#fef2f2;color:#b91c1c;border-color:#fecaca;}
+.btn-danger:hover{background:#fee2e2;}
+.btn-sm{padding:5px 10px;font-size:12px;}
+.filters{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;align-items:flex-end;}
+.fgroup{display:flex;flex-direction:column;gap:4px;}
+.flabel{font-size:11px;font-weight:500;color:var(--muted);}
+select,input[type="date"]{height:38px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-family:'Sarabun',sans-serif;font-size:13px;color:var(--text);background:white;outline:none;}
+select:focus,input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);}
+
+/* Assignment detail card */
+.assign-detail{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-bottom:16px;}
+.assign-detail-title{font-size:16px;font-weight:600;margin-bottom:6px;}
+.assign-detail-desc{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:10px;}
+.assign-detail-meta{display:flex;gap:12px;font-size:12px;color:var(--muted);}
+.assign-detail-meta span{display:flex;align-items:center;gap:4px;}
+.assign-detail-meta svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+
+/* Upload area */
+.upload-area{border:2px dashed var(--border);border-radius:var(--radius);padding:32px 20px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:16px;background:#fafafa;}
+.upload-area:hover,.upload-area.drag-over{border-color:var(--blue);background:var(--blue-lt);}
+.upload-area svg{width:36px;height:36px;stroke:var(--muted);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;margin-bottom:10px;}
+.upload-area p{font-size:13px;color:var(--muted);}
+.upload-area small{font-size:11px;color:#9ca3af;margin-top:4px;display:block;}
+#fileInput{display:none;}
+.file-selected{background:#f0fdf4;border-color:#bbf7d0;color:#166534;padding:12px 16px;border-radius:8px;font-size:13px;display:none;align-items:center;gap:8px;margin-bottom:12px;}
+.file-selected svg{width:16px;height:16px;flex-shrink:0;}
+
+/* Submissions table */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.card-head{padding:12px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between;}
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;padding:10px 12px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--border);background:#fafafa;}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#fafafa;}
+.chip{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:500;}
+.chip-green{background:#f0fdf4;color:#166534;}.chip-red{background:#fef2f2;color:#b91c1c;}.chip-amber{background:#fffbeb;color:#92400e;}.chip-gray{background:#f9fafb;color:#374151;border:1px solid #e5e7eb;}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:200;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:white;border-radius:16px;padding:24px 28px;width:500px;max-width:95vw;animation:fadeUp .25s ease;}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:20px;}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;}
+.form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.form-label{font-size:12px;font-weight:500;}
+input[type="text"],textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:'Sarabun',sans-serif;font-size:13px;color:var(--text);background:#fafafa;outline:none;}
+input[type="text"]{height:40px;padding:0 12px;}
+textarea{resize:vertical;min-height:80px;}
+input:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);background:white;}
+
+#toast{position:fixed;bottom:24px;right:24px;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;}
+#toast.show{opacity:1;transform:translateY(0);}
+#toast.success{background:#052e16;color:#86efac;}
+#toast.error{background:#450a0a;color:#fca5a5;}
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted);}
+.empty-state svg{width:40px;height:40px;stroke:var(--muted);fill:none;stroke-width:1.5;margin-bottom:12px;stroke-linecap:round;stroke-linejoin:round;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a href="dashboard.html" class="brand">
+    <div class="brand-dot"><svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg></div>
+    ระบบจัดการนักเรียน
+  </a>
+  <div class="topbar-right">
+    <div class="user-info">
+      <div class="avatar" id="avatarEl">?</div>
+      <span id="userNameEl">ผู้ใช้</span>
+      <span class="role-badge" id="roleBadgeEl">—</span>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">ออกจากระบบ</button>
+  </div>
+</header>
+
+<nav class="sidebar">
+  <div class="sidebar-label">เมนูหลัก</div>
+  <a href="dashboard.html" class="nav-item"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
+  <a href="attendance.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>เช็คชื่อ</a>
+  <a href="score.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>คะแนน</a>
+  <a href="submit.html" class="nav-item active"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>ส่งงาน</a>
+  <div class="nav-sep"></div>
+  <div class="sidebar-label">จัดการ</div>
+  <a href="class.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>ชั้นเรียน</a>
+  <a href="admin.html" class="nav-item" id="adminNavItem" style="display:none;"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>จัดการผู้ใช้</a>
+</nav>
+
+<main class="main">
+  <!-- Assignments list panel -->
+  <div class="assign-panel">
+    <div class="panel-head">
+      งานที่มอบหมาย
+      <button class="btn btn-sm btn-primary" id="addAssignBtn" onclick="openAddAssign()" style="display:none;">+ เพิ่ม</button>
+    </div>
+    <div style="padding:8px;">
+      <div class="fgroup" style="padding:4px 2px 8px;">
+        <select id="classSelectPanel" onchange="onClassChange()" style="font-size:12px;height:34px;">
+          <option value="">— เลือกชั้น —</option>
+        </select>
+      </div>
+      <div id="assignList">
+        <div style="padding:12px 8px;font-size:12px;color:var(--muted);">เลือกชั้นเรียนก่อน</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content-area">
+    <div class="page-header">
+      <div class="page-title">ส่งงาน</div>
+    </div>
+
+    <div id="mainArea">
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <p>เลือกชั้นเรียนและงานเพื่อดูการส่ง</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Add Assignment Modal -->
+<div class="modal-overlay" id="assignModal">
+  <div class="modal">
+    <div class="modal-title" id="assignModalTitle">เพิ่มงานที่มอบหมาย</div>
+    <div class="form-group">
+      <label class="form-label">ชื่องาน</label>
+      <input type="text" id="assignTitle" placeholder="เช่น รายงานวิทยาศาสตร์">
+    </div>
+    <div class="form-group">
+      <label class="form-label">คำอธิบาย</label>
+      <textarea id="assignDesc" placeholder="รายละเอียดงาน..."></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">กำหนดส่ง</label>
+      <input type="date" id="assignDue" style="height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-family:'Sarabun',sans-serif;font-size:13px;">
+    </div>
+    <input type="hidden" id="editAssignId">
+    <div class="modal-footer">
+      <button class="btn" onclick="closeAssignModal()">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveAssignment()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  getFirestore, collection, doc, getDocs, setDoc, deleteDoc, addDoc,
+  query, where, getStorage
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getStorage as initStorage, ref, uploadBytes, getDownloadURL }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY", authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID", storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID", appId: "YOUR_APP_ID"
+};
+const app     = initializeApp(firebaseConfig);
+const auth    = getAuth(app);
+const db      = getFirestore(app);
+const storage = initStorage(app);
+
+let userRole = "", currentClassId = "", currentAssignId = "";
+let assignments = [], students = [], currentFile = null;
+
+onAuthStateChanged(auth, async user => {
+  if (!user) { window.location.href = "index.html"; return; }
+  userRole = sessionStorage.getItem("userRole") || "user";
+  const name = sessionStorage.getItem("userName") || user.email;
+  document.getElementById("avatarEl").textContent = name.charAt(0).toUpperCase();
+  document.getElementById("userNameEl").textContent = name;
+  const rb = document.getElementById("roleBadgeEl");
+  rb.textContent = userRole === "admin" ? "Admin" : "User";
+  rb.className = "role-badge " + (userRole === "admin" ? "role-admin" : "role-user");
+  if (userRole === "admin") {
+    document.getElementById("adminNavItem").style.display = "flex";
+    document.getElementById("addAssignBtn").style.display = "inline-flex";
+  }
+  await loadClasses();
+});
+
+window.doLogout = async () => { await signOut(auth); sessionStorage.clear(); window.location.href = "index.html"; };
+
+async function loadClasses() {
+  const snap = await getDocs(collection(db, "classes"));
+  const sel = document.getElementById("classSelectPanel");
+  snap.docs.forEach(d => {
+    const opt = document.createElement("option");
+    opt.value = d.id; opt.textContent = d.data().name;
+    sel.appendChild(opt);
+  });
+}
+
+window.onClassChange = async function() {
+  currentClassId = document.getElementById("classSelectPanel").value;
+  currentAssignId = "";
+  if (!currentClassId) return;
+  const sSnap = await getDocs(query(collection(db,"students"), where("classId","==",currentClassId)));
+  students = sSnap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => (a.number||0)-(b.number||0));
+  await loadAssignments();
+};
+
+async function loadAssignments() {
+  const snap = await getDocs(query(collection(db,"assignments"), where("classId","==",currentClassId)));
+  assignments = snap.docs.map(d => ({id: d.id, ...d.data()}));
+  assignments.sort((a,b) => (a.dueDate||"") > (b.dueDate||"") ? 1 : -1);
+  renderAssignList();
+  if (assignments.length > 0) selectAssignment(assignments[0].id);
+  else {
+    document.getElementById("mainArea").innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><p>ยังไม่มีงานที่มอบหมาย</p></div>`;
+  }
+}
+
+function isDue(dueDate) {
+  if (!dueDate) return false;
+  return new Date(dueDate) < new Date(new Date().toDateString());
+}
+
+function formatDate(d) {
+  if (!d) return "—";
+  const parts = d.split("-");
+  return `${parts[2]} พ.ค. ${parseInt(parts[0])+543}`.replace(/(\d+)-(\d+)-(\d+)/, "$3/$2/$1");
+}
+
+function renderAssignList() {
+  const el = document.getElementById("assignList");
+  if (!assignments.length) {
+    el.innerHTML = `<div style="padding:12px 8px;font-size:12px;color:var(--muted);">ยังไม่มีงาน</div>`;
+    return;
+  }
+  el.innerHTML = assignments.map(a => {
+    const overdue = isDue(a.dueDate);
+    const chip = overdue
+      ? `<span class="chip chip-red" style="font-size:10px;">เลยกำหนด</span>`
+      : `<span class="chip chip-green" style="font-size:10px;">กำหนดส่ง: ${a.dueDate ? a.dueDate.split("-").reverse().join("/") : "—"}</span>`;
+    return `<div class="assign-item ${a.id === currentAssignId ? 'active':''}" onclick="selectAssignment('${a.id}')">
+      <div class="a-title">${a.title}</div>
+      <div class="a-due">กำหนด: ${a.dueDate||"—"}</div>
+      <div class="a-meta">${chip}</div>
+    </div>`;
+  }).join("");
+}
+
+window.selectAssignment = async function(id) {
+  currentAssignId = id;
+  currentFile = null;
+  renderAssignList();
+  const assign = assignments.find(a => a.id === id);
+  if (!assign) return;
+  // load submissions
+  const snap = await getDocs(query(collection(db,"submissions"), where("assignmentId","==",id)));
+  const subs = snap.docs.map(d => ({id: d.id, ...d.data()}));
+  renderAssignDetail(assign, subs);
+};
+
+function renderAssignDetail(assign, subs) {
+  const isAdmin = userRole === "admin";
+  const overdue = isDue(assign.dueDate);
+  const subMap = {};
+  subs.forEach(s => { subMap[s.studentId] = s; });
+  const submitted = subs.filter(s => s.status === "submitted").length;
+  const late      = subs.filter(s => s.status === "late").length;
+  const pending   = students.length - submitted - late;
+
+  const adminActions = isAdmin ? `
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <button class="btn btn-sm" onclick="openEditAssign('${assign.id}')">
+        <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>แก้ไข
+      </button>
+      <button class="btn btn-sm btn-danger" onclick="deleteAssignment('${assign.id}')">
+        <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>ลบ
+      </button>
+    </div>` : "";
+
+  // Upload zone (for all users)
+  const uploadZone = !isAdmin ? `
+    <div class="assign-detail" style="margin-bottom:16px;">
+      <div style="font-size:14px;font-weight:600;margin-bottom:12px;">ส่งงานของฉัน</div>
+      <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()"
+        ondragover="event.preventDefault();this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="handleDrop(event)">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <p>ลากไฟล์มาวางที่นี่ หรือคลิกเลือกไฟล์</p>
+        <small>รองรับ PDF, DOCX, ZIP สูงสุด 20 MB</small>
+      </div>
+      <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.zip,.pptx,.xlsx" onchange="handleFile(this.files[0])">
+      <div class="file-selected" id="fileSelected">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span id="fileName"></span>
+        <button class="btn btn-sm" style="margin-left:auto;" onclick="clearFile()">ยกเลิก</button>
+      </div>
+      <button class="btn btn-primary" id="submitBtn" onclick="submitFile()">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:white;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        ส่งงาน
+      </button>
+    </div>` : "";
+
+  // Submissions table (admin sees all, user sees their own)
+  const tableRows = isAdmin
+    ? students.map(s => {
+        const sub = subMap[s.id];
+        const chip = sub
+          ? sub.status === "submitted"
+            ? `<span class="chip chip-green">ส่งแล้ว</span>`
+            : `<span class="chip chip-red">เลยกำหนด</span>`
+          : `<span class="chip chip-gray">ยังไม่ส่ง</span>`;
+        const link = sub?.fileUrl
+          ? `<a href="${sub.fileUrl}" target="_blank" class="btn btn-sm" style="font-size:11px;">ดูไฟล์</a>` : "—";
+        const time = sub?.submittedAt ? new Date(sub.submittedAt).toLocaleString("th-TH",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}) : "—";
+        return `<tr>
+          <td style="color:var(--muted);font-size:12px;">${s.number||"—"}</td>
+          <td>${s.name}</td>
+          <td>${chip}</td>
+          <td style="font-size:12px;color:var(--muted);">${time}</td>
+          <td>${link}</td>
+        </tr>`;
+      }).join("")
+    : "";
+
+  const table = isAdmin ? `
+    <div class="card">
+      <div class="card-head">
+        รายการส่งงาน
+        <div style="display:flex;gap:8px;">
+          <span class="chip chip-green">ส่งแล้ว ${submitted}</span>
+          <span class="chip chip-red">เลยกำหนด ${late}</span>
+          <span class="chip chip-gray">ยังไม่ส่ง ${Math.max(0,pending)}</span>
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        <table><thead><tr>
+          <th style="width:48px;">เลขที่</th><th>ชื่อ-สกุล</th><th>สถานะ</th><th>เวลาส่ง</th><th>ไฟล์</th>
+        </tr></thead><tbody>${tableRows}</tbody></table>
+      </div>
+    </div>` : "";
+
+  document.getElementById("mainArea").innerHTML = `
+    <div class="assign-detail">
+      <div class="assign-detail-title">${assign.title}</div>
+      <div class="assign-detail-desc">${assign.description||"ไม่มีคำอธิบาย"}</div>
+      <div class="assign-detail-meta">
+        <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>กำหนดส่ง: ${assign.dueDate||"—"}</span>
+        ${overdue ? '<span style="color:#b91c1c;">⚠ เลยกำหนดแล้ว</span>' : ''}
+      </div>
+      ${adminActions}
+    </div>
+    ${uploadZone}
+    ${table}`;
+}
+
+window.handleFile = function(file) {
+  if (!file) return;
+  if (file.size > 20*1024*1024) { showToast("ไฟล์ใหญ่เกิน 20 MB","error"); return; }
+  currentFile = file;
+  document.getElementById("fileName").textContent = file.name;
+  document.getElementById("fileSelected").style.display = "flex";
+};
+
+window.handleDrop = function(e) {
+  e.preventDefault();
+  document.getElementById("uploadArea").classList.remove("drag-over");
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+};
+
+window.clearFile = function() {
+  currentFile = null;
+  document.getElementById("fileInput").value = "";
+  document.getElementById("fileSelected").style.display = "none";
+};
+
+window.submitFile = async function() {
+  if (!currentFile) { showToast("กรุณาเลือกไฟล์ก่อน","error"); return; }
+  const userId = sessionStorage.getItem("userId");
+  if (!userId) { showToast("ไม่พบข้อมูลผู้ใช้","error"); return; }
+  const assign = assignments.find(a => a.id === currentAssignId);
+  const btn = document.getElementById("submitBtn");
+  btn.disabled = true; btn.textContent = "กำลังส่ง...";
+  try {
+    const storageRef = ref(storage, `submissions/${currentAssignId}/${userId}_${currentFile.name}`);
+    const snap = await uploadBytes(storageRef, currentFile);
+    const url  = await getDownloadURL(snap.ref);
+    const status = isDue(assign.dueDate) ? "late" : "submitted";
+    await setDoc(doc(db,"submissions",`${userId}_${currentAssignId}`), {
+      assignmentId: currentAssignId, studentId: userId,
+      studentName: sessionStorage.getItem("userName")||"ไม่ทราบชื่อ",
+      fileUrl: url, fileName: currentFile.name,
+      submittedAt: new Date().toISOString(), status, classId: currentClassId
+    });
+    showToast("ส่งงานเรียบร้อย ✓","success");
+    clearFile();
+    await selectAssignment(currentAssignId);
+  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
+  btn.disabled = false;
+  btn.innerHTML = `<svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:white;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> ส่งงาน`;
+};
+
+window.openAddAssign = function() {
+  if (!currentClassId) { showToast("กรุณาเลือกชั้นเรียนก่อน","error"); return; }
+  document.getElementById("assignModalTitle").textContent = "เพิ่มงานที่มอบหมาย";
+  document.getElementById("assignTitle").value = "";
+  document.getElementById("assignDesc").value = "";
+  document.getElementById("assignDue").value = "";
+  document.getElementById("editAssignId").value = "";
+  document.getElementById("assignModal").classList.add("open");
+};
+
+window.openEditAssign = function(id) {
+  const a = assignments.find(x => x.id === id);
+  if (!a) return;
+  document.getElementById("assignModalTitle").textContent = "แก้ไขงาน";
+  document.getElementById("assignTitle").value = a.title;
+  document.getElementById("assignDesc").value = a.description||"";
+  document.getElementById("assignDue").value = a.dueDate||"";
+  document.getElementById("editAssignId").value = id;
+  document.getElementById("assignModal").classList.add("open");
+};
+
+window.closeAssignModal = function() { document.getElementById("assignModal").classList.remove("open"); };
+
+window.saveAssignment = async function() {
+  const title = document.getElementById("assignTitle").value.trim();
+  const desc  = document.getElementById("assignDesc").value.trim();
+  const due   = document.getElementById("assignDue").value;
+  const editId = document.getElementById("editAssignId").value;
+  if (!title) { showToast("กรุณากรอกชื่องาน","error"); return; }
+  try {
+    if (editId) {
+      await setDoc(doc(db,"assignments",editId), {title, description:desc, dueDate:due, classId:currentClassId},{merge:true});
+    } else {
+      await addDoc(collection(db,"assignments"), {title, description:desc, dueDate:due, classId:currentClassId, createdAt:new Date().toISOString()});
+    }
+    closeAssignModal();
+    showToast("บันทึกงานเรียบร้อย ✓","success");
+    await loadAssignments();
+  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
+};
+
+window.deleteAssignment = async function(id) {
+  if (!confirm("ยืนยันลบงานนี้? การส่งงานทั้งหมดจะถูกลบด้วย")) return;
+  try {
+    await deleteDoc(doc(db,"assignments",id));
+    const snap = await getDocs(query(collection(db,"submissions"), where("assignmentId","==",id)));
+    await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+    showToast("ลบงานเรียบร้อย","success");
+    await loadAssignments();
+  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
+};
+
+function showToast(msg, type) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.className = "show " + type;
+  setTimeout(() => { t.className = ""; }, 3000);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>คะแนน — ระบบจัดการนักเรียน</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--bg:#f5f4f0;--surface:#ffffff;--blue:#0f3460;--blue-lt:#e6eef7;--text:#1a1a2e;--muted:#6b7280;--border:rgba(0,0,0,0.08);--radius:12px;--sidebar-w:200px;--topbar-h:56px;}
+body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+.topbar{position:fixed;top:0;left:0;right:0;height:var(--topbar-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:100;}
+.brand{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;color:var(--text);text-decoration:none;}
+.brand-dot{width:32px;height:32px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;}
+.brand-dot svg{width:18px;height:18px;fill:white;}
+.topbar-right{display:flex;align-items:center;gap:14px;}
+.user-info{font-size:13px;display:flex;align-items:center;gap:8px;}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--blue);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;}
+.role-badge{padding:2px 8px;border-radius:99px;font-size:11px;font-weight:500;}
+.role-admin{background:#fef2f2;color:#b91c1c;}.role-user{background:#f0fdf4;color:#166534;}
+.btn-logout{padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:transparent;font-family:'Sarabun',sans-serif;font-size:13px;color:var(--muted);cursor:pointer;}
+.btn-logout:hover{background:var(--bg);}
+.sidebar{position:fixed;top:var(--topbar-h);left:0;bottom:0;width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);padding:16px 10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;}
+.sidebar-label{font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--muted);padding:8px 10px 4px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;font-size:13px;color:var(--muted);text-decoration:none;transition:all .15s;}
+.nav-item svg{width:17px;height:17px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.nav-item:hover{background:var(--bg);color:var(--text);}
+.nav-item.active{background:var(--blue-lt);color:var(--blue);font-weight:500;}
+.nav-sep{height:1px;background:var(--border);margin:8px 0;}
+.main{margin-left:var(--sidebar-w);margin-top:var(--topbar-h);padding:24px;display:grid;grid-template-columns:220px 1fr;gap:20px;align-items:start;}
+.topics-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;position:sticky;top:calc(var(--topbar-h) + 24px);}
+.topics-head{padding:14px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between;}
+.topics-list{padding:8px;}
+.topic-item{padding:9px 10px;border-radius:8px;font-size:13px;cursor:pointer;transition:all .15s;border:1px solid transparent;margin-bottom:2px;}
+.topic-item:hover{background:var(--bg);}
+.topic-item.active{background:var(--blue-lt);color:var(--blue);font-weight:500;border-color:rgba(15,52,96,.12);}
+.topic-item .t-name{font-size:13px;}
+.topic-item .t-max{font-size:11px;color:var(--muted);margin-top:1px;}
+.topic-item.active .t-max{color:rgba(15,52,96,.7);}
+.topic-add{padding:8px 10px;margin:4px 8px 8px;}
+.content-area{min-width:0;}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.page-title{font-size:20px;font-weight:600;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid var(--border);border-radius:8px;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:500;cursor:pointer;background:var(--surface);color:var(--text);transition:all .15s;}
+.btn:hover{background:var(--bg);}
+.btn:active{transform:scale(.97);}
+.btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.btn-primary{background:var(--blue);color:white;border-color:var(--blue);}
+.btn-primary:hover{background:#0a2847;}
+.btn-danger{background:#fef2f2;color:#b91c1c;border-color:#fecaca;}
+.btn-danger:hover{background:#fee2e2;}
+.btn-sm{padding:5px 10px;font-size:12px;}
+.filters{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;align-items:flex-end;}
+.fgroup{display:flex;flex-direction:column;gap:4px;}
+.flabel{font-size:11px;font-weight:500;color:var(--muted);}
+select{height:38px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-family:'Sarabun',sans-serif;font-size:13px;color:var(--text);background:white;outline:none;}
+select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);}
+.metrics-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;}
+.m-label{font-size:11px;color:var(--muted);margin-bottom:4px;}
+.m-val{font-size:26px;font-weight:600;line-height:1;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;padding:10px 12px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--border);background:#fafafa;}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#fafafa;}
+.score-input{width:80px;height:32px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-family:'Sarabun',sans-serif;font-size:13px;text-align:center;background:#fafafa;}
+.score-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);outline:none;background:white;}
+.grade-badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600;}
+.g-aplus{background:#dcfce7;color:#166534;}
+.g-a{background:#f0fdf4;color:#166534;}
+.g-b{background:#eff6ff;color:#1d4ed8;}
+.g-c{background:#fffbeb;color:#92400e;}
+.g-d{background:#fff7ed;color:#c2410c;}
+.g-f{background:#fef2f2;color:#b91c1c;}
+.g-none{background:#f9fafb;color:#6b7280;}
+.score-bar-wrap{display:flex;align-items:center;gap:8px;}
+.score-bar{flex:1;height:5px;background:#f3f4f6;border-radius:99px;overflow:hidden;min-width:40px;}
+.score-bar-fill{height:100%;border-radius:99px;transition:width .3s;}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:200;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:white;border-radius:16px;padding:24px 28px;width:420px;max-width:95vw;animation:fadeUp .25s ease;}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:20px;}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;}
+.form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.form-label{font-size:12px;font-weight:500;}
+input[type="text"],input[type="number"]{width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-family:'Sarabun',sans-serif;font-size:13px;color:var(--text);background:#fafafa;outline:none;}
+input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);background:white;}
+#toast{position:fixed;bottom:24px;right:24px;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;}
+#toast.show{opacity:1;transform:translateY(0);}
+#toast.success{background:#052e16;color:#86efac;}
+#toast.error{background:#450a0a;color:#fca5a5;}
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted);}
+.empty-state svg{width:40px;height:40px;stroke:var(--muted);fill:none;stroke-width:1.5;margin-bottom:12px;stroke-linecap:round;stroke-linejoin:round;}
+.readonly-banner{background:#fffbeb;border:1px solid #fde68a;color:#92400e;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:16px;display:none;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a href="dashboard.html" class="brand">
+    <div class="brand-dot"><svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg></div>
+    ระบบจัดการนักเรียน
+  </a>
+  <div class="topbar-right">
+    <div class="user-info">
+      <div class="avatar" id="avatarEl">?</div>
+      <span id="userNameEl">ผู้ใช้</span>
+      <span class="role-badge" id="roleBadgeEl">—</span>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">ออกจากระบบ</button>
+  </div>
+</header>
+
+<nav class="sidebar">
+  <div class="sidebar-label">เมนูหลัก</div>
+  <a href="dashboard.html" class="nav-item"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
+  <a href="attendance.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>เช็คชื่อ</a>
+  <a href="score.html" class="nav-item active"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>คะแนน</a>
+  <a href="submit.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>ส่งงาน</a>
+  <div class="nav-sep"></div>
+  <div class="sidebar-label">จัดการ</div>
+  <a href="class.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>ชั้นเรียน</a>
+  <a href="admin.html" class="nav-item" id="adminNavItem" style="display:none;"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>จัดการผู้ใช้</a>
+</nav>
+
+<main class="main">
+  <!-- Topics sidebar -->
+  <div class="topics-panel">
+    <div class="topics-head">
+      หัวข้อคะแนน
+      <button class="btn btn-sm btn-primary" id="addTopicBtn" onclick="openAddTopic()" style="display:none;">+ เพิ่ม</button>
+    </div>
+    <div class="topics-list" id="topicsList">
+      <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">เลือกชั้นเรียนก่อน</div>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div class="content-area">
+    <div class="page-header">
+      <div class="page-title">คะแนนนักเรียน</div>
+      <button class="btn btn-primary" id="saveScoreBtn" onclick="saveScores()" style="display:none;">
+        <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        บันทึกคะแนน
+      </button>
+    </div>
+
+    <div class="readonly-banner" id="readonlyBanner">
+      <strong>โหมดดูอย่างเดียว:</strong> คุณไม่มีสิทธิ์แก้ไขคะแนน
+    </div>
+
+    <div class="filters">
+      <div class="fgroup">
+        <div class="flabel">ชั้นเรียน</div>
+        <select id="classSelect" onchange="onClassChange()">
+          <option value="">— เลือกชั้น —</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="metrics-row" id="metricsRow" style="display:none;">
+      <div class="metric"><div class="m-label">นักเรียนทั้งหมด</div><div class="m-val" id="mTotal">—</div></div>
+      <div class="metric"><div class="m-label">คะแนนเฉลี่ย</div><div class="m-val" id="mAvg">—</div></div>
+      <div class="metric"><div class="m-label">ยังไม่ได้ให้คะแนน</div><div class="m-val" id="mPending">—</div></div>
+    </div>
+
+    <div id="scoreArea">
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+        <p>เลือกชั้นเรียนและหัวข้อเพื่อดูคะแนน</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Add Topic Modal -->
+<div class="modal-overlay" id="topicModal">
+  <div class="modal">
+    <div class="modal-title" id="topicModalTitle">เพิ่มหัวข้อคะแนน</div>
+    <div class="form-group">
+      <label class="form-label">ชื่อหัวข้อ</label>
+      <input type="text" id="topicTitle" placeholder="เช่น กลางภาค, ปลายภาค">
+    </div>
+    <div class="form-group">
+      <label class="form-label">คะแนนเต็ม</label>
+      <input type="number" id="topicMax" placeholder="100" min="1" max="1000">
+    </div>
+    <input type="hidden" id="editTopicId">
+    <div class="modal-footer">
+      <button class="btn" onclick="closeTopicModal()">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveTopic()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  getFirestore, collection, doc, getDocs, setDoc, deleteDoc, addDoc,
+  query, where, orderBy, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY", authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID", storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID", appId: "YOUR_APP_ID"
+};
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+let userRole = "", currentClassId = "", currentTopicId = "", currentMaxScore = 100;
+let students = [], scores = {}, topics = [];
+
+onAuthStateChanged(auth, async user => {
+  if (!user) { window.location.href = "index.html"; return; }
+  userRole = sessionStorage.getItem("userRole") || "user";
+  const name = sessionStorage.getItem("userName") || user.email;
+  document.getElementById("avatarEl").textContent = name.charAt(0).toUpperCase();
+  document.getElementById("userNameEl").textContent = name;
+  const rb = document.getElementById("roleBadgeEl");
+  rb.textContent = userRole === "admin" ? "Admin" : "User";
+  rb.className = "role-badge " + (userRole === "admin" ? "role-admin" : "role-user");
+  if (userRole === "admin") {
+    document.getElementById("adminNavItem").style.display = "flex";
+    document.getElementById("addTopicBtn").style.display = "inline-flex";
+    document.getElementById("saveScoreBtn").style.display = "inline-flex";
+  } else {
+    document.getElementById("readonlyBanner").style.display = "block";
+  }
+  await loadClasses();
+});
+
+window.doLogout = async () => { await signOut(auth); sessionStorage.clear(); window.location.href = "index.html"; };
+
+async function loadClasses() {
+  const snap = await getDocs(collection(db, "classes"));
+  const sel = document.getElementById("classSelect");
+  snap.docs.forEach(d => {
+    const opt = document.createElement("option");
+    opt.value = d.id; opt.textContent = d.data().name;
+    sel.appendChild(opt);
+  });
+}
+
+window.onClassChange = async function() {
+  currentClassId = document.getElementById("classSelect").value;
+  if (!currentClassId) return;
+  // load students
+  const sSnap = await getDocs(query(collection(db,"students"), where("classId","==",currentClassId)));
+  students = sSnap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => (a.number||0)-(b.number||0));
+  // load topics
+  await loadTopics();
+};
+
+async function loadTopics() {
+  const snap = await getDocs(query(collection(db,"scoreTopics"), where("classId","==",currentClassId)));
+  topics = snap.docs.map(d => ({id: d.id, ...d.data()}));
+  renderTopicsList();
+  if (topics.length > 0) selectTopic(topics[0].id);
+  else {
+    document.getElementById("scoreArea").innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg><p>ยังไม่มีหัวข้อคะแนน กดปุ่ม "+ เพิ่ม" เพื่อสร้าง</p></div>`;
+    document.getElementById("metricsRow").style.display = "none";
+  }
+}
+
+function renderTopicsList() {
+  const el = document.getElementById("topicsList");
+  if (!topics.length) {
+    el.innerHTML = `<div style="padding:12px 10px;font-size:12px;color:var(--muted);">ยังไม่มีหัวข้อ</div>`;
+    return;
+  }
+  el.innerHTML = topics.map(t => `
+    <div class="topic-item ${t.id === currentTopicId ? 'active' : ''}" onclick="selectTopic('${t.id}')">
+      <div class="t-name">${t.title}</div>
+      <div class="t-max">เต็ม ${t.maxScore} คะแนน</div>
+    </div>`).join("");
+}
+
+window.selectTopic = async function(topicId) {
+  currentTopicId = topicId;
+  const topic = topics.find(t => t.id === topicId);
+  if (!topic) return;
+  currentMaxScore = topic.maxScore || 100;
+  renderTopicsList();
+  // load scores
+  const snap = await getDocs(query(collection(db,"scores"), where("topicId","==",topicId), where("classId","==",currentClassId)));
+  scores = {};
+  snap.docs.forEach(d => { const x = d.data(); scores[x.studentId] = x.score; });
+  renderScoreTable(topic);
+  updateMetrics();
+  document.getElementById("metricsRow").style.display = "grid";
+};
+
+function getGrade(score, max) {
+  const pct = (score / max) * 100;
+  if (pct >= 95) return {label:"A+", cls:"g-aplus"};
+  if (pct >= 80) return {label:"A",  cls:"g-a"};
+  if (pct >= 70) return {label:"B",  cls:"g-b"};
+  if (pct >= 60) return {label:"C",  cls:"g-c"};
+  if (pct >= 50) return {label:"D",  cls:"g-d"};
+  return {label:"F", cls:"g-f"};
+}
+
+function scoreColor(score, max) {
+  const pct = (score / max) * 100;
+  if (pct >= 70) return "#1D9E75";
+  if (pct >= 50) return "#EF9F27";
+  return "#E24B4A";
+}
+
+function renderScoreTable(topic) {
+  const isAdmin = userRole === "admin";
+  const area = document.getElementById("scoreArea");
+  if (!students.length) {
+    area.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><p>ยังไม่มีนักเรียนในชั้นนี้</p></div>`;
+    return;
+  }
+  const topicActions = isAdmin
+    ? `<div style="display:flex;gap:8px;margin-bottom:14px;">
+        <button class="btn btn-sm" onclick="openEditTopic('${topic.id}')">
+          <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          แก้ไขหัวข้อ
+        </button>
+        <button class="btn btn-sm btn-danger" onclick="deleteTopic('${topic.id}')">
+          <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          ลบหัวข้อ
+        </button>
+      </div>` : "";
+
+  const rows = students.map(s => {
+    const sc = scores[s.id];
+    const hasScore = sc !== undefined && sc !== null;
+    if (!isAdmin) {
+      const g = hasScore ? getGrade(sc, topic.maxScore) : null;
+      const color = hasScore ? scoreColor(sc, topic.maxScore) : "#9ca3af";
+      const pct = hasScore ? Math.round((sc/topic.maxScore)*100) : 0;
+      return `<tr>
+        <td style="color:var(--muted);font-size:12px;">${s.number||"—"}</td>
+        <td>${s.name}</td>
+        <td>
+          <div class="score-bar-wrap">
+            <span style="font-weight:600;color:${color};min-width:36px;">${hasScore ? sc : '—'}</span>
+            <div class="score-bar"><div class="score-bar-fill" style="width:${pct}%;background:${color};"></div></div>
+          </div>
+        </td>
+        <td>${g ? `<span class="grade-badge ${g.cls}">${g.label}</span>` : '<span class="grade-badge g-none">—</span>'}</td>
+      </tr>`;
+    }
+    return `<tr>
+      <td style="color:var(--muted);font-size:12px;">${s.number||"—"}</td>
+      <td>${s.name}</td>
+      <td>
+        <input class="score-input" type="number" id="sc-${s.id}" min="0" max="${topic.maxScore}"
+          value="${hasScore ? sc : ''}" placeholder="—"
+          oninput="previewGrade('${s.id}',${topic.maxScore})">
+        <span style="font-size:11px;color:var(--muted);margin-left:4px;">/ ${topic.maxScore}</span>
+      </td>
+      <td><span class="grade-badge ${hasScore ? getGrade(sc, topic.maxScore).cls : 'g-none'}" id="grade-${s.id}">${hasScore ? getGrade(sc, topic.maxScore).label : '—'}</span></td>
+    </tr>`;
+  }).join("");
+
+  area.innerHTML = `
+    ${topicActions}
+    <div class="card">
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th style="width:48px;">เลขที่</th>
+            <th>ชื่อ-สกุล</th>
+            <th>คะแนน / ${topic.maxScore}</th>
+            <th>เกรด</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+window.previewGrade = function(sid, max) {
+  const val = parseFloat(document.getElementById("sc-"+sid)?.value);
+  const el = document.getElementById("grade-"+sid);
+  if (!el) return;
+  if (isNaN(val) || val < 0) { el.className="grade-badge g-none"; el.textContent="—"; return; }
+  const g = getGrade(Math.min(val,max), max);
+  el.className = "grade-badge " + g.cls;
+  el.textContent = g.label;
+};
+
+window.saveScores = async function() {
+  if (userRole !== "admin") return;
+  if (!currentTopicId || !currentClassId) { showToast("กรุณาเลือกชั้นเรียนและหัวข้อ","error"); return; }
+  const btn = document.getElementById("saveScoreBtn");
+  btn.disabled = true; btn.textContent = "กำลังบันทึก...";
+  const topic = topics.find(t => t.id === currentTopicId);
+  try {
+    const writes = students.map(s => {
+      const input = document.getElementById("sc-"+s.id);
+      if (!input || input.value === "") return null;
+      const score = Math.min(Math.max(0, parseFloat(input.value)||0), topic.maxScore);
+      return setDoc(doc(db, "scores", `${s.id}_${currentTopicId}`), {
+        studentId: s.id, studentName: s.name, topicId: currentTopicId,
+        score, classId: currentClassId, updatedAt: new Date().toISOString()
+      });
+    }).filter(Boolean);
+    await Promise.all(writes);
+    showToast("บันทึกคะแนนเรียบร้อย ✓", "success");
+    await selectTopic(currentTopicId);
+  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message, "error"); }
+  btn.disabled = false;
+  btn.innerHTML = `<svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:white;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> บันทึกคะแนน`;
+};
+
+function updateMetrics() {
+  const vals = students.map(s => scores[s.id]).filter(v => v !== undefined && v !== null);
+  document.getElementById("mTotal").textContent = students.length;
+  document.getElementById("mAvg").textContent = vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1) : "—";
+  document.getElementById("mPending").textContent = students.length - vals.length;
+}
+
+window.openAddTopic = function() {
+  if (!currentClassId) { showToast("กรุณาเลือกชั้นเรียนก่อน","error"); return; }
+  document.getElementById("topicModalTitle").textContent = "เพิ่มหัวข้อคะแนน";
+  document.getElementById("topicTitle").value = "";
+  document.getElementById("topicMax").value = "100";
+  document.getElementById("editTopicId").value = "";
+  document.getElementById("topicModal").classList.add("open");
+};
+
+window.openEditTopic = function(id) {
+  const t = topics.find(x => x.id === id);
+  if (!t) return;
+  document.getElementById("topicModalTitle").textContent = "แก้ไขหัวข้อ";
+  document.getElementById("topicTitle").value = t.title;
+  document.getElementById("topicMax").value = t.maxScore;
+  document.getElementById("editTopicId").value = id;
+  document.getElementById("topicModal").classList.add("open");
+};
+
+window.closeTopicModal = function() { document.getElementById("topicModal").classList.remove("open"); };
+
+window.saveTopic = async function() {
+  const title = document.getElementById("topicTitle").value.trim();
+  const max   = parseInt(document.getElementById("topicMax").value) || 100;
+  const editId = document.getElementById("editTopicId").value;
+  if (!title) { showToast("กรุณากรอกชื่อหัวข้อ","error"); return; }
+  try {
+    if (editId) {
+      await setDoc(doc(db,"scoreTopics",editId), { title, maxScore: max, classId: currentClassId }, {merge:true});
+    } else {
+      await addDoc(collection(db,"scoreTopics"), { title, maxScore: max, classId: currentClassId, createdAt: new Date().toISOString() });
+    }
+    closeTopicModal();
+    showToast("บันทึกหัวข้อเรียบร้อย ✓","success");
+    await loadTopics();
+  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
+};
+
+window.deleteTopic = async function(id) {
+  if (!confirm("ยืนยันลบหัวข้อนี้? คะแนนทั้งหมดในหัวข้อนี้จะถูกลบด้วย")) return;
+  try {
+    await deleteDoc(doc(db,"scoreTopics",id));
+    // delete all scores in this topic
+    const snap = await getDocs(query(collection(db,"scores"), where("topicId","==",id)));
+    await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+    showToast("ลบหัวข้อเรียบร้อย","success");
+    await loadTopics();
+  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
+};
+
+function showToast(msg, type) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.className = "show " + type;
+  setTimeout(() => { t.className = ""; }, 3000);
+}
+</script>
+</body>
+</html>

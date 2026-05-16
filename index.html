@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>เข้าสู่ระบบ — ระบบจัดการนักเรียน</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --primary: #1a1a2e;
+    --accent: #16213e;
+    --blue: #0f3460;
+    --highlight: #e94560;
+    --text: #1a1a2e;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --radius: 12px;
+    --input-h: 44px;
+  }
+
+  body {
+    font-family: 'Sarabun', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* geometric background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(15,52,96,0.08) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(233,69,96,0.06) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .geo {
+    position: fixed;
+    border: 1px solid rgba(15,52,96,0.08);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .geo-1 { width: 500px; height: 500px; top: -200px; left: -200px; }
+  .geo-2 { width: 300px; height: 300px; bottom: -100px; right: -100px; border-color: rgba(233,69,96,0.1); }
+  .geo-3 { width: 200px; height: 200px; top: 50%; right: 8%; border-color: rgba(15,52,96,0.06); }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 40px 36px;
+    width: 380px;
+    position: relative;
+    z-index: 1;
+    animation: fadeUp 0.4s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .brand-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--blue);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .brand-icon svg {
+    width: 22px;
+    height: 22px;
+    fill: white;
+  }
+
+  .brand-text { line-height: 1.2; }
+  .brand-name { font-size: 15px; font-weight: 600; color: var(--text); }
+  .brand-sub  { font-size: 12px; color: var(--muted); }
+
+  h1 { font-size: 22px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .sub { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
+
+  .field { margin-bottom: 16px; }
+  label { display: block; font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
+
+  input[type="email"],
+  input[type="password"] {
+    width: 100%;
+    height: var(--input-h);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0 14px;
+    font-family: 'Sarabun', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    background: #fafafa;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+
+  input:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(15,52,96,0.08);
+    background: white;
+  }
+
+  .btn-login {
+    width: 100%;
+    height: 46px;
+    background: var(--blue);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Sarabun', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: background 0.2s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .btn-login:hover  { background: #0a2847; }
+  .btn-login:active { transform: scale(0.98); }
+  .btn-login:disabled { background: var(--muted); cursor: not-allowed; }
+
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    display: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .alert {
+    margin-top: 14px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    display: none;
+  }
+  .alert-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #b91c1c;
+  }
+
+  .footer-note {
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 20px;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<div class="geo geo-1"></div>
+<div class="geo geo-2"></div>
+<div class="geo geo-3"></div>
+
+<div class="card">
+  <div class="brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/>
+      </svg>
+    </div>
+    <div class="brand-text">
+      <div class="brand-name">ระบบจัดการนักเรียน</div>
+      <div class="brand-sub">ปีการศึกษา 2568</div>
+    </div>
+  </div>
+
+  <h1>เข้าสู่ระบบ</h1>
+  <p class="sub">กรอกอีเมลและรหัสผ่านที่ได้รับจากผู้ดูแลระบบ</p>
+
+  <div class="field">
+    <label for="email">อีเมล</label>
+    <input type="email" id="email" placeholder="example@school.ac.th" autocomplete="email">
+  </div>
+
+  <div class="field">
+    <label for="password">รหัสผ่าน</label>
+    <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+  </div>
+
+  <button class="btn-login" id="loginBtn" onclick="doLogin()">
+    <span id="btnText">เข้าสู่ระบบ</span>
+    <div class="spinner" id="spinner"></div>
+  </button>
+
+  <div class="alert alert-error" id="alertBox"></div>
+
+  <div class="footer-note">
+    หากไม่มีบัญชีหรือลืมรหัสผ่าน<br>กรุณาติดต่อผู้ดูแลระบบ
+  </div>
+</div>
+
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  // ถ้า login อยู่แล้ว ไปหน้า dashboard เลย
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      const snap = await getDoc(doc(db, "users", user.uid));
+      if (snap.exists()) {
+        sessionStorage.setItem("userRole", snap.data().role);
+        sessionStorage.setItem("userName", snap.data().displayName);
+        sessionStorage.setItem("userId",   user.uid);
+      }
+      window.location.href = "dashboard.html";
+    }
+  });
+
+  window.doLogin = async function () {
+    const email    = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    const btn      = document.getElementById("loginBtn");
+    const spinner  = document.getElementById("spinner");
+    const btnText  = document.getElementById("btnText");
+    const alert    = document.getElementById("alertBox");
+
+    if (!email || !password) {
+      showAlert("กรุณากรอกอีเมลและรหัสผ่าน");
+      return;
+    }
+
+    btn.disabled   = true;
+    spinner.style.display = "block";
+    btnText.textContent   = "กำลังเข้าสู่ระบบ...";
+    alert.style.display   = "none";
+
+    try {
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const snap = await getDoc(doc(db, "users", cred.user.uid));
+
+      if (!snap.exists()) throw new Error("ไม่พบข้อมูลผู้ใช้");
+
+      const data = snap.data();
+      sessionStorage.setItem("userRole", data.role);
+      sessionStorage.setItem("userName", data.displayName);
+      sessionStorage.setItem("userId",   cred.user.uid);
+
+      window.location.href = "dashboard.html";
+    } catch (err) {
+      let msg = "อีเมลหรือรหัสผ่านไม่ถูกต้อง";
+      if (err.code === "auth/too-many-requests") msg = "ลองใหม่ภายหลัง (พยายามเข้าสู่ระบบบ่อยเกินไป)";
+      if (err.message === "ไม่พบข้อมูลผู้ใช้") msg = err.message;
+      showAlert(msg);
+      btn.disabled = false;
+      spinner.style.display = "none";
+      btnText.textContent   = "เข้าสู่ระบบ";
+    }
+  };
+
+  function showAlert(msg) {
+    const el = document.getElementById("alertBox");
+    el.textContent   = msg;
+    el.style.display = "block";
+  }
+
+  // Enter key
+  document.addEventListener("keydown", e => {
+    if (e.key === "Enter") window.doLogin();
+  });
+</script>
+</body>
+</html>

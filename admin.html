@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>จัดการผู้ใช้ — ระบบจัดการนักเรียน</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--bg:#f5f4f0;--surface:#ffffff;--blue:#0f3460;--blue-lt:#e6eef7;--text:#1a1a2e;--muted:#6b7280;--border:rgba(0,0,0,0.08);--radius:12px;--sidebar-w:200px;--topbar-h:56px;}
+body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+.topbar{position:fixed;top:0;left:0;right:0;height:var(--topbar-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:100;}
+.brand{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;color:var(--text);text-decoration:none;}
+.brand-dot{width:32px;height:32px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;}
+.brand-dot svg{width:18px;height:18px;fill:white;}
+.topbar-right{display:flex;align-items:center;gap:14px;}
+.user-info{font-size:13px;display:flex;align-items:center;gap:8px;}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--blue);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;}
+.role-badge{padding:2px 8px;border-radius:99px;font-size:11px;font-weight:500;}
+.role-admin{background:#fef2f2;color:#b91c1c;}.role-user{background:#f0fdf4;color:#166534;}
+.btn-logout{padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:transparent;font-family:'Sarabun',sans-serif;font-size:13px;color:var(--muted);cursor:pointer;}
+.btn-logout:hover{background:var(--bg);}
+.sidebar{position:fixed;top:var(--topbar-h);left:0;bottom:0;width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);padding:16px 10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;}
+.sidebar-label{font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--muted);padding:8px 10px 4px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;font-size:13px;color:var(--muted);text-decoration:none;transition:all .15s;}
+.nav-item svg{width:17px;height:17px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.nav-item:hover{background:var(--bg);color:var(--text);}
+.nav-item.active{background:var(--blue-lt);color:var(--blue);font-weight:500;}
+.nav-sep{height:1px;background:var(--border);margin:8px 0;}
+.main{margin-left:var(--sidebar-w);margin-top:var(--topbar-h);padding:24px;}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.page-title{font-size:20px;font-weight:600;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid var(--border);border-radius:8px;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:500;cursor:pointer;background:var(--surface);color:var(--text);transition:all .15s;}
+.btn:hover{background:var(--bg);}
+.btn:active{transform:scale(.97);}
+.btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.btn-primary{background:var(--blue);color:white;border-color:var(--blue);}
+.btn-primary:hover{background:#0a2847;}
+.btn-danger{background:#fef2f2;color:#b91c1c;border-color:#fecaca;}
+.btn-danger:hover{background:#fee2e2;}
+.btn-sm{padding:5px 10px;font-size:12px;}
+
+/* Access denied */
+.access-denied{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:40px;text-align:center;display:none;}
+.access-denied svg{width:48px;height:48px;stroke:#b91c1c;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;margin-bottom:14px;}
+.access-denied h2{font-size:18px;color:#b91c1c;margin-bottom:8px;}
+.access-denied p{font-size:13px;color:var(--muted);}
+
+/* Tabs */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:24px;}
+.tab{padding:10px 16px;font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted);transition:.15s;background:none;border-left:none;border-right:none;border-top:none;font-family:'Sarabun',sans-serif;}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue);}
+
+/* User cards */
+.users-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+.user-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;transition:.2s;}
+.user-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.06);}
+.uc-top{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+.uc-avatar{width:40px;height:40px;border-radius:50%;background:var(--blue);color:white;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;flex-shrink:0;}
+.uc-info{flex:1;min-width:0;}
+.uc-name{font-size:14px;font-weight:600;truncate:ellipsis;white-space:nowrap;overflow:hidden;}
+.uc-email{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.uc-bottom{display:flex;align-items:center;justify-content:space-between;}
+.role-select{height:32px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-family:'Sarabun',sans-serif;font-size:12px;background:#fafafa;cursor:pointer;outline:none;}
+.role-select:focus{border-color:var(--blue);}
+
+/* Table */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.card-head{padding:14px 18px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between;}
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;padding:10px 12px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--border);background:#fafafa;}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#fafafa;}
+.chip{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:500;}
+.chip-red{background:#fef2f2;color:#b91c1c;}.chip-green{background:#f0fdf4;color:#166534;}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:200;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:white;border-radius:16px;padding:24px 28px;width:440px;max-width:95vw;animation:fadeUp .25s ease;}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:20px;}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;}
+.form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.form-label{font-size:12px;font-weight:500;}
+input[type="text"],input[type="email"],input[type="password"],select.modal-sel{width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-family:'Sarabun',sans-serif;font-size:13px;color:var(--text);background:#fafafa;outline:none;}
+input:focus,select.modal-sel:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);background:white;}
+.info-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;font-size:12px;color:#1e40af;margin-bottom:14px;line-height:1.5;}
+
+#toast{position:fixed;bottom:24px;right:24px;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;}
+#toast.show{opacity:1;transform:translateY(0);}
+#toast.success{background:#052e16;color:#86efac;}
+#toast.error{background:#450a0a;color:#fca5a5;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a href="dashboard.html" class="brand">
+    <div class="brand-dot"><svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg></div>
+    ระบบจัดการนักเรียน
+  </a>
+  <div class="topbar-right">
+    <div class="user-info">
+      <div class="avatar" id="avatarEl">?</div>
+      <span id="userNameEl">ผู้ใช้</span>
+      <span class="role-badge role-admin" id="roleBadgeEl">Admin</span>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">ออกจากระบบ</button>
+  </div>
+</header>
+
+<nav class="sidebar">
+  <div class="sidebar-label">เมนูหลัก</div>
+  <a href="dashboard.html" class="nav-item"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
+  <a href="attendance.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>เช็คชื่อ</a>
+  <a href="score.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>คะแนน</a>
+  <a href="submit.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>ส่งงาน</a>
+  <div class="nav-sep"></div>
+  <div class="sidebar-label">จัดการ</div>
+  <a href="class.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>ชั้นเรียน</a>
+  <a href="admin.html" class="nav-item active"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>จัดการผู้ใช้</a>
+</nav>
+
+<main class="main">
+  <!-- Access denied for non-admins -->
+  <div class="access-denied" id="accessDenied">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+    <h2>ไม่มีสิทธิ์เข้าถึง</h2>
+    <p>หน้านี้สำหรับ Admin เท่านั้น กรุณาติดต่อผู้ดูแลระบบ</p>
+    <br>
+    <a href="dashboard.html" class="btn btn-primary" style="display:inline-flex;margin:0 auto;">กลับหน้าหลัก</a>
+  </div>
+
+  <!-- Admin content -->
+  <div id="adminContent" style="display:none;">
+    <div class="page-header">
+      <div class="page-title">จัดการผู้ใช้งาน</div>
+      <button class="btn btn-primary" onclick="openAddUser()">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        เพิ่มผู้ใช้ใหม่
+      </button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" id="tabUsers" onclick="switchTab('users')">ผู้ใช้ทั้งหมด</button>
+      <button class="tab" id="tabActivity" onclick="switchTab('activity')">สรุปสิทธิ์</button>
+    </div>
+
+    <!-- Users tab -->
+    <div id="panelUsers">
+      <div class="users-grid" id="usersGrid">
+        <div style="color:var(--muted);font-size:13px;">กำลังโหลด...</div>
+      </div>
+    </div>
+
+    <!-- Activity/summary tab -->
+    <div id="panelActivity" style="display:none;">
+      <div class="card">
+        <div class="card-head">
+          สรุปสิทธิ์ผู้ใช้งาน
+          <span id="userCountBadge" style="font-size:12px;color:var(--muted);font-weight:400;"></span>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>ชื่อ</th>
+              <th>อีเมล</th>
+              <th>สิทธิ์</th>
+              <th>วันที่สร้าง</th>
+              <th>จัดการ</th>
+            </tr></thead>
+            <tbody id="activityTbody">
+              <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">กำลังโหลด...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Add User Modal -->
+<div class="modal-overlay" id="userModal">
+  <div class="modal">
+    <div class="modal-title">เพิ่มผู้ใช้ใหม่</div>
+    <div class="info-box">
+      ⓘ การเพิ่มผู้ใช้จะสร้างบัญชี Firebase Authentication พร้อมข้อมูลใน Firestore<br>
+      ผู้ใช้สามารถ login ด้วยอีเมล/รหัสผ่านที่กำหนด
+    </div>
+    <div class="form-group">
+      <label class="form-label">ชื่อ-นามสกุล / ชื่อที่แสดง</label>
+      <input type="text" id="newUserName" placeholder="ชื่อผู้ใช้">
+    </div>
+    <div class="form-group">
+      <label class="form-label">อีเมล</label>
+      <input type="email" id="newUserEmail" placeholder="example@school.ac.th">
+    </div>
+    <div class="form-group">
+      <label class="form-label">รหัสผ่านเริ่มต้น</label>
+      <input type="password" id="newUserPass" placeholder="อย่างน้อย 6 ตัวอักษร">
+    </div>
+    <div class="form-group">
+      <label class="form-label">บทบาท</label>
+      <select class="modal-sel" id="newUserRole">
+        <option value="user">User — ดูข้อมูลอย่างเดียว</option>
+        <option value="admin">Admin — เพิ่ม/แก้ไข/ลบได้</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeUserModal()">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="createUser()">สร้างบัญชี</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Role Modal -->
+<div class="modal-overlay" id="roleModal">
+  <div class="modal">
+    <div class="modal-title">แก้ไขสิทธิ์ผู้ใช้</div>
+    <div class="form-group">
+      <label class="form-label">ผู้ใช้</label>
+      <input type="text" id="editUserDisplay" disabled style="background:#f3f4f6;color:var(--muted);">
+    </div>
+    <div class="form-group">
+      <label class="form-label">สิทธิ์</label>
+      <select class="modal-sel" id="editUserRole">
+        <option value="user">User — ดูข้อมูลอย่างเดียว</option>
+        <option value="admin">Admin — เพิ่ม/แก้ไข/ลบได้</option>
+      </select>
+    </div>
+    <input type="hidden" id="editUserId">
+    <div class="modal-footer">
+      <button class="btn" onclick="closeRoleModal()">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveRole()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, updateProfile }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  getFirestore, collection, doc, getDocs, setDoc, deleteDoc, query, orderBy
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY", authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID", storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID", appId: "YOUR_APP_ID"
+};
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+let userRole = "", users = [], currentTab = "users";
+
+onAuthStateChanged(auth, async user => {
+  if (!user) { window.location.href = "index.html"; return; }
+  userRole = sessionStorage.getItem("userRole") || "user";
+  const name = sessionStorage.getItem("userName") || user.email;
+  document.getElementById("avatarEl").textContent = name.charAt(0).toUpperCase();
+  document.getElementById("userNameEl").textContent = name;
+
+  if (userRole !== "admin") {
+    document.getElementById("accessDenied").style.display = "block";
+    return;
+  }
+  document.getElementById("adminContent").style.display = "block";
+  document.getElementById("adminNavItem") && (document.getElementById("adminNavItem").style.display = "flex");
+  await loadUsers();
+});
+
+window.doLogout = async () => { await signOut(auth); sessionStorage.clear(); window.location.href = "index.html"; };
+
+async function loadUsers() {
+  const snap = await getDocs(collection(db, "users"));
+  users = snap.docs.map(d => ({id: d.id, ...d.data()}));
+  users.sort((a,b) => (a.displayName||"").localeCompare(b.displayName||"","th"));
+  renderUsers();
+  renderActivity();
+  document.getElementById("userCountBadge").textContent = `${users.length} บัญชี`;
+}
+
+function renderUsers() {
+  const grid = document.getElementById("usersGrid");
+  if (!users.length) {
+    grid.innerHTML = `<div style="color:var(--muted);font-size:13px;grid-column:1/-1;">ยังไม่มีผู้ใช้งาน</div>`;
+    return;
+  }
+  grid.innerHTML = users.map(u => `
+    <div class="user-card">
+      <div class="uc-top">
+        <div class="uc-avatar">${(u.displayName||u.email||"?").charAt(0).toUpperCase()}</div>
+        <div class="uc-info">
+          <div class="uc-name">${u.displayName||"ไม่ระบุชื่อ"}</div>
+          <div class="uc-email">${u.email||"—"}</div>
+        </div>
+        <span class="chip ${u.role==="admin"?"chip-red":"chip-green"}">${u.role==="admin"?"Admin":"User"}</span>
+      </div>
+      <div class="uc-bottom">
+        <div style="font-size:11px;color:var(--muted);">
+          สร้าง: ${u.createdAt ? new Date(u.createdAt).toLocaleDateString("th-TH",{day:"2-digit",month:"short",year:"numeric"}) : "—"}
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-sm" onclick="openEditRole('${u.id}')">
+            <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            สิทธิ์
+          </button>
+          <button class="btn btn-sm btn-danger" onclick="removeUser('${u.id}','${u.displayName||u.email}')">
+            <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>`).join("");
+}
+
+function renderActivity() {
+  const tbody = document.getElementById("activityTbody");
+  const admins = users.filter(u => u.role === "admin").length;
+  const regular = users.filter(u => u.role !== "admin").length;
+  if (!users.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">ยังไม่มีผู้ใช้</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = users.map(u => `<tr>
+    <td>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="avatar" style="width:28px;height:28px;font-size:11px;">${(u.displayName||"?").charAt(0).toUpperCase()}</div>
+        ${u.displayName||"—"}
+      </div>
+    </td>
+    <td style="color:var(--muted);font-size:12px;">${u.email||"—"}</td>
+    <td><span class="chip ${u.role==="admin"?"chip-red":"chip-green"}">${u.role==="admin"?"Admin":"User"}</span></td>
+    <td style="font-size:12px;color:var(--muted);">${u.createdAt ? new Date(u.createdAt).toLocaleDateString("th-TH") : "—"}</td>
+    <td>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-sm" onclick="openEditRole('${u.id}')">แก้ไขสิทธิ์</button>
+        <button class="btn btn-sm btn-danger" onclick="removeUser('${u.id}','${u.displayName||u.email}')">ลบ</button>
+      </div>
+    </td>
+  </tr>`).join("");
+}
+
+window.switchTab = function(tab) {
+  currentTab = tab;
+  document.getElementById("tabUsers").classList.toggle("active", tab==="users");
+  document.getElementById("tabActivity").classList.toggle("active", tab==="activity");
+  document.getElementById("panelUsers").style.display = tab==="users" ? "block" : "none";
+  document.getElementById("panelActivity").style.display = tab==="activity" ? "block" : "none";
+};
+
+// CREATE USER
+window.openAddUser = function() { document.getElementById("userModal").classList.add("open"); };
+window.closeUserModal = function() { document.getElementById("userModal").classList.remove("open"); };
+
+window.createUser = async function() {
+  const name  = document.getElementById("newUserName").value.trim();
+  const email = document.getElementById("newUserEmail").value.trim();
+  const pass  = document.getElementById("newUserPass").value;
+  const role  = document.getElementById("newUserRole").value;
+  if (!name || !email || !pass) { showToast("กรุณากรอกข้อมูลให้ครบ","error"); return; }
+  if (pass.length < 6) { showToast("รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร","error"); return; }
+
+  // Note: createUserWithEmailAndPassword will sign in as the new user.
+  // A proper implementation uses Firebase Admin SDK (Cloud Function).
+  // Here we create the user then re-sign in the admin.
+  const adminUser = auth.currentUser;
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    await updateProfile(cred.user, {displayName: name});
+    await setDoc(doc(db,"users",cred.user.uid), {
+      email, displayName: name, role, createdAt: new Date().toISOString()
+    });
+    // Re-sign-in admin won't work client-side; show notice
+    showToast("สร้างบัญชีเรียบร้อย (คุณอาจต้องล็อกอินใหม่)","success");
+    closeUserModal();
+    await loadUsers();
+  } catch(e) {
+    let msg = e.message;
+    if (e.code === "auth/email-already-in-use") msg = "อีเมลนี้มีบัญชีอยู่แล้ว";
+    if (e.code === "auth/invalid-email") msg = "รูปแบบอีเมลไม่ถูกต้อง";
+    showToast(msg,"error");
+  }
+};
+
+// EDIT ROLE
+window.openEditRole = function(id) {
+  const u = users.find(x => x.id === id);
+  if (!u) return;
+  document.getElementById("editUserDisplay").value = `${u.displayName||"—"} (${u.email||"—"})`;
+  document.getElementById("editUserRole").value = u.role||"user";
+  document.getElementById("editUserId").value = id;
+  document.getElementById("roleModal").classList.add("open");
+};
+window.closeRoleModal = function() { document.getElementById("roleModal").classList.remove("open"); };
+
+window.saveRole = async function() {
+  const id   = document.getElementById("editUserId").value;
+  const role = document.getElementById("editUserRole").value;
+  try {
+    await setDoc(doc(db,"users",id), {role},{merge:true});
+    closeRoleModal();
+    showToast("อัพเดตสิทธิ์เรียบร้อย ✓","success");
+    await loadUsers();
+  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
+};
+
+// DELETE USER (Firestore record only — Auth deletion requires Admin SDK)
+window.removeUser = async function(id, name) {
+  if (!confirm(`ยืนยันลบบัญชี "${name}"?\nหมายเหตุ: ข้อมูลใน Firestore จะถูกลบ แต่บัญชี Authentication ต้องลบผ่าน Firebase Console หรือ Admin SDK`)) return;
+  try {
+    await deleteDoc(doc(db,"users",id));
+    showToast("ลบข้อมูลผู้ใช้เรียบร้อย","success");
+    await loadUsers();
+  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
+};
+
+function showToast(msg, type) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.className = "show " + type;
+  setTimeout(() => { t.className = ""; }, 3500);
+}
+</script>
+</body>
+</html>

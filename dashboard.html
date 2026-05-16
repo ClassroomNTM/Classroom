@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — ระบบจัดการนักเรียน</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f5f4f0; --surface: #ffffff; --blue: #0f3460; --blue-lt: #e6eef7;
+  --text: #1a1a2e; --muted: #6b7280; --border: rgba(0,0,0,0.08);
+  --radius: 12px; --sidebar-w: 200px; --topbar-h: 56px;
+}
+body { font-family:'Sarabun',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+/* topbar */
+.topbar { position:fixed; top:0; left:0; right:0; height:var(--topbar-h); background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 20px; z-index:100; }
+.brand { display:flex; align-items:center; gap:10px; font-size:15px; font-weight:600; color:var(--text); text-decoration:none; }
+.brand-dot { width:32px; height:32px; background:var(--blue); border-radius:8px; display:flex; align-items:center; justify-content:center; }
+.brand-dot svg { width:18px; height:18px; fill:white; }
+.topbar-right { display:flex; align-items:center; gap:14px; }
+.user-info { font-size:13px; color:var(--text); display:flex; align-items:center; gap:8px; }
+.avatar { width:32px; height:32px; border-radius:50%; background:var(--blue); color:white; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; }
+.role-badge { padding:2px 8px; border-radius:99px; font-size:11px; font-weight:500; }
+.role-admin { background:#fef2f2; color:#b91c1c; }
+.role-user  { background:#f0fdf4; color:#166534; }
+.btn-logout { padding:6px 12px; border:1px solid var(--border); border-radius:8px; background:transparent; font-family:'Sarabun',sans-serif; font-size:13px; color:var(--muted); cursor:pointer; }
+.btn-logout:hover { background:var(--bg); }
+
+/* sidebar */
+.sidebar { position:fixed; top:var(--topbar-h); left:0; bottom:0; width:var(--sidebar-w); background:var(--surface); border-right:1px solid var(--border); padding:16px 10px; display:flex; flex-direction:column; gap:2px; overflow-y:auto; }
+.sidebar-label { font-size:10px; font-weight:600; letter-spacing:.08em; color:var(--muted); padding:8px 10px 4px; text-transform:uppercase; }
+.nav-item { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:8px; font-size:13px; color:var(--muted); text-decoration:none; transition:all .15s; }
+.nav-item svg { width:17px; height:17px; flex-shrink:0; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.nav-item:hover { background:var(--bg); color:var(--text); }
+.nav-item.active { background:var(--blue-lt); color:var(--blue); font-weight:500; }
+.nav-sep { height:1px; background:var(--border); margin:8px 0; }
+
+/* main */
+.main { margin-left:var(--sidebar-w); margin-top:var(--topbar-h); padding:24px; }
+.page-title { font-size:20px; font-weight:600; margin-bottom:4px; }
+.page-sub { font-size:13px; color:var(--muted); margin-bottom:20px; }
+
+/* metrics */
+.metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+.metric { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; }
+.m-label { font-size:11px; color:var(--muted); margin-bottom:6px; display:flex; align-items:center; gap:5px; }
+.m-label svg { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.m-val { font-size:28px; font-weight:600; line-height:1; }
+.m-sub { font-size:11px; margin-top:5px; }
+.up { color:#166534; } .dn { color:#b91c1c; }
+
+/* grid rows */
+.row2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+.row3 { display:grid; grid-template-columns:3fr 2fr; gap:16px; margin-bottom:16px; }
+.card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; }
+.card-head { font-size:13px; font-weight:600; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; }
+.card-head span { font-size:11px; font-weight:400; color:var(--muted); }
+
+/* notif */
+.notif { display:flex; align-items:flex-start; gap:10px; padding:9px 0; border-bottom:1px solid var(--border); }
+.notif:last-child { border-bottom:none; }
+.notif-ico { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:14px; }
+.notif-body { flex:1; }
+.notif-text { font-size:12px; line-height:1.4; }
+.notif-time { font-size:10px; color:var(--muted); margin-top:2px; }
+
+/* progress bars */
+.prog-row { margin-bottom:10px; }
+.prog-row:last-child { margin-bottom:0; }
+.prog-label { display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px; }
+.prog-label b { font-weight:500; }
+.prog-bar { height:6px; background:#f3f4f6; border-radius:99px; overflow:hidden; }
+.prog-fill { height:100%; border-radius:99px; }
+
+/* table */
+.tbl-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:12px; }
+th { text-align:left; padding:8px 10px; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); border-bottom:1px solid var(--border); }
+td { padding:9px 10px; border-bottom:1px solid var(--border); vertical-align:middle; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:#fafafa; }
+.chip { display:inline-flex; align-items:center; padding:2px 8px; border-radius:99px; font-size:10px; font-weight:500; }
+.chip-green { background:#f0fdf4; color:#166534; }
+.chip-red   { background:#fef2f2; color:#b91c1c; }
+.chip-amber { background:#fffbeb; color:#92400e; }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <a href="dashboard.html" class="brand">
+    <div class="brand-dot">
+      <svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg>
+    </div>
+    ระบบจัดการนักเรียน
+  </a>
+  <div class="topbar-right">
+    <div class="user-info">
+      <div class="avatar" id="avatarEl">?</div>
+      <span id="userNameEl">ผู้ใช้</span>
+      <span class="role-badge role-admin" id="roleBadgeEl">—</span>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">ออกจากระบบ</button>
+  </div>
+</header>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-label">เมนูหลัก</div>
+  <a href="dashboard.html"  class="nav-item active">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Dashboard
+  </a>
+  <a href="attendance.html" class="nav-item">
+    <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+    เช็คชื่อ
+  </a>
+  <a href="score.html" class="nav-item">
+    <svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+    คะแนน
+  </a>
+  <a href="submit.html" class="nav-item">
+    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    ส่งงาน
+  </a>
+  <div class="nav-sep"></div>
+  <div class="sidebar-label">จัดการ</div>
+  <a href="class.html" class="nav-item">
+    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    ชั้นเรียน
+  </a>
+  <a href="admin.html" class="nav-item" id="adminNavItem" style="display:none;">
+    <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+    จัดการผู้ใช้
+  </a>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="page-title">Dashboard</div>
+  <div class="page-sub" id="dateSubEl">ภาพรวมระบบ</div>
+
+  <!-- Metrics -->
+  <div class="metrics" id="metricsEl">
+    <div class="metric">
+      <div class="m-label"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>นักเรียนทั้งหมด</div>
+      <div class="m-val" id="totalStudents">—</div>
+      <div class="m-sub" id="totalClasses" style="color:var(--muted);">— ชั้นเรียน</div>
+    </div>
+    <div class="metric">
+      <div class="m-label"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>มาเรียนวันนี้</div>
+      <div class="m-val" id="todayPresent">—</div>
+      <div class="m-sub up" id="attendPct">—%</div>
+    </div>
+    <div class="metric">
+      <div class="m-label"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>คะแนนเฉลี่ย</div>
+      <div class="m-val" id="avgScore">—</div>
+      <div class="m-sub" style="color:var(--muted);">จากทุกหัวข้อ</div>
+    </div>
+    <div class="metric">
+      <div class="m-label"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>ส่งงานแล้ว</div>
+      <div class="m-val" id="submitCount">—</div>
+      <div class="m-sub dn" id="pendingCount">ค้าง — คน</div>
+    </div>
+  </div>
+
+  <div class="row2">
+    <!-- Chart: Attendance 7 days -->
+    <div class="card">
+      <div class="card-head">การมาเรียน 7 วันล่าสุด <span id="attendChartSub"></span></div>
+      <div style="position:relative;height:180px;">
+        <canvas id="attendChart" role="img" aria-label="กราฟการมาเรียน 7 วันล่าสุด"></canvas>
+      </div>
+      <div style="display:flex;gap:14px;margin-top:10px;font-size:11px;color:var(--muted);">
+        <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#1D9E75;display:inline-block;"></span>มาเรียน</span>
+        <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#E24B4A;display:inline-block;"></span>ขาด/สาย</span>
+      </div>
+    </div>
+
+    <!-- Chart: Submit donut -->
+    <div class="card">
+      <div class="card-head">สถานะการส่งงาน <span>ภาคเรียนนี้</span></div>
+      <div style="position:relative;height:180px;">
+        <canvas id="submitChart" role="img" aria-label="กราฟสถานะการส่งงาน"></canvas>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:10px;font-size:11px;color:var(--muted);flex-wrap:wrap;">
+        <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#1D9E75;display:inline-block;"></span>ส่งแล้ว</span>
+        <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#EF9F27;display:inline-block;"></span>ค้างส่ง</span>
+        <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#E24B4A;display:inline-block;"></span>เลยกำหนด</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row3">
+    <!-- Score progress per class -->
+    <div class="card">
+      <div class="card-head">คะแนนเฉลี่ยแต่ละชั้น <span>กลางภาค</span></div>
+      <div id="progressBars"><p style="color:var(--muted);font-size:13px;">กำลังโหลด...</p></div>
+    </div>
+
+    <!-- Notifications -->
+    <div class="card">
+      <div class="card-head">แจ้งเตือนล่าสุด</div>
+      <div id="notifsEl">
+        <div class="notif">
+          <div class="notif-ico" style="background:#f0fdf4;color:#166534;">✓</div>
+          <div class="notif-body"><div class="notif-text">กำลังโหลดข้อมูล...</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Watch list -->
+  <div class="card">
+    <div class="card-head">นักเรียนที่ต้องติดตาม <span>ขาดบ่อย / คะแนนต่ำ</span></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ชื่อ-สกุล</th>
+            <th>ชั้น</th>
+            <th>การเข้าเรียน</th>
+            <th>คะแนนเฉลี่ย</th>
+            <th>สถานะ</th>
+          </tr>
+        </thead>
+        <tbody id="watchTbody">
+          <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">กำลังโหลด...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script type="module">
+import { initializeApp }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, getDocs, query, where, orderBy, limit, Timestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+const days = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
+const today = new Date();
+
+// ── Auth Guard ──
+onAuthStateChanged(auth, async (user) => {
+  if (!user) { window.location.href = "index.html"; return; }
+
+  const role = sessionStorage.getItem("userRole") || "user";
+  const name = sessionStorage.getItem("userName") || user.email;
+  const initials = name.substring(0,2);
+
+  document.getElementById("avatarEl").textContent    = initials;
+  document.getElementById("userNameEl").textContent  = name;
+  const badge = document.getElementById("roleBadgeEl");
+  badge.textContent  = role === "admin" ? "Admin" : "User";
+  badge.className    = "role-badge " + (role === "admin" ? "role-admin" : "role-user");
+  if (role === "admin") document.getElementById("adminNavItem").style.display = "flex";
+
+  document.getElementById("dateSubEl").textContent =
+    "ภาพรวมระบบ · " + today.toLocaleDateString("th-TH", {weekday:"long",year:"numeric",month:"long",day:"numeric"});
+
+  await loadDashboard();
+});
+
+window.doLogout = async function() {
+  await signOut(auth);
+  sessionStorage.clear();
+  window.location.href = "index.html";
+};
+
+async function loadDashboard() {
+  try {
+    // Students & Classes
+    const studentSnap = await getDocs(collection(db,"students"));
+    const classSnap   = await getDocs(collection(db,"classes"));
+    const students    = studentSnap.docs.map(d=>({id:d.id,...d.data()}));
+    const classes     = classSnap.docs.map(d=>({id:d.id,...d.data()}));
+
+    document.getElementById("totalStudents").textContent = students.length;
+    document.getElementById("totalClasses").textContent  = classes.length + " ชั้นเรียน";
+
+    // Today attendance
+    const todayStr = today.toISOString().split("T")[0];
+    const attSnap  = await getDocs(query(collection(db,"attendance"), where("date","==",todayStr)));
+    const attRecs  = attSnap.docs.map(d=>d.data());
+    const present  = attRecs.filter(r=>r.status==="present").length;
+    const pct      = students.length ? Math.round(present/students.length*100) : 0;
+    document.getElementById("todayPresent").textContent = present;
+    document.getElementById("attendPct").textContent    = pct + "% ของทั้งหมด";
+
+    // Scores average
+    const scoreSnap = await getDocs(collection(db,"scores"));
+    const scores    = scoreSnap.docs.map(d=>d.data());
+    const avgScore  = scores.length
+      ? (scores.reduce((s,r)=>s+(r.score||0),0)/scores.length).toFixed(1)
+      : "—";
+    document.getElementById("avgScore").textContent = avgScore;
+
+    // Submissions
+    const subSnap   = await getDocs(collection(db,"submissions"));
+    const subs      = subSnap.docs.map(d=>d.data());
+    const submitted = subs.filter(s=>s.status==="submitted").length;
+    const pending   = students.length - submitted;
+    document.getElementById("submitCount").textContent = submitted;
+    document.getElementById("pendingCount").textContent = "ค้าง " + Math.max(0,pending) + " คน";
+
+    // Attendance chart (7 days)
+    await buildAttendChart(students.length);
+
+    // Submit donut
+    const late = subs.filter(s=>s.status==="late").length;
+    const pend = Math.max(0, students.length - submitted - late);
+    buildSubmitChart(submitted, pend, late);
+
+    // Progress bars per class
+    buildProgressBars(classes, scores, students);
+
+    // Notifications (recent attendance issues)
+    buildNotifs(attRecs, students);
+
+    // Watch list
+    buildWatchList(students, attRecs, scores);
+
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+async function buildAttendChart(total) {
+  const labels = [], presentData = [], absentData = [];
+  for (let i=6; i>=0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate()-i);
+    const ds = d.toISOString().split("T")[0];
+    const snap = await getDocs(query(collection(db,"attendance"),where("date","==",ds)));
+    const recs = snap.docs.map(x=>x.data());
+    const p = recs.filter(r=>r.status==="present").length;
+    labels.push(days[d.getDay()]);
+    presentData.push(p);
+    absentData.push(Math.max(0,total-p));
+  }
+  const isDark = false;
+  const gc = "rgba(0,0,0,0.05)";
+  const tc = "#6b7280";
+  new Chart(document.getElementById("attendChart"),{
+    type:"bar",
+    data:{
+      labels,
+      datasets:[
+        {label:"มาเรียน",data:presentData,backgroundColor:"#1D9E75",borderRadius:4,stack:"s"},
+        {label:"ขาด/สาย",data:absentData,backgroundColor:"#E24B4A",borderRadius:4,stack:"s"}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{stacked:true,ticks:{color:tc,font:{size:11,family:"Sarabun"}},grid:{display:false}},
+        y:{stacked:true,ticks:{color:tc,font:{size:11,family:"Sarabun"}},grid:{color:gc},beginAtZero:true}
+      }
+    }
+  });
+}
+
+function buildSubmitChart(submitted, pending, late) {
+  new Chart(document.getElementById("submitChart"),{
+    type:"doughnut",
+    data:{
+      labels:["ส่งแล้ว","ค้างส่ง","เลยกำหนด"],
+      datasets:[{data:[submitted,pending,late],backgroundColor:["#1D9E75","#EF9F27","#E24B4A"],borderWidth:0,hoverOffset:4}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,cutout:"68%",plugins:{legend:{display:false}}}
+  });
+}
+
+function buildProgressBars(classes, scores, students) {
+  const el = document.getElementById("progressBars");
+  if (!classes.length) { el.innerHTML = '<p style="color:var(--muted);font-size:13px;">ยังไม่มีข้อมูลชั้นเรียน</p>'; return; }
+  el.innerHTML = classes.slice(0,6).map(cls => {
+    const classScores = scores.filter(s=>s.classId===cls.id);
+    const avg = classScores.length
+      ? Math.round(classScores.reduce((a,b)=>a+(b.score||0),0)/classScores.length)
+      : 0;
+    const color = avg>=70?"#1D9E75":avg>=50?"#EF9F27":"#E24B4A";
+    return `<div class="prog-row">
+      <div class="prog-label"><span>${cls.name}</span><b>${avg} / 100</b></div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${avg}%;background:${color};"></div></div>
+    </div>`;
+  }).join("");
+}
+
+function buildNotifs(attRecs, students) {
+  const absent = attRecs.filter(r=>r.status==="absent");
+  const el = document.getElementById("notifsEl");
+  if (!absent.length) {
+    el.innerHTML = `<div class="notif"><div class="notif-ico" style="background:#f0fdf4;color:#166534;">✓</div><div class="notif-body"><div class="notif-text">นักเรียนมาเรียนครบทุกคนวันนี้</div></div></div>`;
+    return;
+  }
+  el.innerHTML = absent.slice(0,4).map(r=>`
+    <div class="notif">
+      <div class="notif-ico" style="background:#fef2f2;color:#b91c1c;">!</div>
+      <div class="notif-body">
+        <div class="notif-text">${r.studentName} ขาดเรียน${r.note?" ("+r.note+")":""}</div>
+        <div class="notif-time">วันนี้</div>
+      </div>
+    </div>`).join("");
+}
+
+function buildWatchList(students, attRecs, scores) {
+  const tbody = document.getElementById("watchTbody");
+  if (!students.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">ยังไม่มีข้อมูลนักเรียน</td></tr>';
+    return;
+  }
+  const rows = students.slice(0,5).map(s => {
+    const sScores  = scores.filter(x=>x.studentId===s.id);
+    const avg      = sScores.length ? Math.round(sScores.reduce((a,b)=>a+(b.score||0),0)/sScores.length) : null;
+    const att      = attRecs.filter(x=>x.studentId===s.id);
+    const present  = att.filter(x=>x.status==="present").length;
+    const pct      = att.length ? Math.round(present/att.length*100) : 100;
+    const status   = (pct<80||avg<50)
+      ? '<span class="chip chip-red">ต้องติดตาม</span>'
+      : pct<90
+        ? '<span class="chip chip-amber">เฝ้าระวัง</span>'
+        : '<span class="chip chip-green">ปกติ</span>';
+    return `<tr>
+      <td>${s.name}</td>
+      <td>${s.className||"—"}</td>
+      <td style="color:${pct<80?"#b91c1c":pct<90?"#92400e":"#166534"}">${pct}%</td>
+      <td>${avg??'—'}</td>
+      <td>${status}</td>
+    </tr>`;
+  }).join("");
+  tbody.innerHTML = rows;
+}
+</script>
+</body>
+</html>
