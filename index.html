@@ -11,8 +11,6 @@
   :root {
     --bg: #f5f4f0;
     --surface: #ffffff;
-    --primary: #1a1a2e;
-    --accent: #16213e;
     --blue: #0f3460;
     --highlight: #e94560;
     --text: #1a1a2e;
@@ -33,7 +31,6 @@
     overflow: hidden;
   }
 
-  /* geometric background */
   body::before {
     content: '';
     position: fixed;
@@ -44,12 +41,7 @@
     pointer-events: none;
   }
 
-  .geo {
-    position: fixed;
-    border: 1px solid rgba(15,52,96,0.08);
-    border-radius: 50%;
-    pointer-events: none;
-  }
+  .geo { position: fixed; border: 1px solid rgba(15,52,96,0.08); border-radius: 50%; pointer-events: none; }
   .geo-1 { width: 500px; height: 500px; top: -200px; left: -200px; }
   .geo-2 { width: 300px; height: 300px; bottom: -100px; right: -100px; border-color: rgba(233,69,96,0.1); }
   .geo-3 { width: 200px; height: 200px; top: 50%; right: 8%; border-color: rgba(15,52,96,0.06); }
@@ -78,21 +70,12 @@
   }
 
   .brand-icon {
-    width: 40px;
-    height: 40px;
+    width: 40px; height: 40px;
     background: var(--blue);
     border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: flex; align-items: center; justify-content: center;
   }
-
-  .brand-icon svg {
-    width: 22px;
-    height: 22px;
-    fill: white;
-  }
-
+  .brand-icon svg { width: 22px; height: 22px; fill: white; }
   .brand-text { line-height: 1.2; }
   .brand-name { font-size: 15px; font-weight: 600; color: var(--text); }
   .brand-sub  { font-size: 12px; color: var(--muted); }
@@ -142,11 +125,54 @@
     justify-content: center;
     gap: 8px;
   }
-
   .btn-login:hover  { background: #0a2847; }
   .btn-login:active { transform: scale(0.98); }
   .btn-login:disabled { background: var(--muted); cursor: not-allowed; }
 
+  /* ── Divider ── */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 18px 0;
+  }
+  .divider::before,
+  .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+  .divider span { font-size: 12px; color: var(--muted); white-space: nowrap; }
+
+  /* ── Google Button ── */
+  .btn-google {
+    width: 100%;
+    height: 46px;
+    background: white;
+    color: #3c4043;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: 'Sarabun', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .btn-google:hover {
+    background: #f8f9fa;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+  }
+  .btn-google:active { transform: scale(0.98); }
+  .btn-google:disabled { opacity: 0.6; cursor: not-allowed; }
+  .btn-google svg { width: 20px; height: 20px; flex-shrink: 0; }
+
+  /* ── Spinner ── */
   .spinner {
     width: 18px; height: 18px;
     border: 2px solid rgba(255,255,255,0.3);
@@ -155,8 +181,17 @@
     animation: spin 0.6s linear infinite;
     display: none;
   }
+  .spinner-dark {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(0,0,0,0.15);
+    border-top-color: #3c4043;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    display: none;
+  }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  /* ── Alert ── */
   .alert {
     margin-top: 14px;
     padding: 10px 14px;
@@ -164,11 +199,8 @@
     font-size: 13px;
     display: none;
   }
-  .alert-error {
-    background: #fef2f2;
-    border: 1px solid #fecaca;
-    color: #b91c1c;
-  }
+  .alert-error   { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
+  .alert-warning { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
 
   .footer-note {
     text-align: center;
@@ -188,9 +220,7 @@
 <div class="card">
   <div class="brand">
     <div class="brand-icon">
-      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/>
-      </svg>
+      <svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg>
     </div>
     <div class="brand-text">
       <div class="brand-name">ระบบจัดการนักเรียน</div>
@@ -200,6 +230,20 @@
 
   <h1>เข้าสู่ระบบ</h1>
   <p class="sub">กรอกอีเมลและรหัสผ่านที่ได้รับจากผู้ดูแลระบบ</p>
+
+  <!-- Google Sign-In -->
+  <button class="btn-google" id="googleBtn" onclick="doGoogleLogin()">
+    <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+    </svg>
+    <span id="googleBtnText">เข้าสู่ระบบด้วย Google</span>
+    <div class="spinner-dark" id="googleSpinner"></div>
+  </button>
+
+  <div class="divider"><span>หรือ</span></div>
 
   <div class="field">
     <label for="email">อีเมล</label>
@@ -217,94 +261,150 @@
   </button>
 
   <div class="alert alert-error" id="alertBox"></div>
+  <div class="alert alert-warning" id="alertWarn"></div>
 
   <div class="footer-note">
     หากไม่มีบัญชีหรือลืมรหัสผ่าน<br>กรุณาติดต่อผู้ดูแลระบบ
   </div>
 </div>
 
-<!-- Firebase -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth, signInWithEmailAndPassword, onAuthStateChanged }
-    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc }
+  import {
+    getAuth,
+    signInWithEmailAndPassword,
+    signInWithPopup,
+    GoogleAuthProvider,
+    onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc, setDoc, serverTimestamp }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyCBXMi3sy-3iDDzHDXVvlmaa6szcmnFbwQ",
+    authDomain: "classroom-93c8b.firebaseapp.com",
+    projectId: "classroom-93c8b",
+    storageBucket: "classroom-93c8b.firebasestorage.app",
+    messagingSenderId: "659092749098",
+    appId: "1:659092749098:web:36f249557c4badc088fc53",
+    measurementId: "G-EXJVCH9Z4S"
   };
 
-  const app  = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db   = getFirestore(app);
+  const app      = initializeApp(firebaseConfig);
+  const auth     = getAuth(app);
+  const db       = getFirestore(app);
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: "select_account" });
 
-  // ถ้า login อยู่แล้ว ไปหน้า dashboard เลย
+  // ── ถ้า login อยู่แล้ว → ไป dashboard ──
   onAuthStateChanged(auth, async (user) => {
     if (user) {
-      const snap = await getDoc(doc(db, "users", user.uid));
-      if (snap.exists()) {
-        sessionStorage.setItem("userRole", snap.data().role);
-        sessionStorage.setItem("userName", snap.data().displayName);
-        sessionStorage.setItem("userId",   user.uid);
-      }
+      await loadAndStoreUser(user);
       window.location.href = "dashboard.html";
     }
   });
 
+  // ── helper: ดึงข้อมูลผู้ใช้จาก Firestore ──
+  async function loadAndStoreUser(user) {
+    const snap = await getDoc(doc(db, "users", user.uid));
+    if (snap.exists()) {
+      const data = snap.data();
+      sessionStorage.setItem("userRole", data.role || "user");
+      sessionStorage.setItem("userName", data.displayName || user.displayName || user.email);
+      sessionStorage.setItem("userId",   user.uid);
+    } else {
+      // ผู้ใช้ใหม่ (Google) — สร้าง doc อัตโนมัติด้วย role = "user"
+      const newUser = {
+        displayName: user.displayName || user.email,
+        email:       user.email,
+        role:        "user",
+        provider:    user.providerData[0]?.providerId || "google.com",
+        createdAt:   serverTimestamp()
+      };
+      await setDoc(doc(db, "users", user.uid), newUser);
+      sessionStorage.setItem("userRole", "user");
+      sessionStorage.setItem("userName", newUser.displayName);
+      sessionStorage.setItem("userId",   user.uid);
+    }
+  }
+
+  // ── Email / Password Login ──
   window.doLogin = async function () {
     const email    = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value;
     const btn      = document.getElementById("loginBtn");
     const spinner  = document.getElementById("spinner");
     const btnText  = document.getElementById("btnText");
-    const alert    = document.getElementById("alertBox");
 
-    if (!email || !password) {
-      showAlert("กรุณากรอกอีเมลและรหัสผ่าน");
-      return;
-    }
+    if (!email || !password) { showError("กรุณากรอกอีเมลและรหัสผ่าน"); return; }
 
-    btn.disabled   = true;
-    spinner.style.display = "block";
-    btnText.textContent   = "กำลังเข้าสู่ระบบ...";
-    alert.style.display   = "none";
+    setLoading(btn, spinner, btnText, "กำลังเข้าสู่ระบบ...", true);
+    hideAlerts();
 
     try {
       const cred = await signInWithEmailAndPassword(auth, email, password);
-      const snap = await getDoc(doc(db, "users", cred.user.uid));
-
-      if (!snap.exists()) throw new Error("ไม่พบข้อมูลผู้ใช้");
-
-      const data = snap.data();
-      sessionStorage.setItem("userRole", data.role);
-      sessionStorage.setItem("userName", data.displayName);
-      sessionStorage.setItem("userId",   cred.user.uid);
-
+      await loadAndStoreUser(cred.user);
       window.location.href = "dashboard.html";
     } catch (err) {
       let msg = "อีเมลหรือรหัสผ่านไม่ถูกต้อง";
       if (err.code === "auth/too-many-requests") msg = "ลองใหม่ภายหลัง (พยายามเข้าสู่ระบบบ่อยเกินไป)";
-      if (err.message === "ไม่พบข้อมูลผู้ใช้") msg = err.message;
-      showAlert(msg);
-      btn.disabled = false;
-      spinner.style.display = "none";
-      btnText.textContent   = "เข้าสู่ระบบ";
+      if (err.code === "auth/user-not-found")    msg = "ไม่พบบัญชีผู้ใช้นี้";
+      if (err.code === "auth/wrong-password")    msg = "รหัสผ่านไม่ถูกต้อง";
+      if (err.message === "ไม่พบข้อมูลผู้ใช้")   msg = err.message;
+      showError(msg);
+      setLoading(btn, spinner, btnText, "เข้าสู่ระบบ", false);
     }
   };
 
-  function showAlert(msg) {
+  // ── Google Login ──
+  window.doGoogleLogin = async function () {
+    const btn     = document.getElementById("googleBtn");
+    const spinner = document.getElementById("googleSpinner");
+    const btnText = document.getElementById("googleBtnText");
+
+    setLoading(btn, spinner, btnText, "กำลังเชื่อมต่อ Google...", true);
+    hideAlerts();
+
+    try {
+      const result = await signInWithPopup(auth, provider);
+      await loadAndStoreUser(result.user);
+      window.location.href = "dashboard.html";
+    } catch (err) {
+      if (err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request") {
+        // ผู้ใช้ปิด popup เอง — ไม่ต้องแสดง error
+      } else if (err.code === "auth/popup-blocked") {
+        showWarn("เบราว์เซอร์บล็อก popup กรุณาอนุญาต popup แล้วลองใหม่");
+      } else {
+        showError("เกิดข้อผิดพลาดในการเข้าสู่ระบบด้วย Google");
+      }
+      setLoading(btn, spinner, btnText, "เข้าสู่ระบบด้วย Google", false);
+    }
+  };
+
+  // ── Helpers ──
+  function setLoading(btn, spinner, textEl, text, loading) {
+    btn.disabled         = loading;
+    spinner.style.display = loading ? "block" : "none";
+    textEl.textContent   = text;
+  }
+
+  function showError(msg) {
     const el = document.getElementById("alertBox");
     el.textContent   = msg;
     el.style.display = "block";
   }
 
-  // Enter key
+  function showWarn(msg) {
+    const el = document.getElementById("alertWarn");
+    el.textContent   = msg;
+    el.style.display = "block";
+  }
+
+  function hideAlerts() {
+    document.getElementById("alertBox").style.display  = "none";
+    document.getElementById("alertWarn").style.display = "none";
+  }
+
   document.addEventListener("keydown", e => {
     if (e.key === "Enter") window.doLogin();
   });
