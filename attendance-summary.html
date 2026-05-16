@@ -345,12 +345,18 @@ async function _loadDataAsync() {
   const classId   = document.getElementById("classSelect").value;
   const subjectId = document.getElementById("subjectSelect").value;
   const month     = document.getElementById("monthInput").value; // "YYYY-MM"
-  if (!classId || !month) return;
+  if (!classId || !month) {
+    document.getElementById("tableArea").innerHTML = `<div class="state-box">เลือกชั้นเรียนและเดือนที่ต้องการดู</div>`;
+    document.getElementById("metricsEl").style.display = "none";
+    document.getElementById("legendEl").style.display  = "none";
+    return;
+  }
 
   document.getElementById("tableArea").innerHTML = `<div class="state-box">กำลังโหลดข้อมูล...</div>`;
 
   const [year, mon] = month.split("-").map(Number);
 
+  try {
   // load students
   const sSnap = await getDocs(query(collection(db,"students"),where("classId","==",classId)));
   allStudents = sSnap.docs.map(d=>(Object.assign({id:d.id},d.data()))).sort((a,b)=>(a.number||0)-(b.number||0));
@@ -535,20 +541,32 @@ function renderGrid(year, mon, daysInMonth) {
 
   // ── metrics ──
   const recordedDays = daysWithData.size;
-  document.getElementById("mDays").textContent = recordedDays;
+  const today = new Date();
+  const isCurrentMonth = (today.getFullYear() === year && today.getMonth()+1 === mon);
+  const daysSoFar = isCurrentMonth ? today.getDate() : daysInMonth;
+
+  document.getElementById("mDays").textContent = recordedDays > 0 ? recordedDays : "—";
+  document.getElementById("mDaysSub").textContent = recordedDays > 0
+    ? (isCurrentMonth && recordedDays < daysSoFar ? `วัน (มีข้อมูล ${recordedDays} จาก ${daysSoFar} วัน)` : `วัน (ไม่รวมเสาร์-อาทิตย์)`)
+    : "ยังไม่มีข้อมูลเช็คชื่อ";
   document.getElementById("mPresent").textContent = recordedDays > 0
     ? (totalPresent/recordedDays).toFixed(1) : "—";
-  document.getElementById("mAbsent").textContent = totalAbsent;
-  document.getElementById("mPct").textContent = totPct + "%";
+  document.getElementById("mAbsent").textContent = recordedDays > 0 ? totalAbsent : "—";
+  document.getElementById("mPct").textContent = totDenom > 0 ? totPct + "%" : "—";
 
   const clsName = document.getElementById("classSelect").selectedOptions[0]?.text || "";
   const subName = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
   document.getElementById("tableTitle").textContent = `${clsName}${subName?" — "+subName:""} — ${THAI_MONTHS[mon]} ${year+543}`;
+  const noDataNote = daysWithData.size === 0 ? " · ⚠ ยังไม่มีข้อมูลเช็คชื่อในเดือนนี้" : (daysWithData.size < daysInMonth ? ` · มีข้อมูล ${daysWithData.size} วัน` : "");
   document.getElementById("tableSubtitle").textContent =
-    `นักเรียน ${activeStudents.length} คน (ไม่มีตัวตน ${ghostStudents.length} คน)`;
+    `นักเรียน ${activeStudents.length} คน (ไม่มีตัวตน ${ghostStudents.length} คน)${noDataNote}`;
 
   document.getElementById("metricsEl").style.display = "grid";
   document.getElementById("legendEl").style.display  = "flex";
+  } catch(err) {
+    document.getElementById("tableArea").innerHTML = `<div class="state-box" style="color:#b91c1c;">เกิดข้อผิดพลาดในการโหลดข้อมูล: ${err.message}</div>`;
+    console.error(err);
+  }
 }
 
 window.exportTable = function() {

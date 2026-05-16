@@ -375,9 +375,9 @@ function renderAssignDetail(assign, subs) {
         ondrop="handleDrop(event)">
         <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         <p>ลากไฟล์มาวางที่นี่ หรือคลิกเลือกไฟล์</p>
-        <small>รองรับ PDF, DOCX, ZIP สูงสุด 20 MB</small>
+        <small>รองรับ PDF, ZIP, รูปภาพ (JPG, PNG, GIF) สูงสุด 20 MB</small>
       </div>
-      <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.zip,.pptx,.xlsx" onchange="handleFile(this.files[0])">
+      <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.zip,.pptx,.xlsx,.jpg,.jpeg,.png,.gif,.webp" onchange="handleFile(this.files[0])">
       <div class="file-selected" id="fileSelected">
         <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         <span id="fileName"></span>
@@ -398,15 +398,24 @@ function renderAssignDetail(assign, subs) {
             ? `<span class="chip chip-green">ส่งแล้ว</span>`
             : `<span class="chip chip-red">เลยกำหนด</span>`
           : `<span class="chip chip-gray">ยังไม่ส่ง</span>`;
+        const isImage = sub?.fileName && /\.(jpg|jpeg|png|gif|webp)$/i.test(sub.fileName);
         const link = sub?.fileUrl
-          ? `<a href="${sub.fileUrl}" target="_blank" class="btn btn-sm" style="font-size:11px;">ดูไฟล์</a>` : "—";
+          ? isImage
+            ? `<a href="${sub.fileUrl}" target="_blank" class="btn btn-sm" style="font-size:11px;">ดูรูป</a>`
+            : `<a href="${sub.fileUrl}" target="_blank" class="btn btn-sm" style="font-size:11px;">ดูไฟล์</a>`
+          : "—";
+        const delBtn = sub
+          ? `<button class="btn btn-sm btn-danger" onclick="deleteSubmission('${sub.id}','${s.id}')" style="margin-left:4px;">
+              <svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+            </button>`
+          : "";
         const time = sub?.submittedAt ? new Date(sub.submittedAt).toLocaleString("th-TH",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}) : "—";
         return `<tr>
           <td style="color:var(--muted);font-size:12px;">${s.number||"—"}</td>
           <td>${s.name}</td>
           <td>${chip}</td>
           <td style="font-size:12px;color:var(--muted);">${time}</td>
-          <td>${link}</td>
+          <td><div style="display:flex;align-items:center;">${link}${delBtn}</div></td>
         </tr>`;
       }).join("")
     : "";
@@ -445,8 +454,17 @@ function renderAssignDetail(assign, subs) {
 window.handleFile = function(file) {
   if (!file) return;
   if (file.size > 20*1024*1024) { showToast("ไฟล์ใหญ่เกิน 20 MB","error"); return; }
+  const allowed = /\.(pdf|docx|doc|zip|pptx|xlsx|jpg|jpeg|png|gif|webp)$/i;
+  if (!allowed.test(file.name)) { showToast("ไม่รองรับไฟล์ประเภทนี้","error"); return; }
   currentFile = file;
-  document.getElementById("fileName").textContent = file.name;
+  const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(file.name);
+  const nameEl = document.getElementById("fileName");
+  if (isImage) {
+    const url = URL.createObjectURL(file);
+    nameEl.innerHTML = `<img src="${url}" style="height:40px;border-radius:4px;object-fit:cover;margin-right:6px;"> ${file.name}`;
+  } else {
+    nameEl.textContent = file.name;
+  }
   document.getElementById("fileSelected").style.display = "flex";
 };
 
@@ -487,6 +505,15 @@ window.submitFile = async function() {
   } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
   btn.disabled = false;
   btn.innerHTML = `<svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:white;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> ส่งงาน`;
+};
+
+window.deleteSubmission = async function(subId, studentId) {
+  if (!confirm("ยืนยันลบงานที่ส่งของนักเรียนคนนี้?")) return;
+  try {
+    await deleteDoc(doc(db,"submissions",subId));
+    showToast("ลบงานที่ส่งเรียบร้อย","success");
+    await selectAssignment(currentAssignId);
+  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
 };
 
 window.openAddAssign = function() {

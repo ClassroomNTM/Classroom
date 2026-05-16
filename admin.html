@@ -148,6 +148,7 @@ input:focus,select.modal-sel:focus{border-color:var(--blue);box-shadow:0 0 0 3px
     <div class="tabs">
       <button class="tab active" id="tabUsers" onclick="switchTab('users')">ผู้ใช้ทั้งหมด</button>
       <button class="tab" id="tabActivity" onclick="switchTab('activity')">สรุปสิทธิ์</button>
+      <button class="tab" id="tabSubjects" onclick="switchTab('subjects')">รายวิชา</button>
     </div>
 
     <!-- Users tab -->
@@ -175,6 +176,32 @@ input:focus,select.modal-sel:focus{border-color:var(--blue);box-shadow:0 0 0 3px
             </tr></thead>
             <tbody id="activityTbody">
               <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">กำลังโหลด...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Subjects tab -->
+    <div id="panelSubjects" style="display:none;">
+      <div class="card">
+        <div class="card-head">
+          รายวิชาทั้งหมด
+          <button class="btn btn-sm btn-primary" onclick="openAddSubject()">
+            <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            เพิ่มวิชา
+          </button>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>รหัสวิชา</th>
+              <th>ชื่อวิชา</th>
+              <th>คำอธิบาย</th>
+              <th style="width:100px;">จัดการ</th>
+            </tr></thead>
+            <tbody id="subjectsTbody">
+              <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px;">กำลังโหลด...</td></tr>
             </tbody>
           </table>
         </div>
@@ -240,6 +267,30 @@ input:focus,select.modal-sel:focus{border-color:var(--blue);box-shadow:0 0 0 3px
   </div>
 </div>
 
+<!-- Subject Modal -->
+<div class="modal-overlay" id="subjectModal">
+  <div class="modal">
+    <div class="modal-title" id="subjectModalTitle">เพิ่มรายวิชา</div>
+    <div class="form-group">
+      <label class="form-label">ชื่อวิชา *</label>
+      <input type="text" id="subjectName" placeholder="เช่น คณิตศาสตร์">
+    </div>
+    <div class="form-group">
+      <label class="form-label">รหัสวิชา (ถ้ามี)</label>
+      <input type="text" id="subjectCode" placeholder="เช่น MATH101">
+    </div>
+    <div class="form-group">
+      <label class="form-label">คำอธิบาย</label>
+      <input type="text" id="subjectDesc" placeholder="คำอธิบายสั้น ๆ">
+    </div>
+    <input type="hidden" id="editSubjectId">
+    <div class="modal-footer">
+      <button class="btn" onclick="closeSubjectModal()">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveSubject()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script type="module">
@@ -247,7 +298,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, updateProfile }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
-  getFirestore, collection, doc, getDocs, setDoc, deleteDoc, query, orderBy
+  getFirestore, collection, doc, getDocs, setDoc, deleteDoc, addDoc, query, orderBy
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -260,7 +311,7 @@ const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
 
-let userRole = "", users = [], currentTab = "users";
+let userRole = "", users = [], subjects = [], currentTab = "users";
 
 onAuthStateChanged(auth, async user => {
   if (!user) { window.location.href = "index.html"; return; }
@@ -353,8 +404,11 @@ window.switchTab = function(tab) {
   currentTab = tab;
   document.getElementById("tabUsers").classList.toggle("active", tab==="users");
   document.getElementById("tabActivity").classList.toggle("active", tab==="activity");
+  document.getElementById("tabSubjects").classList.toggle("active", tab==="subjects");
   document.getElementById("panelUsers").style.display = tab==="users" ? "block" : "none";
   document.getElementById("panelActivity").style.display = tab==="activity" ? "block" : "none";
+  document.getElementById("panelSubjects").style.display = tab==="subjects" ? "block" : "none";
+  if (tab === "subjects") loadSubjects();
 };
 
 // CREATE USER
@@ -420,6 +474,87 @@ window.removeUser = async function(id, name) {
     await deleteDoc(doc(db,"users",id));
     showToast("ลบข้อมูลผู้ใช้เรียบร้อย","success");
     await loadUsers();
+  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
+};
+
+// ── SUBJECTS ──
+async function loadSubjects() {
+  document.getElementById("subjectsTbody").innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px;">กำลังโหลด...</td></tr>`;
+  const snap = await getDocs(collection(db, "subjects"));
+  subjects = snap.docs.map(d => ({id: d.id, ...d.data()}))
+    .sort((a,b) => (a.name||"").localeCompare(b.name||"","th"));
+  renderSubjects();
+}
+
+function renderSubjects() {
+  const tbody = document.getElementById("subjectsTbody");
+  if (!subjects.length) {
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">ยังไม่มีรายวิชา — กดปุ่ม "+ เพิ่มวิชา" เพื่อเริ่มต้น</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = subjects.map(s => `<tr>
+    <td style="font-size:12px;color:var(--muted);">${s.code||"—"}</td>
+    <td style="font-weight:500;">${s.name||"—"}</td>
+    <td style="font-size:12px;color:var(--muted);">${s.description||"—"}</td>
+    <td>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-sm" onclick="openEditSubject('${s.id}')">
+          <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="btn btn-sm btn-danger" onclick="deleteSubject('${s.id}','${(s.name||"").replace(/'/g,"\\'")}')">
+          <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+        </button>
+      </div>
+    </td>
+  </tr>`).join("");
+}
+
+window.openAddSubject = function() {
+  document.getElementById("subjectModalTitle").textContent = "เพิ่มรายวิชา";
+  document.getElementById("subjectName").value = "";
+  document.getElementById("subjectCode").value = "";
+  document.getElementById("subjectDesc").value = "";
+  document.getElementById("editSubjectId").value = "";
+  document.getElementById("subjectModal").classList.add("open");
+};
+
+window.openEditSubject = function(id) {
+  const s = subjects.find(x => x.id === id);
+  if (!s) return;
+  document.getElementById("subjectModalTitle").textContent = "แก้ไขรายวิชา";
+  document.getElementById("subjectName").value = s.name||"";
+  document.getElementById("subjectCode").value = s.code||"";
+  document.getElementById("subjectDesc").value = s.description||"";
+  document.getElementById("editSubjectId").value = id;
+  document.getElementById("subjectModal").classList.add("open");
+};
+
+window.closeSubjectModal = function() { document.getElementById("subjectModal").classList.remove("open"); };
+
+window.saveSubject = async function() {
+  const name = document.getElementById("subjectName").value.trim();
+  const code = document.getElementById("subjectCode").value.trim();
+  const desc = document.getElementById("subjectDesc").value.trim();
+  const editId = document.getElementById("editSubjectId").value;
+  if (!name) { showToast("กรุณากรอกชื่อวิชา","error"); return; }
+  try {
+    if (editId) {
+      await setDoc(doc(db,"subjects",editId), {name, code, description:desc}, {merge:true});
+    } else {
+      await addDoc(collection(db,"subjects"), {name, code, description:desc, createdAt:new Date().toISOString()});
+    }
+    closeSubjectModal();
+    showToast("บันทึกรายวิชาเรียบร้อย ✓","success");
+    await loadSubjects();
+  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
+};
+
+window.deleteSubject = async function(id, name) {
+  if (!confirm(`ยืนยันลบวิชา "${name}"?\nข้อมูลเช็คชื่อและคะแนนที่อ้างถึงวิชานี้จะยังอยู่ แต่จะไม่แสดงในตัวกรอง`)) return;
+  try {
+    await deleteDoc(doc(db,"subjects",id));
+    showToast("ลบรายวิชาเรียบร้อย","success");
+    await loadSubjects();
   } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
 };
 
