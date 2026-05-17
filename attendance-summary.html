@@ -530,18 +530,13 @@ function cacheGet(key) {
     return obj.data;
   } catch { return null; }
 }
-const STUDENTS_CACHE_TTL = 5 * 60 * 1000; // 5 นาที
 function studentsCacheSet(classId, data) {
-  sessionStorage.setItem("students_" + classId, JSON.stringify({ ts: Date.now(), data }));
+  sessionStorage.setItem("students_" + classId, JSON.stringify(data));
 }
 function studentsCacheGet(classId) {
   try {
     const raw = sessionStorage.getItem("students_" + classId);
-    if (!raw) return null;
-    const obj = JSON.parse(raw);
-    if (Array.isArray(obj)) { sessionStorage.removeItem("students_" + classId); return null; }
-    if (Date.now() - obj.ts > STUDENTS_CACHE_TTL) { sessionStorage.removeItem("students_" + classId); return null; }
-    return obj.data;
+    return raw ? JSON.parse(raw) : null;
   } catch { return null; }
 }
 
@@ -754,7 +749,10 @@ function renderGrid(year, mon, daysInMonth) {
       const cls = [DOW_CLS[dow]||"", isToday?"col-today":""].filter(Boolean).join(" ");
       const colIdxAttr = `data-col-idx="${d}"`;
       if (isGhost) {
-        cells += `<td class="cell ${cls}" ${colIdxAttr}><span class="dot dot-ghost">—</span></td>`;
+        const ghostAttr = isAdmin
+          ? `data-sid="${s.id}" data-date="${dateStr}" data-name="${(s.prefix?s.prefix+" ":"")+s.name}" class="cell ${cls} editable" onclick="openPopup(this,event)" ${colIdxAttr}`
+          : `class="cell ${cls}" ${colIdxAttr}`;
+        cells += `<td ${ghostAttr}><span class="dot dot-ghost">—</span></td>`;
         return;
       }
       const rec    = attMap[dateStr]?.[s.id];
@@ -962,9 +960,7 @@ window.doDeleteMonth = async function() {
 // ─── Popup ────────────────────────────────────────────────────
 window.openPopup = function(td, event) {
   if (event) event.stopPropagation();
-  // ป้องกัน ghost students ถูกแก้ไข
   const sid = td.dataset.sid;
-  if (sid && (window.__allStudents||[]).find(s => s.id === sid && s.ghost === true)) return;
   const classId   = document.getElementById("classSelect").value;
   const subjectId = document.getElementById("subjectSelect").value;
   _popup = { studentId:td.dataset.sid, dateStr:td.dataset.date, subjectId,
@@ -992,9 +988,26 @@ window.applyStatus = async function(newStatus) {
   document.getElementById("popupSaving").style.display = "block";
 
   try {
+    // ── ถ้า ghost state เปลี่ยน → อัปเดต students collection ──
+    const stu = (window.__allStudents||[]).find(x => x.id === studentId);
+    const wasGhost = stu?.ghost === true;
+    const nowGhost = newStatus === "ghost";
+
+    if (wasGhost !== nowGhost) {
+      await setDoc(doc(db, "students", studentId), { ghost: nowGhost }, { merge: true });
+      if (stu) stu.ghost = nowGhost;
+      window.__allStudents = window.__allStudents || [];
+      // ล้าง students cache เพื่อให้ attendance.html โหลดใหม่
+      sessionStorage.removeItem("students_" + classId);
+    }
+
+    // ── บันทึก attendance เฉพาะ non-ghost ──
     const docId = `${classId}_${subjectId||"none"}_${dateStr}_${studentId}`;
-    if (newStatus === null) {
-      await deleteDoc(doc(db, "attendance", docId));
+    if (newStatus === null || nowGhost) {
+      // ghost หรือลบ → ลบ attendance record ออก (ghost ไม่มีใน attendance)
+      await deleteDoc(doc(db, "attendance", docId)).catch(()=>{});
+      if (!attMap[dateStr]) attMap[dateStr] = {};
+      delete attMap[dateStr][studentId];
     } else {
       await setDoc(doc(db, "attendance", docId), {
         studentId, studentName, classId,
@@ -1004,16 +1017,11 @@ window.applyStatus = async function(newStatus) {
         note: "",
         savedAt: new Date().toISOString()
       });
+      if (!attMap[dateStr]) attMap[dateStr] = {};
+      attMap[dateStr][studentId] = { status:newStatus, note:"", savedAt:new Date().toISOString(), docId };
     }
 
-    // อัปเดต attMap
-    if (!attMap[dateStr]) attMap[dateStr] = {};
-    if (newStatus===null) delete attMap[dateStr][studentId];
-    else attMap[dateStr][studentId] = { status:newStatus, note:"", savedAt:new Date().toISOString(), docId };
-
-    if (tdEl) tdEl.innerHTML = statusDot(newStatus);
-
-    // re-render เพื่ออัปเดต totals
+    // re-render grid (รวม ghost state ที่เปลี่ยน)
     const [year,mon] = document.getElementById("monthInput").value.split("-").map(Number);
     renderGrid(year, mon, new Date(year,mon,0).getDate());
     showToast("บันทึกเรียบร้อย ✓","success");
