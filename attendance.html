@@ -36,56 +36,42 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min
 .btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
 .btn-primary{background:var(--blue);color:white;border-color:var(--blue);}
 .btn-primary:hover{background:#0a2847;}
-
-/* Filters */
 .filters{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;align-items:flex-end;}
 .fgroup{display:flex;flex-direction:column;gap:4px;}
 .flabel{font-size:11px;font-weight:500;color:var(--muted);}
 select,input[type="date"]{height:38px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-family:'Sarabun',sans-serif;font-size:13px;color:var(--text);background:white;outline:none;}
 select:focus,input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);}
-
-/* Summary chips */
 .summary-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
 .s-chip{padding:6px 14px;border-radius:99px;font-size:12px;font-weight:500;}
 .s-green{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;}
 .s-amber{background:#fffbeb;color:#92400e;border:1px solid #fde68a;}
 .s-red  {background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;}
 .s-gray {background:#f9fafb;color:#374151;border:1px solid #e5e7eb;}
-
-/* Table */
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
 .tbl-wrap{overflow-x:auto;}
 table{width:100%;border-collapse:collapse;font-size:13px;}
 th{text-align:left;padding:10px 12px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--border);background:#fafafa;}
 td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
 tr:last-child td{border-bottom:none;}
-
-/* Status buttons */
-.status-btns{display:flex;gap:6px;}
+.status-btns{display:flex;gap:6px;flex-wrap:wrap;}
 .stat-btn{padding:4px 10px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .15s;font-family:'Sarabun',sans-serif;}
 .stat-btn.present{background:#f0fdf4;color:#166534;border-color:#bbf7d0;}
 .stat-btn.late   {background:#fffbeb;color:#92400e;border-color:#fde68a;}
 .stat-btn.absent {background:#fef2f2;color:#b91c1c;border-color:#fecaca;}
-.stat-btn.ghost  {background:#fef2f2;color:#b91c1c;border-color:#fecaca;}
 .stat-btn.active-present{background:#166534;color:white;}
 .stat-btn.active-late   {background:#92400e;color:white;}
 .stat-btn.active-absent {background:#b91c1c;color:white;}
-.stat-btn.active-ghost  {background:#b91c1c;color:white;}
+/* ปุ่มแก้เป็นมีตัวตน */
+.btn-restore{padding:4px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;transition:all .15s;font-family:'Sarabun',sans-serif;}
+.btn-restore:hover{background:#dbeafe;}
 .note-input{width:120px;height:30px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-family:'Sarabun',sans-serif;font-size:12px;background:#fafafa;}
-
-/* Toast */
 #toast{position:fixed;bottom:24px;right:24px;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;}
 #toast.show{opacity:1;transform:translateY(0);}
 #toast.success{background:#052e16;color:#86efac;}
 #toast.error{background:#450a0a;color:#fca5a5;}
-
-/* read-only overlay */
 .readonly-banner{background:#fffbeb;border:1px solid #fde68a;color:#92400e;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:16px;display:none;}
-/* ghost student row */
 .ghost-name-att{color:#b91c1c;text-decoration:line-through;font-style:italic;}
 .ghost-tag-att{background:#fef2f2;color:#b91c1c;padding:2px 6px;border-radius:99px;font-size:10px;font-weight:500;margin-left:5px;}
-
-/* ── HAMBURGER ── */
 .hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:6px;border:none;background:transparent;margin-right:4px;}
 .hamburger span{display:block;width:22px;height:2px;background:var(--text);border-radius:2px;transition:.25s;}
 .hamburger.open span:nth-child(1){transform:rotate(45deg) translate(5px,5px);}
@@ -93,12 +79,10 @@ tr:last-child td{border-bottom:none;}
 .hamburger.open span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px);}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:150;}
 .sidebar-overlay.open{display:block;}
-/* sidebar subject section */
 .nav-subject-section{padding:8px 10px 4px;}
 .nav-subject-label{font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-bottom:6px;padding:0 2px;}
 .nav-subject-select{width:100%;height:34px;border:1px solid var(--border);border-radius:8px;padding:0 10px;font-family:'Sarabun',sans-serif;font-size:12px;color:var(--text);background:white;outline:none;}
 .nav-subject-select:focus{border-color:var(--blue);}
-/* mobile */
 @media(max-width:768px){
   :root{--sidebar-w:220px;}
   .sidebar{transform:translateX(-100%);z-index:160;transition:transform .25s ease;}
@@ -231,13 +215,11 @@ let userRole   = "user";
 let students   = [];
 let attendance = {};
 
-// date default = today
 const today = new Date().toISOString().split("T")[0];
 document.getElementById("dateInput").value = today;
 
-// ─── sessionStorage cache helpers ────────────────────────────
+// ─── cache helpers ────────────────────────────────────────────
 const CACHE_TTL = 30 * 60 * 1000;
-
 function cacheSet(key, data) {
   sessionStorage.setItem(key, JSON.stringify({ ts: Date.now(), data }));
 }
@@ -250,8 +232,6 @@ function cacheGet(key) {
     return obj.data;
   } catch { return null; }
 }
-
-// students cache แยกตาม classId (TTL 5 นาที)
 const STUDENTS_CACHE_TTL = 5 * 60 * 1000;
 function studentsCacheSet(classId, data) {
   sessionStorage.setItem("students_" + classId, JSON.stringify({ ts: Date.now(), data }));
@@ -261,14 +241,13 @@ function studentsCacheGet(classId) {
     const raw = sessionStorage.getItem("students_" + classId);
     if (!raw) return null;
     const obj = JSON.parse(raw);
-    // format เก่า (plain array) → ถือว่าหมดอายุ ล้างทิ้ง
     if (Array.isArray(obj)) { sessionStorage.removeItem("students_" + classId); return null; }
-    // ถ้าไม่มี ts หรือหมดอายุ → ล้างทิ้ง
     if (!obj.ts || Date.now() - obj.ts > STUDENTS_CACHE_TTL) { sessionStorage.removeItem("students_" + classId); return null; }
     return obj.data;
   } catch { return null; }
 }
 
+// ─── init ─────────────────────────────────────────────────────
 initAuth({ requireAdmin: true, onReady: async ({ role }) => {
   userRole = role;
   document.getElementById("adminNavItem").style.display = "flex";
@@ -278,7 +257,7 @@ initAuth({ requireAdmin: true, onReady: async ({ role }) => {
   window.loadStudents();
 }});
 
-// ─── loadSubjects: cache-first, Firestore fallback ───────────
+// ─── loadSubjects ─────────────────────────────────────────────
 async function loadSubjects() {
   let subjects = cacheGet("subjects");
   if (!subjects) {
@@ -293,7 +272,6 @@ async function loadSubjects() {
     opt.value = s.id; opt.textContent = s.name;
     sel.appendChild(opt);
   });
-  // ใส่ sidebar nav ด้วยเลย (ไม่ต้อง getDocs ซ้ำ)
   const navSel = document.getElementById("navSubjectSelect");
   if (navSel) {
     subjects.forEach(s => {
@@ -307,7 +285,7 @@ async function loadSubjects() {
   if (navSel) navSel.value = sel.value;
 }
 
-// ─── loadClasses: cache-first, Firestore fallback ────────────
+// ─── loadClasses ──────────────────────────────────────────────
 async function loadClasses() {
   let classes = cacheGet("classes");
   if (!classes) {
@@ -325,7 +303,7 @@ async function loadClasses() {
   if (classes.length > 0) sel.value = classes[0].id;
 }
 
-// ─── loadStudents: cache students ตาม classId ────────────────
+// ─── loadStudents ─────────────────────────────────────────────
 window.loadStudents = async function() {
   const classId   = document.getElementById("classSelect").value;
   const subjectId = document.getElementById("subjectSelect").value;
@@ -336,7 +314,6 @@ window.loadStudents = async function() {
     '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px;">กำลังโหลด...</td></tr>';
 
   try {
-    // students: cache-first ตาม classId
     let cachedStudents = studentsCacheGet(classId);
     if (!cachedStudents) {
       const snap = await getDocs(query(collection(db, "students"), where("classId", "==", classId)));
@@ -346,7 +323,6 @@ window.loadStudents = async function() {
     }
     students = cachedStudents;
 
-    // attendance รายวัน จาก Firestore
     const attQuery = subjectId
       ? query(collection(db, "attendance"), where("classId","==",classId), where("date","==",date), where("subjectId","==",subjectId))
       : query(collection(db, "attendance"), where("classId","==",classId), where("date","==",date));
@@ -367,6 +343,7 @@ window.loadStudents = async function() {
   }
 };
 
+// ─── renderTable ──────────────────────────────────────────────
 function renderTable() {
   const isAdmin = userRole === "admin";
   const tbody   = document.getElementById("studentTbody");
@@ -380,26 +357,41 @@ function renderTable() {
     const isGhost = s.ghost === true;
     const existingRec = attendance[s.id];
     const defaultStatus = isGhost ? "ghost" : "present";
-    const resolvedStatus = (existingRec && existingRec.status === "ghost" && !isGhost) ? "present" : (existingRec?.status || defaultStatus);
+    const resolvedStatus = (existingRec && existingRec.status === "ghost" && !isGhost)
+      ? "present" : (existingRec?.status || defaultStatus);
     const cur = { status: resolvedStatus, note: existingRec?.note || "" };
-    if (!attendance[s.id] || (attendance[s.id].status === "ghost" && !isGhost)) {
-      attendance[s.id] = { status: resolvedStatus, note: cur.note };
-    }
+    attendance[s.id] = { status: resolvedStatus, note: cur.note };
 
     const nameHtml = isGhost
       ? `<span class="ghost-name-att">${s.prefix?s.prefix+" ":""}${s.name}</span><span class="ghost-tag-att">ไม่มีตัวตน</span>`
       : `${s.prefix?s.prefix+" ":""}${s.name}`;
 
+    // ── non-admin: read-only ──
     if (!isAdmin) {
       let chip;
-      if (isGhost || cur.status==="ghost") chip = '<span style="background:#fef2f2;color:#b91c1c;padding:3px 10px;border-radius:99px;font-size:12px;">ไม่มีตัวตน</span>';
+      if (isGhost) chip = '<span style="background:#fef2f2;color:#b91c1c;padding:3px 10px;border-radius:99px;font-size:12px;">ไม่มีตัวตน</span>';
       else if (cur.status==="present") chip = '<span style="background:#f0fdf4;color:#166534;padding:3px 10px;border-radius:99px;font-size:12px;">มาเรียน</span>';
       else if (cur.status==="late")    chip = '<span style="background:#fffbeb;color:#92400e;padding:3px 10px;border-radius:99px;font-size:12px;">สาย</span>';
       else chip = '<span style="background:#fef2f2;color:#b91c1c;padding:3px 10px;border-radius:99px;font-size:12px;">ขาด</span>';
       return `<tr style="${isGhost?"opacity:.6;":""}"><td>${s.number||"—"}</td><td>${nameHtml}</td><td>${chip}</td><td style="color:var(--muted);font-size:12px;">${cur.note||"—"}</td></tr>`;
     }
 
-    return `<tr id="row-${s.id}" style="${isGhost?"background:#fff8f8;":""}">
+    // ── admin: ghost row → แสดงแค่ปุ่ม "แก้เป็นมีตัวตน" ──
+    if (isGhost) {
+      return `<tr id="row-${s.id}" style="background:#fff8f8;opacity:.7;">
+        <td>${s.number||"—"}</td>
+        <td>${nameHtml}</td>
+        <td>
+          <button class="btn-restore" onclick="restoreStudent('${s.id}')">
+            ✦ แก้เป็นมีตัวตน
+          </button>
+        </td>
+        <td style="color:var(--muted);font-size:12px;">—</td>
+      </tr>`;
+    }
+
+    // ── admin: นักเรียนปกติ → ปุ่มเช็คชื่อ ──
+    return `<tr id="row-${s.id}">
       <td>${s.number||"—"}</td>
       <td>${nameHtml}</td>
       <td>
@@ -410,8 +402,6 @@ function renderTable() {
             onclick="setStatus('${s.id}','late')">สาย</button>
           <button class="stat-btn absent ${cur.status==='absent'?'active-absent':''}"
             onclick="setStatus('${s.id}','absent')">ขาด</button>
-          <button class="stat-btn ghost ${cur.status==='ghost'?'active-ghost':''}"
-            onclick="setStatus('${s.id}','ghost')">ไม่มีตัวตน</button>
         </div>
       </td>
       <td>
@@ -422,32 +412,52 @@ function renderTable() {
   }).join("");
 }
 
+// ─── restoreStudent: แก้ ghost → present ทันที ───────────────
+window.restoreStudent = async function(sid) {
+  if (userRole !== "admin") return;
+  try {
+    await updateDoc(doc(db, "students", sid), { ghost: false });
+    const classId = document.getElementById("classSelect").value;
+    sessionStorage.removeItem("students_" + classId);
+    // อัพเดต local array ด้วย
+    const idx = students.findIndex(s => s.id === sid);
+    if (idx > -1) students[idx] = { ...students[idx], ghost: false };
+    attendance[sid] = { status: "present", note: "" };
+    renderTable();
+    updateSummary();
+    showToast("แก้เป็นมีตัวตนเรียบร้อย ✓", "success");
+  } catch(e) {
+    showToast("เกิดข้อผิดพลาด: " + e.message, "error");
+  }
+};
+
+// ─── setStatus ────────────────────────────────────────────────
 window.setStatus = function(sid, status) {
   attendance[sid].status = status;
   const row = document.getElementById("row-"+sid);
   row.querySelectorAll(".stat-btn").forEach(b => {
-    b.classList.remove("active-present","active-late","active-absent","active-ghost");
+    b.classList.remove("active-present","active-late","active-absent");
   });
-  const map = {present:"active-present",late:"active-late",absent:"active-absent",ghost:"active-ghost"};
+  const map = {present:"active-present",late:"active-late",absent:"active-absent"};
   const btn = row.querySelector(".stat-btn."+status);
   if (btn) btn.classList.add(map[status]);
-  if (status === "ghost") row.style.background = "#fff8f8";
-  else row.style.background = "";
+  row.style.background = "";
   updateSummary();
 };
 
+// ─── markAllPresent ───────────────────────────────────────────
 window.markAllPresent = function() {
   if (userRole !== "admin") return;
   students.forEach(s => {
-    if (s.ghost) attendance[s.id] = {status:"ghost", note:attendance[s.id]?.note||""};
-    else attendance[s.id] = {status:"present", note:""};
+    if (!s.ghost) attendance[s.id] = { status: "present", note: "" };
   });
   renderTable();
   updateSummary();
 };
 
+// ─── updateSummary ────────────────────────────────────────────
 function updateSummary() {
-  const activeStudents = students.filter(s => attendance[s.id]?.status !== "ghost");
+  const activeStudents = students.filter(s => !s.ghost);
   const ghostCount     = students.length - activeStudents.length;
   const p = activeStudents.filter(s => attendance[s.id]?.status==="present").length;
   const l = activeStudents.filter(s => attendance[s.id]?.status==="late").length;
@@ -458,6 +468,7 @@ function updateSummary() {
   document.getElementById("totalCount").textContent   = "ทั้งหมด: "+activeStudents.length+(ghostCount>0?" (ไม่มีตัวตน: "+ghostCount+")":"");
 }
 
+// ─── saveAll ──────────────────────────────────────────────────
 window.saveAll = async function() {
   if (userRole !== "admin") return;
   const classId   = document.getElementById("classSelect").value;
@@ -472,18 +483,18 @@ window.saveAll = async function() {
   try {
     const savedAt = new Date().toISOString();
 
-    // ── อัพเดต ghost field ใน collection students ──
+    // อัพเดต ghost field ใน students (เฉพาะที่เปลี่ยน)
     const ghostUpdates = students.map(s => {
-      const isGhostNow = attendance[s.id]?.status === "ghost";
-      // อัพเดตเฉพาะเมื่อ flag เปลี่ยน เพื่อลด Firestore write
-      if (isGhostNow !== (s.ghost === true)) {
-        return updateDoc(doc(db, "students", s.id), { ghost: isGhostNow });
+      const isGhostNow = s.ghost === true;
+      const attIsGhost = attendance[s.id]?.status === "ghost";
+      if (attIsGhost !== isGhostNow) {
+        return updateDoc(doc(db, "students", s.id), { ghost: attIsGhost });
       }
       return Promise.resolve();
     });
 
-    // ── บันทึก attendance เฉพาะนักเรียนที่ไม่ใช่ ghost ──
-    const activeStudents = students.filter(s => attendance[s.id]?.status !== "ghost");
+    // บันทึก attendance เฉพาะ non-ghost
+    const activeStudents = students.filter(s => !s.ghost);
     const writes = activeStudents.map(s => {
       const a   = attendance[s.id] || { status: "present", note: "" };
       const docId = `${classId}_${subjectId||"none"}_${date}_${s.id}`;
@@ -500,8 +511,6 @@ window.saveAll = async function() {
     });
 
     await Promise.all([...ghostUpdates, ...writes]);
-
-    // ── ล้าง students cache ของ classId นี้ เพราะ ghost flag อาจเปลี่ยน ──
     sessionStorage.removeItem("students_" + classId);
 
     showToast(`บันทึกการเช็คชื่อเรียบร้อย ✓ (${activeStudents.length} คน)`, "success");
@@ -513,6 +522,7 @@ window.saveAll = async function() {
   btn.innerHTML = `<svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:white;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> บันทึกการเช็คชื่อ`;
 };
 
+// ─── showToast ────────────────────────────────────────────────
 function showToast(msg, type) {
   const t = document.getElementById("toast");
   t.textContent = msg;
@@ -538,7 +548,6 @@ window._closeSidebar = function() {
   if (o) o.classList.remove('open');
   if (h) h.classList.remove('open');
 };
-// ── Subject selector sync ──
 window._syncSidebarSubjectTo = function(val) {
   const el = document.getElementById('navSubjectSelect');
   if (el) el.value = val;
