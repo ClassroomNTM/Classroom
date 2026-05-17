@@ -556,6 +556,8 @@ initAuth({ requireAdmin: true, onReady: async ({ role }) => {
   await loadSubjects();
   await loadClasses();
   loadData();
+  // เปิด Focus Mode อัตโนมัติ
+  window.toggleFocusMode();
 }});
 
 // ─── Sidebar ─────────────────────────────────────────────────
@@ -596,7 +598,7 @@ async function loadSubjects() {
       sel.appendChild(opt);
     });
   });
-  const defId = subjects.find(s => s.id === "8Ib9Lkl9iN")?.id || subjects[0]?.id || "";
+  const defId = subjects[0]?.id || "";
   document.getElementById("subjectSelect").value        = defId;
   document.getElementById("sidebarSubjectSelect").value = defId;
 }
