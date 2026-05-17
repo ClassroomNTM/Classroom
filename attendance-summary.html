@@ -506,6 +506,7 @@ const THAI_DAYS_SHORT = ["อา","จ","อ","พ","พฤ","ศ","ส"];
 
 let userRole    = "user";
 let allStudents = [];
+window.__allStudents = allStudents;
 let attMap      = {};
 
 let _popup = { studentId:null, dateStr:null, subjectId:null, classId:null, studentName:"", tdEl:null };
@@ -649,6 +650,7 @@ async function _loadDataAsync() {
       studentsCacheSet(classId, cachedStudents);
     }
     allStudents = cachedStudents;
+    window.__allStudents = allStudents;
 
     // attendance ทั้งเดือน จาก Firestore
     let attQuery;
@@ -751,7 +753,8 @@ function renderGrid(year, mon, daysInMonth) {
         return;
       }
       const rec    = attMap[dateStr]?.[s.id];
-      const status = rec?.status;
+      // ถ้า record เดิมเป็น "ghost" แต่ student ไม่ใช่ ghost แล้ว → ถือว่าไม่มีข้อมูล
+      const status = (rec?.status === "ghost" && !isGhost) ? undefined : rec?.status;
       if (status==="present") { sP++; dayPresent[dateStr]=(dayPresent[dateStr]||0)+1; }
       if (status==="late")    { sL++; dayLate[dateStr]=(dayLate[dateStr]||0)+1; }
       if (status==="absent")  { sA++; dayAbsent[dateStr]=(dayAbsent[dateStr]||0)+1; }
@@ -954,6 +957,9 @@ window.doDeleteMonth = async function() {
 // ─── Popup ────────────────────────────────────────────────────
 window.openPopup = function(td, event) {
   if (event) event.stopPropagation();
+  // ป้องกัน ghost students ถูกแก้ไข
+  const sid = td.dataset.sid;
+  if (sid && (window.__allStudents||[]).find(s => s.id === sid && s.ghost === true)) return;
   const classId   = document.getElementById("classSelect").value;
   const subjectId = document.getElementById("subjectSelect").value;
   _popup = { studentId:td.dataset.sid, dateStr:td.dataset.date, subjectId,
