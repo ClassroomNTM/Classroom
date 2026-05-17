@@ -100,7 +100,33 @@ select:focus,input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,5
 .col-weekend.th-daynum{background:#fde0e0!important;color:#b91c1c!important;font-weight:700;}
 td.cell.col-weekend{background:#fff0f0!important;}
 tr.ghost-row td.cell.col-weekend{background:#fceaea!important;}
-.col-today.th-daynum{color:var(--blue)!important;font-weight:700;}
+
+/* ── DAY OF WEEK COLORS ── */
+/* Monday (จ) */
+.col-mon.th-dayname{background:#fffde7!important;color:#f57f17!important;font-weight:700;}
+.col-mon.th-daynum{background:#fffde7!important;color:#f57f17!important;font-weight:700;}
+td.cell.col-mon{background:#fffef5!important;}
+/* Tuesday (อ) */
+.col-tue.th-dayname{background:#fce4ec!important;color:#c2185b!important;font-weight:700;}
+.col-tue.th-daynum{background:#fce4ec!important;color:#c2185b!important;font-weight:700;}
+td.cell.col-tue{background:#fff5f8!important;}
+/* Wednesday (พ) */
+.col-wed.th-dayname{background:#e8f5e9!important;color:#2e7d32!important;font-weight:700;}
+.col-wed.th-daynum{background:#e8f5e9!important;color:#2e7d32!important;font-weight:700;}
+td.cell.col-wed{background:#f5fef5!important;}
+/* Thursday (พฤ) */
+.col-thu.th-dayname{background:#fff3e0!important;color:#e65100!important;font-weight:700;}
+.col-thu.th-daynum{background:#fff3e0!important;color:#e65100!important;font-weight:700;}
+td.cell.col-thu{background:#fffaf3!important;}
+/* Friday (ศ) */
+.col-fri.th-dayname{background:#e3f2fd!important;color:#1565c0!important;font-weight:700;}
+.col-fri.th-daynum{background:#e3f2fd!important;color:#1565c0!important;font-weight:700;}
+td.cell.col-fri{background:#f3f9ff!important;}
+
+/* ── TODAY HIGHLIGHT ── */
+.col-today.th-dayname{font-weight:800!important;outline:2px solid var(--blue);outline-offset:-1px;}
+.col-today.th-daynum{color:white!important;background:var(--blue)!important;font-weight:800!important;outline:2px solid var(--blue);outline-offset:-1px;}
+td.cell.col-today{background:#dbeafe!important;outline:1px solid #93c5fd;outline-offset:-1px;}
 td.cell{padding:3px 2px;background:#fafafa;}
 td.cell-name{padding:6px 10px;text-align:left;background:white;position:sticky;left:0;z-index:2;border-right:2px solid rgba(0,0,0,0.1);}
 td.cell-no{padding:6px 4px;background:#fafafa;color:var(--muted);font-size:11px;}
@@ -561,12 +587,15 @@ function renderGrid(year, mon, daysInMonth) {
                 isWeekend: dow===0||dow===6, isToday: dateStr===today });
   }
 
+  const DOW_CLS = ["","col-mon","col-tue","col-wed","col-thu","col-fri",""];
+
   // Header rows
   let hName = `<tr>
     <th class="th-name col-no">#</th>
     <th class="th-name col-name">ชื่อ-สกุล</th>`;
-  days.forEach(({name,isWeekend,isToday,d}) => {
-    const cls = [isWeekend?"col-weekend":"", isToday?"col-today":""].filter(Boolean).join(" ");
+  days.forEach(({name,isWeekend,isToday,d,dow}) => {
+    const dowCls = !isWeekend ? (DOW_CLS[dow]||"") : "";
+    const cls = [isWeekend?"col-weekend":dowCls, isToday?"col-today":""].filter(Boolean).join(" ");
     hName += `<th class="th-dayname col-day ${cls}">${name}</th>`;
   });
   hName += `<th class="th-name" style="font-size:10px;">รวม<br>ม</th>
@@ -578,10 +607,10 @@ function renderGrid(year, mon, daysInMonth) {
     <th class="th-daynum col-no" style="font-size:10px;color:var(--muted);">ที่</th>
     <th class="th-daynum col-name" style="text-align:left;padding-left:10px;font-size:10px;color:var(--muted);">
       เดือน ${THAI_MONTHS[mon]} ${year+543}</th>`;
-  days.forEach(({d,isWeekend,isToday}) => {
-    const cls   = [isWeekend?"col-weekend":"", isToday?"col-today":""].filter(Boolean).join(" ");
-    const style = isToday ? `style="color:var(--blue);font-weight:700;"` : "";
-    hNum += `<th class="th-daynum col-day ${cls}" ${style}>${d}</th>`;
+  days.forEach(({d,isWeekend,isToday,dow}) => {
+    const dowCls = !isWeekend ? (DOW_CLS[dow]||"") : "";
+    const cls   = [isWeekend?"col-weekend":dowCls, isToday?"col-today":""].filter(Boolean).join(" ");
+    hNum += `<th class="th-daynum col-day ${cls}">${d}</th>`;
   });
   hNum += `<th class="th-daynum">—</th><th class="th-daynum">—</th>
     <th class="th-daynum">—</th><th class="th-daynum">—</th></tr>`;
@@ -598,8 +627,9 @@ function renderGrid(year, mon, daysInMonth) {
     let sP=0, sL=0, sA=0;
     let cells = "";
 
-    days.forEach(({dateStr,isWeekend,isToday}) => {
-      const wkCls  = isWeekend ? "col-weekend" : "";
+    days.forEach(({dateStr,isWeekend,isToday,dow}) => {
+      const dowCls = !isWeekend ? (DOW_CLS[dow]||"") : "";
+      const wkCls  = isWeekend ? "col-weekend" : dowCls;
       const tdyCls = isToday   ? "col-today"   : "";
       const cls    = [wkCls,tdyCls].filter(Boolean).join(" ");
       if (isGhost) {
