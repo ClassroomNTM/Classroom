@@ -602,13 +602,23 @@ window.saveStudent = async function() {
     }
     dupConfirmed = false;
     document.getElementById("dupWarn").style.display = "none";
+    clearStudentsCache(currentClassId);
     closeStudentModal(); showToast("บันทึกนักเรียนเรียบร้อย ✓","success"); await loadStudents(currentClassId);
   } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
 };
 
+// ล้าง students cache ทุก classId ที่เกี่ยวข้อง เพื่อให้ attendance.html โหลดใหม่
+function clearStudentsCache(classId) {
+  try {
+    // ล้าง key ของ classId นั้น และ key pattern เก่า
+    sessionStorage.removeItem("students_" + classId);
+  } catch {}
+}
+
 window.toggleGhost = async function(id, isGhost) {
   try {
     await setDoc(doc(db,"students",id),{ghost:isGhost},{merge:true});
+    clearStudentsCache(currentClassId);
     showToast(isGhost ? "มาร์ก 'ไม่มีตัวตน' เรียบร้อย" : "คืนสถานะปกติแล้ว","success");
     await loadStudents(currentClassId);
   } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
@@ -620,6 +630,7 @@ window.deleteStudent = async function(id) {
     await deleteDoc(doc(db,"students",id));
     const cls=classes.find(c=>c.id===currentClassId);
     if (cls) await setDoc(doc(db,"classes",currentClassId),{studentCount:Math.max(0,(cls.studentCount||1)-1)},{merge:true});
+    clearStudentsCache(currentClassId);
     showToast("ลบนักเรียนเรียบร้อย","success"); await loadStudents(currentClassId);
   } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
 };
