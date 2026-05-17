@@ -284,44 +284,26 @@ input:focus,select.modal-sel:focus{border-color:var(--blue);box-shadow:0 0 0 3px
 <div id="toast"></div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, updateProfile }
-  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { initAuth, doLogout, db, auth } from "./auth-guard.js";
 import {
-  getFirestore, collection, doc, getDocs, setDoc, deleteDoc, query, orderBy
+  collection, doc, getDocs, setDoc, deleteDoc, query, orderBy
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { createUserWithEmailAndPassword, updateProfile }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyCBXMi3sy-3iDDzHDXVvlmaa6szcmnFbwQ", authDomain: "classroom-93c8b.firebaseapp.com",
-  projectId: "classroom-93c8b", storageBucket: "classroom-93c8b.firebasestorage.app",
-  messagingSenderId: "659092749098", appId: "1:659092749098:web:36f249557c4badc088fc53",
-  measurementId: "G-EXJVCH9Z4S"
-};
-const app  = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db   = getFirestore(app);
 window.__db = db;
+window.doLogout = doLogout;
 
 let userRole = "", users = [], currentTab = "users";
 
-onAuthStateChanged(auth, async user => {
-  if (!user) { window.location.href = "index.html"; return; }
-  userRole = sessionStorage.getItem("userRole") || "user";
-  const name = sessionStorage.getItem("userName") || user.email;
-  document.getElementById("avatarEl").textContent = name.charAt(0).toUpperCase();
-  document.getElementById("userNameEl").textContent = name;
-
-  if (userRole !== "admin") {
-    document.getElementById("accessDenied").style.display = "block";
-    return;
-  }
+// requireAdmin: true → user ถูก redirect ไป submit.html อัตโนมัติ
+initAuth({ requireAdmin: true, onReady: async ({ role }) => {
+  userRole = role;
   document.getElementById("adminContent").style.display = "block";
-  document.getElementById("adminNavItem") && (
-    document.getElementById("adminNavItem").style.display = "flex");
+  document.getElementById("adminNavItem") &&
+    (document.getElementById("adminNavItem").style.display = "flex");
   await loadUsers();
-});
-
-window.doLogout = async () => { await signOut(auth); sessionStorage.clear(); window.location.href = "index.html"; };
+}});
 
 async function loadUsers() {
   const snap = await getDocs(collection(db, "users"));

@@ -221,26 +221,12 @@ tr:last-child td{border-bottom:none;}
 <div id="toast"></div>
 
 <script type="module">
-import { initializeApp }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut }
-  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, query, where }
+import { initAuth, doLogout, db } from "./auth-guard.js";
+import { collection, getDocs, doc, setDoc, deleteDoc, query, where }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyCBXMi3sy-3iDDzHDXVvlmaa6szcmnFbwQ",
-  authDomain: "classroom-93c8b.firebaseapp.com",
-  projectId: "classroom-93c8b",
-  storageBucket: "classroom-93c8b.firebasestorage.app",
-  messagingSenderId: "659092749098",
-  appId: "1:659092749098:web:36f249557c4badc088fc53",
-  measurementId: "G-EXJVCH9Z4S"
-};
-
-const app  = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db   = getFirestore(app);
 window.__db = db;
+window.doLogout = doLogout;
 
 let userRole   = "user";
 let students   = [];
@@ -251,7 +237,6 @@ const today = new Date().toISOString().split("T")[0];
 document.getElementById("dateInput").value = today;
 
 // ─── sessionStorage cache helpers ────────────────────────────
-// Cache TTL = 30 นาที (subjects/classes ไม่ค่อยเปลี่ยน)
 const CACHE_TTL = 30 * 60 * 1000;
 
 function cacheSet(key, data) {
@@ -267,7 +252,7 @@ function cacheGet(key) {
   } catch { return null; }
 }
 
-// students cache แยกตาม classId (ไม่มี TTL — invalidate เมื่อ classId เปลี่ยน)
+// students cache แยกตาม classId
 function studentsCacheSet(classId, data) {
   sessionStorage.setItem("students_" + classId, JSON.stringify(data));
 }
@@ -278,30 +263,14 @@ function studentsCacheGet(classId) {
   } catch { return null; }
 }
 
-onAuthStateChanged(auth, async (user) => {
-  if (!user) { window.location.href = "index.html"; return; }
-  userRole = sessionStorage.getItem("userRole") || "user";
-  const name = sessionStorage.getItem("userName") || user.email;
-
-  document.getElementById("avatarEl").textContent   = name.substring(0,2);
-  document.getElementById("userNameEl").textContent = name;
-  const badge = document.getElementById("roleBadgeEl");
-  badge.textContent = userRole === "admin" ? "Admin" : "User";
-  badge.className   = "role-badge " + (userRole==="admin"?"role-admin":"role-user");
-
-  if (userRole === "admin") {
-    document.getElementById("adminNavItem").style.display = "flex";
-    document.getElementById("saveBtn").style.display = "inline-flex";
-  } else {
-    document.getElementById("readonlyBanner").style.display = "block";
-  }
-
+initAuth({ requireAdmin: true, onReady: async ({ role }) => {
+  userRole = role;
+  document.getElementById("adminNavItem").style.display = "flex";
+  document.getElementById("saveBtn").style.display = "inline-flex";
   await loadSubjects();
   await loadClasses();
   window.loadStudents();
-});
-
-window.doLogout = async () => { await signOut(auth); sessionStorage.clear(); window.location.href="index.html"; };
+}});
 
 // ─── loadSubjects: cache-first, Firestore fallback ───────────
 async function loadSubjects() {

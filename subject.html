@@ -207,48 +207,22 @@ input:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15
 <div id="toast"></div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { initAuth, doLogout, db } from "./auth-guard.js";
 import {
-  getFirestore, collection, doc, getDocs, addDoc, setDoc, deleteDoc
+  collection, doc, getDocs, addDoc, setDoc, deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyCBXMi3sy-3iDDzHDXVvlmaa6szcmnFbwQ",
-  authDomain: "classroom-93c8b.firebaseapp.com",
-  projectId: "classroom-93c8b",
-  storageBucket: "classroom-93c8b.firebasestorage.app",
-  messagingSenderId: "659092749098",
-  appId: "1:659092749098:web:36f249557c4badc088fc53",
-  measurementId: "G-EXJVCH9Z4S"
-};
-const app  = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db   = getFirestore(app);
 window.__db = db;
+window.doLogout = doLogout;
 
 let userRole = "", subjects = [];
 
-onAuthStateChanged(auth, async user => {
-  if (!user) { window.location.href = "index.html"; return; }
-  userRole = sessionStorage.getItem("userRole") || "user";
-  const name = sessionStorage.getItem("userName") || user.email;
-  document.getElementById("avatarEl").textContent = name.charAt(0).toUpperCase();
-  document.getElementById("userNameEl").textContent = name;
-  const rb = document.getElementById("roleBadgeEl");
-  rb.textContent = userRole === "admin" ? "Admin" : "User";
-  rb.className = "role-badge " + (userRole === "admin" ? "role-admin" : "role-user");
-
-  if (userRole === "admin") {
-    document.getElementById("adminNavItem").style.display = "flex";
-    document.getElementById("addSubjectBtn").style.display = "inline-flex";
-  } else {
-    document.getElementById("noticeBar").style.display = "block";
-  }
+initAuth({ requireAdmin: true, onReady: async ({ role }) => {
+  userRole = role;
+  document.getElementById("adminNavItem").style.display = "flex";
+  document.getElementById("addSubjectBtn").style.display = "inline-flex";
   await loadSubjects();
-});
-
-window.doLogout = async () => { await signOut(auth); sessionStorage.clear(); window.location.href = "index.html"; };
+}});
 
 async function loadSubjects() {
   document.getElementById("subjectsArea").innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg><p>กำลังโหลด...</p></div>`;

@@ -296,36 +296,45 @@
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
 
-  // ── ถ้า login อยู่แล้ว → ไป dashboard ──
+  // ── ถ้า login อยู่แล้ว → redirect ตาม role ──
   onAuthStateChanged(auth, async (user) => {
     if (user) {
-      await loadAndStoreUser(user);
-      window.location.href = "dashboard.html";
+      const role = await loadAndCacheUser(user);
+      window.location.href = role === "admin" ? "dashboard.html" : "submit.html";
     }
   });
 
-  // ── helper: ดึงข้อมูลผู้ใช้จาก Firestore ──
-  async function loadAndStoreUser(user) {
+  // ── helper: ดึงข้อมูลผู้ใช้จาก Firestore → cache ──
+  async function loadAndCacheUser(user) {
+    // ตรวจ cache ก่อน (TTL 30 นาที)
+    try {
+      const raw = sessionStorage.getItem("_authCache");
+      if (raw) {
+        const obj = JSON.parse(raw);
+        if (obj.uid === user.uid && Date.now() - obj.ts < 30 * 60 * 1000) {
+          return obj.role;
+        }
+      }
+    } catch {}
+
     const snap = await getDoc(doc(db, "users", user.uid));
+    let role, name;
     if (snap.exists()) {
       const data = snap.data();
-      sessionStorage.setItem("userRole", data.role || "user");
-      sessionStorage.setItem("userName", data.displayName || user.displayName || user.email);
-      sessionStorage.setItem("userId",   user.uid);
+      role = data.role || "user";
+      name = data.displayName || user.displayName || user.email;
     } else {
-      // ผู้ใช้ใหม่ (Google) — สร้าง doc อัตโนมัติด้วย role = "user"
-      const newUser = {
-        displayName: user.displayName || user.email,
-        email:       user.email,
-        role:        "user",
-        provider:    user.providerData[0]?.providerId || "google.com",
-        createdAt:   serverTimestamp()
-      };
-      await setDoc(doc(db, "users", user.uid), newUser);
-      sessionStorage.setItem("userRole", "user");
-      sessionStorage.setItem("userName", newUser.displayName);
-      sessionStorage.setItem("userId",   user.uid);
+      // ผู้ใช้ใหม่ (Google) — สร้าง doc อัตโนมัติ
+      role = "user";
+      name = user.displayName || user.email;
+      await setDoc(doc(db, "users", user.uid), {
+        displayName: name, email: user.email, role: "user",
+        provider: user.providerData[0]?.providerId || "google.com",
+        createdAt: serverTimestamp()
+      });
     }
+    sessionStorage.setItem("_authCache", JSON.stringify({ ts: Date.now(), uid: user.uid, role, name }));
+    return role;
   }
 
   // ── Email / Password Login ──
@@ -343,8 +352,8 @@
 
     try {
       const cred = await signInWithEmailAndPassword(auth, email, password);
-      await loadAndStoreUser(cred.user);
-      window.location.href = "dashboard.html";
+      const role = await loadAndCacheUser(cred.user);
+      window.location.href = role === "admin" ? "dashboard.html" : "submit.html";
     } catch (err) {
       let msg = "อีเมลหรือรหัสผ่านไม่ถูกต้อง";
       if (err.code === "auth/too-many-requests") msg = "ลองใหม่ภายหลัง (พยายามเข้าสู่ระบบบ่อยเกินไป)";
@@ -367,8 +376,8 @@
 
     try {
       const result = await signInWithPopup(auth, provider);
-      await loadAndStoreUser(result.user);
-      window.location.href = "dashboard.html";
+      const role = await loadAndCacheUser(result.user);
+      window.location.href = role === "admin" ? "dashboard.html" : "submit.html";
     } catch (err) {
       if (err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request") {
         // ผู้ใช้ปิด popup เอง — ไม่ต้องแสดง error
