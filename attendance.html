@@ -227,7 +227,7 @@ import { getAuth, onAuthStateChanged, signOut }
 import { getFirestore, collection, getDocs, query, where }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// ─── ⚙️ ใส่ URL Apps Script Web App ที่ Deploy แล้ว ───────────
+// ─── ⚙️ URL Apps Script Web App ────────────────────────────────
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzyN1b-rW6Grg8LBY5SAXZyvAyhkyWKCVHMcVl3E5zpVJffL3abwZoYlgOrnDn3bTodmA/exec";
 // ────────────────────────────────────────────────────────────
 
@@ -248,11 +248,39 @@ window.__db = db;
 
 let userRole   = "user";
 let students   = [];
-let attendance = {}; // studentId -> {status, note}
+let attendance = {};
 
 // date default = today
 const today = new Date().toISOString().split("T")[0];
 document.getElementById("dateInput").value = today;
+
+// ─── sessionStorage cache helpers ────────────────────────────
+// Cache TTL = 30 นาที (subjects/classes ไม่ค่อยเปลี่ยน)
+const CACHE_TTL = 30 * 60 * 1000;
+
+function cacheSet(key, data) {
+  sessionStorage.setItem(key, JSON.stringify({ ts: Date.now(), data }));
+}
+function cacheGet(key) {
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    if (Date.now() - obj.ts > CACHE_TTL) { sessionStorage.removeItem(key); return null; }
+    return obj.data;
+  } catch { return null; }
+}
+
+// students cache แยกตาม classId (ไม่มี TTL — invalidate เมื่อ classId เปลี่ยน)
+function studentsCacheSet(classId, data) {
+  sessionStorage.setItem("students_" + classId, JSON.stringify(data));
+}
+function studentsCacheGet(classId) {
+  try {
+    const raw = sessionStorage.getItem("students_" + classId);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) { window.location.href = "index.html"; return; }
@@ -266,7 +294,6 @@ onAuthStateChanged(auth, async (user) => {
   badge.className   = "role-badge " + (userRole==="admin"?"role-admin":"role-user");
 
   if (userRole === "admin") {
-    
     document.getElementById("adminNavItem").style.display = "flex";
     document.getElementById("saveBtn").style.display = "inline-flex";
   } else {
@@ -280,26 +307,45 @@ onAuthStateChanged(auth, async (user) => {
 
 window.doLogout = async () => { await signOut(auth); sessionStorage.clear(); window.location.href="index.html"; };
 
+// ─── loadSubjects: cache-first, Firestore fallback ───────────
 async function loadSubjects() {
-  const snap = await getDocs(collection(db,"subjects"));
-  const sel  = document.getElementById("subjectSelect");
-  const subjects = snap.docs.map(d=>{return {id:d.id,...d.data()}})
-    .sort((a,b)=>(a.name||"").localeCompare(b.name||"","th"));
+  let subjects = cacheGet("subjects");
+  if (!subjects) {
+    const snap = await getDocs(collection(db, "subjects"));
+    subjects = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (a.name||"").localeCompare(b.name||"", "th"));
+    cacheSet("subjects", subjects);
+  }
+  const sel = document.getElementById("subjectSelect");
   subjects.forEach(s => {
     const opt = document.createElement("option");
     opt.value = s.id; opt.textContent = s.name;
     sel.appendChild(opt);
   });
-  // default คณิตศาสตร์
-  if (subjects.find(s=>s.id==="8Ib9Lkl9iN")) sel.value = "8Ib9Lkl9iN";
+  // ใส่ sidebar nav ด้วยเลย (ไม่ต้อง getDocs ซ้ำ)
+  const navSel = document.getElementById("navSubjectSelect");
+  if (navSel) {
+    subjects.forEach(s => {
+      const opt = document.createElement("option");
+      opt.value = s.id; opt.textContent = s.name;
+      navSel.appendChild(opt);
+    });
+  }
+  if (subjects.find(s => s.id === "8Ib9Lkl9iN")) sel.value = "8Ib9Lkl9iN";
   else if (subjects.length > 0) sel.value = subjects[0].id;
+  if (navSel) navSel.value = sel.value;
 }
 
+// ─── loadClasses: cache-first, Firestore fallback ────────────
 async function loadClasses() {
-  const snap = await getDocs(collection(db,"classes"));
-  const sel  = document.getElementById("classSelect");
-  const classes = snap.docs.map(d=>{return {id:d.id,...d.data()}})
-    .sort((a,b)=>(a.name||"").localeCompare(b.name||"","th"));
+  let classes = cacheGet("classes");
+  if (!classes) {
+    const snap = await getDocs(collection(db, "classes"));
+    classes = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (a.name||"").localeCompare(b.name||"", "th"));
+    cacheSet("classes", classes);
+  }
+  const sel = document.getElementById("classSelect");
   classes.forEach(c => {
     const opt = document.createElement("option");
     opt.value = c.id; opt.textContent = c.name;
@@ -308,6 +354,7 @@ async function loadClasses() {
   if (classes.length > 0) sel.value = classes[0].id;
 }
 
+// ─── loadStudents: cache students ตาม classId ────────────────
 window.loadStudents = async function() {
   const classId   = document.getElementById("classSelect").value;
   const subjectId = document.getElementById("subjectSelect").value;
@@ -318,12 +365,18 @@ window.loadStudents = async function() {
     '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px;">กำลังโหลด...</td></tr>';
 
   try {
-    // โหลด students จาก Firestore (ข้อมูลน้อย เร็ว)
-    const snap = await getDocs(query(collection(db,"students"),where("classId","==",classId)));
-    students = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.number||0)-(b.number||0));
+    // students: cache-first ตาม classId
+    let cachedStudents = studentsCacheGet(classId);
+    if (!cachedStudents) {
+      const snap = await getDocs(query(collection(db, "students"), where("classId", "==", classId)));
+      cachedStudents = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => (a.number||0) - (b.number||0));
+      studentsCacheSet(classId, cachedStudents);
+    }
+    students = cachedStudents;
 
-    // โหลด attendance รายวัน จาก Google Sheets
-    const params = new URLSearchParams({ action:"queryDay", classId, date });
+    // attendance รายวัน จาก GAS (ไม่ cache — ต้องการข้อมูล real-time)
+    const params = new URLSearchParams({ action: "queryDay", classId, date });
     if (subjectId) params.set("subjectId", subjectId);
     const res  = await fetch(`${GAS_URL}?${params}`);
     const json = await res.json();
@@ -513,36 +566,7 @@ window._onNavSubjectChange = function() {
 };
 
 
-// ── Load subjects into sidebar nav select ──
-(async function loadNavSubjects() {
-  try {
-    const { getFirestore, collection, getDocs } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-    // reuse existing app — try to get db from window or re-init
-    if (!window.__navSubjectsLoaded) {
-      window.__navSubjectsLoaded = true;
-      // wait briefly for page's own firebase to init
-      setTimeout(async () => {
-        try {
-          // use page's existing db if available via window
-          const snap = await getDocs(collection(window.__db || getFirestore(), 'subjects'));
-          const sel = document.getElementById('navSubjectSelect');
-          if (!sel) return;
-          snap.docs
-            .map(d => ({id:d.id,...d.data()}))
-            .sort((a,b)=>(a.name||'').localeCompare(b.name||'','th'))
-            .forEach(s => {
-              const o = document.createElement('option');
-              o.value = s.id; o.textContent = s.name;
-              sel.appendChild(o);
-            });
-          // sync initial value from page's subject select
-          const ps = document.getElementById('subjectSelect') || document.getElementById('subjectSelectPanel');
-          if (ps) sel.value = ps.value;
-        } catch(e) { console.warn('nav subjects:', e); }
-      }, 800);
-    }
-  } catch(e) {}
-})();
+// sidebar subjects โหลดพร้อม loadSubjects() แล้ว ไม่ต้อง fetch ซ้ำ
 
 </script>
 </body>

@@ -263,7 +263,7 @@ tr:hover td { background:#fafafa; }
 import { initializeApp }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, getDocs, query, where, orderBy, limit, Timestamp }
+import { getFirestore, collection, getDocs, query, where }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -281,8 +281,24 @@ const auth = getAuth(app);
 const db   = getFirestore(app);
 window.__db = db;
 
-const days = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
-const today = new Date();
+const DAYS_TH  = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
+const today    = new Date();
+const todayStr = today.toISOString().split("T")[0];
+const CACHE_TTL = 30 * 60 * 1000;
+
+// ─── cache helpers ───────────────────────────────────────────
+function cacheSet(key, data) {
+  sessionStorage.setItem(key, JSON.stringify({ ts: Date.now(), data }));
+}
+function cacheGet(key) {
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    if (Date.now() - obj.ts > CACHE_TTL) { sessionStorage.removeItem(key); return null; }
+    return obj.data;
+  } catch { return null; }
+}
 
 // ── Auth Guard ──
 onAuthStateChanged(auth, async (user) => {
@@ -290,14 +306,13 @@ onAuthStateChanged(auth, async (user) => {
 
   const role = sessionStorage.getItem("userRole") || "user";
   const name = sessionStorage.getItem("userName") || user.email;
-  const initials = name.substring(0,2);
 
-  document.getElementById("avatarEl").textContent    = initials;
+  document.getElementById("avatarEl").textContent    = name.substring(0,2);
   document.getElementById("userNameEl").textContent  = name;
   const badge = document.getElementById("roleBadgeEl");
   badge.textContent  = role === "admin" ? "Admin" : "User";
   badge.className    = "role-badge " + (role === "admin" ? "role-admin" : "role-user");
-  if (role === "admin") 
+  if (role === "admin")
     document.getElementById("adminNavItem").style.display = "flex";
 
   document.getElementById("dateSubEl").textContent =
@@ -314,55 +329,68 @@ window.doLogout = async function() {
 
 async function loadDashboard() {
   try {
-    // Students & Classes
-    const studentSnap = await getDocs(collection(db,"students"));
-    const classSnap   = await getDocs(collection(db,"classes"));
-    const students    = studentSnap.docs.map(d=>({id:d.id,...d.data()}));
-    const classes     = classSnap.docs.map(d=>({id:d.id,...d.data()}));
+    // ── classes: cache-first ──────────────────────────────────
+    let classes = cacheGet("classes");
+    if (!classes) {
+      const snap = await getDocs(collection(db, "classes"));
+      classes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      cacheSet("classes", classes);
+    }
 
-    document.getElementById("totalStudents").textContent = students.length;
+    // ── students: cache-first (ทุก class รวมกัน สำหรับ dashboard) ──
+    let students = cacheGet("all_students");
+    if (!students) {
+      const snap = await getDocs(collection(db, "students"));
+      students = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      cacheSet("all_students", students);
+    }
+
+    document.getElementById("totalStudents").textContent = students.filter(s=>!s.ghost).length;
     document.getElementById("totalClasses").textContent  = classes.length + " ชั้นเรียน";
 
-    // Today attendance
-    const todayStr = today.toISOString().split("T")[0];
-    const attSnap  = await getDocs(query(collection(db,"attendance"), where("date","==",todayStr)));
-    const attRecs  = attSnap.docs.map(d=>d.data());
-    const present  = attRecs.filter(r=>r.status==="present").length;
-    const pct      = students.length ? Math.round(present/students.length*100) : 0;
+    // ── Today attendance (1 query สำหรับวันนี้) ───────────────
+    const attSnap = await getDocs(query(collection(db, "attendance"), where("date", "==", todayStr)));
+    const attRecs = attSnap.docs.map(d => d.data());
+    const present = attRecs.filter(r => r.status === "present").length;
+    const pct     = students.length ? Math.round(present / students.filter(s=>!s.ghost).length * 100) : 0;
     document.getElementById("todayPresent").textContent = present;
     document.getElementById("attendPct").textContent    = pct + "% ของทั้งหมด";
 
-    // Scores average
-    const scoreSnap = await getDocs(collection(db,"scores"));
-    const scores    = scoreSnap.docs.map(d=>d.data());
-    const avgScore  = scores.length
-      ? (scores.reduce((s,r)=>s+(r.score||0),0)/scores.length).toFixed(1)
-      : "—";
+    // ── Scores: query เฉพาะ classId แรก ไม่ดึงทั้ง collection ──
+    // รวม scores ตาม classId จาก students แทน
+    const classIds = [...new Set(students.map(s => s.classId).filter(Boolean))];
+    let scores = [];
+    if (classIds.length > 0) {
+      // ดึง scores ของ class แรกก็พอสำหรับ avg ใน dashboard (ประหยัด reads)
+      const scoreSnap = await getDocs(query(collection(db, "scores"), where("classId", "==", classIds[0])));
+      scores = scoreSnap.docs.map(d => d.data());
+    }
+    const avgScore = scores.length
+      ? (scores.reduce((s, r) => s + (r.score || 0), 0) / scores.length).toFixed(1) : "—";
     document.getElementById("avgScore").textContent = avgScore;
 
-    // Submissions
-    const subSnap   = await getDocs(collection(db,"submissions"));
-    const subs      = subSnap.docs.map(d=>d.data());
-    const submitted = subs.filter(s=>s.status==="submitted").length;
-    const pending   = students.length - submitted;
-    document.getElementById("submitCount").textContent = submitted;
-    document.getElementById("pendingCount").textContent = "ค้าง " + Math.max(0,pending) + " คน";
+    // ── Submissions: query where classId = classIds[0] ───────
+    let subs = [];
+    if (classIds.length > 0) {
+      const subSnap = await getDocs(query(collection(db, "submissions"), where("classId", "==", classIds[0])));
+      subs = subSnap.docs.map(d => d.data());
+    }
+    const submitted = subs.filter(s => s.status === "submitted").length;
+    const pending   = students.filter(s=>!s.ghost).length - submitted;
+    document.getElementById("submitCount").textContent   = submitted;
+    document.getElementById("pendingCount").textContent  = "ค้าง " + Math.max(0, pending) + " คน";
 
-    // Attendance chart (7 days)
-    await buildAttendChart(students.length);
+    // ── Attendance chart 7 วัน: 1 query range แทน 7 queries ──
+    await buildAttendChart(students.filter(s=>!s.ghost).length);
 
-    // Submit donut
-    const late = subs.filter(s=>s.status==="late").length;
-    const pend = Math.max(0, students.length - submitted - late);
+    // ── Submit donut ──────────────────────────────────────────
+    const late = subs.filter(s => s.status === "late").length;
+    const pend = Math.max(0, students.filter(s=>!s.ghost).length - submitted - late);
     buildSubmitChart(submitted, pend, late);
 
-    // Progress bars per class
+    // ── Progress bars / Notifs / Watchlist ───────────────────
     buildProgressBars(classes, scores, students);
-
-    // Notifications (recent attendance issues)
     buildNotifs(attRecs, students);
-
-    // Watch list
     buildWatchList(students, attRecs, scores);
 
   } catch(e) {
@@ -371,36 +399,47 @@ async function loadDashboard() {
 }
 
 async function buildAttendChart(total) {
+  // คำนวณ dateFrom = 6 วันที่แล้ว
+  const d6ago = new Date(today);
+  d6ago.setDate(d6ago.getDate() - 6);
+  const dateFrom = d6ago.toISOString().split("T")[0];
+
+  // 1 query range แทน 7 queries แยก
+  const snap = await getDocs(query(
+    collection(db, "attendance"),
+    where("date", ">=", dateFrom),
+    where("date", "<=", todayStr)
+  ));
+  const allRecs = snap.docs.map(d => d.data());
+
   const labels = [], presentData = [], absentData = [];
-  for (let i=6; i>=0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate()-i);
+  for (let i = 6; i >= 0; i--) {
+    const d  = new Date(today);
+    d.setDate(d.getDate() - i);
     const ds = d.toISOString().split("T")[0];
-    const snap = await getDocs(query(collection(db,"attendance"),where("date","==",ds)));
-    const recs = snap.docs.map(x=>x.data());
-    const p = recs.filter(r=>r.status==="present").length;
-    labels.push(days[d.getDay()]);
+    const recs = allRecs.filter(r => r.date === ds);
+    const p    = recs.filter(r => r.status === "present").length;
+    labels.push(DAYS_TH[d.getDay()]);
     presentData.push(p);
-    absentData.push(Math.max(0,total-p));
+    absentData.push(Math.max(0, total - p));
   }
-  const isDark = false;
-  const gc = "rgba(0,0,0,0.05)";
-  const tc = "#6b7280";
-  new Chart(document.getElementById("attendChart"),{
-    type:"bar",
-    data:{
+
+  const tc = "#6b7280", gc = "rgba(0,0,0,0.05)";
+  new Chart(document.getElementById("attendChart"), {
+    type: "bar",
+    data: {
       labels,
-      datasets:[
-        {label:"มาเรียน",data:presentData,backgroundColor:"#1D9E75",borderRadius:4,stack:"s"},
-        {label:"ขาด/สาย",data:absentData,backgroundColor:"#E24B4A",borderRadius:4,stack:"s"}
+      datasets: [
+        { label:"มาเรียน", data:presentData, backgroundColor:"#1D9E75", borderRadius:4, stack:"s" },
+        { label:"ขาด/สาย", data:absentData,  backgroundColor:"#E24B4A", borderRadius:4, stack:"s" }
       ]
     },
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false}},
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false } },
       scales:{
-        x:{stacked:true,ticks:{color:tc,font:{size:11,family:"Sarabun"}},grid:{display:false}},
-        y:{stacked:true,ticks:{color:tc,font:{size:11,family:"Sarabun"}},grid:{color:gc},beginAtZero:true}
+        x:{ stacked:true, ticks:{color:tc,font:{size:11,family:"Sarabun"}}, grid:{display:false} },
+        y:{ stacked:true, ticks:{color:tc,font:{size:11,family:"Sarabun"}}, grid:{color:gc}, beginAtZero:true }
       }
     }
   });
@@ -512,35 +551,30 @@ window._onNavSubjectChange = function() {
 };
 
 
-// ── Load subjects into sidebar nav select ──
-(async function loadNavSubjects() {
+// ── sidebar subjects: ดึงจาก cache ที่หน้าอื่นเก็บไว้ ──────────
+(async function loadNavSubjectsFromCache() {
   try {
-    const { getFirestore, collection, getDocs } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-    // reuse existing app — try to get db from window or re-init
-    if (!window.__navSubjectsLoaded) {
-      window.__navSubjectsLoaded = true;
-      // wait briefly for page's own firebase to init
-      setTimeout(async () => {
-        try {
-          // use page's existing db if available via window
-          const snap = await getDocs(collection(window.__db || getFirestore(), 'subjects'));
-          const sel = document.getElementById('navSubjectSelect');
-          if (!sel) return;
-          snap.docs
-            .map(d => ({id:d.id,...d.data()}))
-            .sort((a,b)=>(a.name||'').localeCompare(b.name||'','th'))
-            .forEach(s => {
-              const o = document.createElement('option');
-              o.value = s.id; o.textContent = s.name;
-              sel.appendChild(o);
-            });
-          // sync initial value from page's subject select
-          const ps = document.getElementById('subjectSelect') || document.getElementById('subjectSelectPanel');
-          if (ps) sel.value = ps.value;
-        } catch(e) { console.warn('nav subjects:', e); }
-      }, 800);
+    const sel = document.getElementById('navSubjectSelect');
+    if (!sel) return;
+    let subjects = null;
+    try {
+      const raw = sessionStorage.getItem("subjects");
+      if (raw) { const obj = JSON.parse(raw); subjects = obj.data; }
+    } catch {}
+    if (!subjects) {
+      // fallback: โหลดครั้งเดียวถ้า cache ยังไม่มี
+      const { getDocs: gd, collection: col } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+      const snap = await gd(col(window.__db, 'subjects'));
+      subjects = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => (a.name||'').localeCompare(b.name||'', 'th'));
+      sessionStorage.setItem("subjects", JSON.stringify({ ts: Date.now(), data: subjects }));
     }
-  } catch(e) {}
+    subjects.forEach(s => {
+      const o = document.createElement('option');
+      o.value = s.id; o.textContent = s.name;
+      sel.appendChild(o);
+    });
+  } catch(e) { console.warn('nav subjects:', e); }
 })();
 
 </script>

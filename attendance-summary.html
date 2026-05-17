@@ -356,13 +356,10 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
 <script type="module">
 import { initializeApp }        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, getDocs }    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// ─────────────────────────────────────────────────────────────
-//  ⚙️  ตั้งค่า: ใส่ URL ของ Apps Script Web App ที่ Deploy แล้ว
-// ─────────────────────────────────────────────────────────────
+// ─── ⚙️ URL Apps Script Web App ────────────────────────────────
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzyN1b-rW6Grg8LBY5SAXZyvAyhkyWKCVHMcVl3E5zpVJffL3abwZoYlgOrnDn3bTodmA/exec";
-//              ^ เปลี่ยนตรงนี้หลัง Deploy Apps Script
 
 const firebaseConfig = {
   apiKey: "AIzaSyCBXMi3sy-3iDDzHDXVvlmaa6szcmnFbwQ",
@@ -375,7 +372,7 @@ const firebaseConfig = {
 
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db   = getFirestore(app);   // ยังใช้ Firestore สำหรับ subjects, classes, students
+const db   = getFirestore(app);
 
 const THAI_MONTHS     = ["","มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน",
                           "กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
@@ -383,15 +380,38 @@ const THAI_DAYS_SHORT = ["อา","จ","อ","พ","พฤ","ศ","ส"];
 
 let userRole    = "user";
 let allStudents = [];
-let attMap      = {};   // attMap[date][studentId] = { status, note }
+let attMap      = {};
 
-// popup state
 let _popup = { studentId:null, dateStr:null, subjectId:null, classId:null, studentName:"", tdEl:null };
 
-// set default month
 const now = new Date();
 document.getElementById("monthInput").value =
   `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+
+// ─── sessionStorage cache helpers ────────────────────────────
+const CACHE_TTL = 30 * 60 * 1000;
+
+function cacheSet(key, data) {
+  sessionStorage.setItem(key, JSON.stringify({ ts: Date.now(), data }));
+}
+function cacheGet(key) {
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    if (Date.now() - obj.ts > CACHE_TTL) { sessionStorage.removeItem(key); return null; }
+    return obj.data;
+  } catch { return null; }
+}
+function studentsCacheSet(classId, data) {
+  sessionStorage.setItem("students_" + classId, JSON.stringify(data));
+}
+function studentsCacheGet(classId) {
+  try {
+    const raw = sessionStorage.getItem("students_" + classId);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
 
 // ─── Auth ────────────────────────────────────────────────────
 onAuthStateChanged(auth, async (user) => {
@@ -439,11 +459,16 @@ window.syncSubjectToSidebar = function() {
   document.getElementById("sidebarSubjectSelect").value = document.getElementById("subjectSelect").value;
 };
 
-// ─── Load Subjects / Classes (Firestore) ─────────────────────
+// ─── loadSubjects: cache-first ────────────────────────────────
 async function loadSubjects() {
-  const snap = await getDocs(collection(db,"subjects"));
-  const subjects = snap.docs.map(d=>({id:d.id,...d.data()}))
-    .sort((a,b)=>(a.name||"").localeCompare(b.name||"","th"));
+  let subjects = cacheGet("subjects");
+  if (!subjects) {
+    const snap = await getDocs(collection(db, "subjects"));
+    subjects = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (a.name||"").localeCompare(b.name||"", "th"));
+    cacheSet("subjects", subjects);
+  }
+  // ใส่ทั้ง subjectSelect และ sidebarSubjectSelect พร้อมกัน
   ["subjectSelect","sidebarSubjectSelect"].forEach(id => {
     const sel = document.getElementById(id);
     subjects.forEach(s => {
@@ -452,16 +477,21 @@ async function loadSubjects() {
       sel.appendChild(opt);
     });
   });
-  const defId = subjects.find(s=>s.id==="8Ib9Lkl9iN")?.id || subjects[0]?.id || "";
-  document.getElementById("subjectSelect").value       = defId;
+  const defId = subjects.find(s => s.id === "8Ib9Lkl9iN")?.id || subjects[0]?.id || "";
+  document.getElementById("subjectSelect").value        = defId;
   document.getElementById("sidebarSubjectSelect").value = defId;
 }
 
+// ─── loadClasses: cache-first ────────────────────────────────
 async function loadClasses() {
-  const snap = await getDocs(collection(db,"classes"));
-  const sel  = document.getElementById("classSelect");
-  const classes = snap.docs.map(d=>({id:d.id,...d.data()}))
-    .sort((a,b)=>(a.name||"").localeCompare(b.name||"","th"));
+  let classes = cacheGet("classes");
+  if (!classes) {
+    const snap = await getDocs(collection(db, "classes"));
+    classes = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (a.name||"").localeCompare(b.name||"", "th"));
+    cacheSet("classes", classes);
+  }
+  const sel = document.getElementById("classSelect");
   classes.forEach(c => {
     const opt = document.createElement("option");
     opt.value = c.id; opt.textContent = c.name;
@@ -470,7 +500,7 @@ async function loadClasses() {
   if (classes.length > 0) sel.value = classes[0].id;
 }
 
-// ─── Load Attendance จาก Google Sheets (via Apps Script) ─────
+// ─── Load Attendance จาก GAS + students cache ────────────────
 window.loadData = loadData;
 function loadData() { _loadDataAsync(); }
 
@@ -496,32 +526,28 @@ async function _loadDataAsync() {
     const dateFrom    = `${year}-${String(mon).padStart(2,"0")}-01`;
     const dateTo      = `${year}-${String(mon).padStart(2,"0")}-${String(daysInMonth).padStart(2,"0")}`;
 
-    // โหลด students จาก Firestore (ยังเร็ว เพราะ students ไม่มาก)
-    const { getDocs: gd, query: q, collection: col, where: w } = await import(
-      "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
-    );
-    const sSnap = await gd(q(col(db,"students"), w("classId","==",classId)));
-    allStudents = sSnap.docs.map(d=>({id:d.id,...d.data()}))
-      .sort((a,b)=>(a.number||0)-(b.number||0));
+    // students: cache-first ตาม classId
+    let cachedStudents = studentsCacheGet(classId);
+    if (!cachedStudents) {
+      const sSnap = await getDocs(query(collection(db, "students"), where("classId", "==", classId)));
+      cachedStudents = sSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => (a.number||0) - (b.number||0));
+      studentsCacheSet(classId, cachedStudents);
+    }
+    allStudents = cachedStudents;
 
-    // โหลด attendance จาก Google Sheets ผ่าน Apps Script
+    // attendance ทั้งเดือน จาก GAS (ไม่ cache — ข้อมูลเปลี่ยนบ่อย)
     const params = new URLSearchParams({
-      action:    "query",
-      classId,
-      dateFrom,
-      dateTo,
+      action: "query", classId, dateFrom, dateTo,
       ...(subjectId ? { subjectId } : {})
     });
     const res  = await fetch(`${GAS_URL}?${params}`);
     const json = await res.json();
-
     if (!json.ok) throw new Error(json.error || "Apps Script error");
 
-    // สร้าง attMap จาก array ที่ได้
     attMap = {};
     json.data.forEach(r => {
       if (!attMap[r.date]) attMap[r.date] = {};
-      // ถ้ามีซ้ำ เอา savedAt ล่าสุด
       const existing = attMap[r.date][r.studentId];
       if (!existing || r.savedAt >= (existing.savedAt||"")) {
         attMap[r.date][r.studentId] = { status: r.status, note: r.note||"", savedAt: r.savedAt||"" };

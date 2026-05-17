@@ -262,8 +262,32 @@ const auth = getAuth(app);
 const db   = getFirestore(app);
 window.__db = db;
 
-let userRole = "", currentClassId = "", currentTopicId = "", currentMaxScore = 100;
+let userRole = "", currentClassId = "", currentSubjectId = "", currentTopicId = "", currentMaxScore = 100;
 let students = [], scores = {}, topics = [];
+
+// ─── cache helpers ────────────────────────────────────────────
+const CACHE_TTL = 30 * 60 * 1000;
+function cacheSet(key, data) {
+  sessionStorage.setItem(key, JSON.stringify({ ts: Date.now(), data }));
+}
+function cacheGet(key) {
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    if (Date.now() - obj.ts > CACHE_TTL) { sessionStorage.removeItem(key); return null; }
+    return obj.data;
+  } catch { return null; }
+}
+function studentsCacheSet(classId, data) {
+  sessionStorage.setItem("students_" + classId, JSON.stringify(data));
+}
+function studentsCacheGet(classId) {
+  try {
+    const raw = sessionStorage.getItem("students_" + classId);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
 
 onAuthStateChanged(auth, async user => {
   if (!user) { window.location.href = "index.html"; return; }
@@ -275,7 +299,6 @@ onAuthStateChanged(auth, async user => {
   rb.textContent = userRole === "admin" ? "Admin" : "User";
   rb.className = "role-badge " + (userRole === "admin" ? "role-admin" : "role-user");
   if (userRole === "admin") {
-    
     document.getElementById("adminNavItem").style.display = "flex";
     document.getElementById("addTopicBtn").style.display = "inline-flex";
     document.getElementById("saveScoreBtn").style.display = "inline-flex";
@@ -289,27 +312,41 @@ onAuthStateChanged(auth, async user => {
 
 window.doLogout = async () => { await signOut(auth); sessionStorage.clear(); window.location.href = "index.html"; };
 
-
 async function loadSubjects() {
-  const snap = await getDocs(collection(db,"subjects"));
-  const sel  = document.getElementById("subjectSelect");
-  const subjects = snap.docs.map(d=>{return {id:d.id,...d.data()}})
-    .sort((a,b)=>(a.name||"").localeCompare(b.name||"","th"));
+  let subjects = cacheGet("subjects");
+  if (!subjects) {
+    const snap = await getDocs(collection(db, "subjects"));
+    subjects = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (a.name||"").localeCompare(b.name||"", "th"));
+    cacheSet("subjects", subjects);
+  }
+  const sel = document.getElementById("subjectSelect");
   subjects.forEach(s => {
     const opt = document.createElement("option");
     opt.value = s.id; opt.textContent = s.name;
     sel.appendChild(opt);
   });
-  // default คณิตศาสตร์
-  if (subjects.find(s=>s.id==="8Ib9Lkl9iN")) sel.value = "8Ib9Lkl9iN";
+  // sidebar nav
+  const navSel = document.getElementById("navSubjectSelect");
+  if (navSel) subjects.forEach(s => {
+    const opt = document.createElement("option");
+    opt.value = s.id; opt.textContent = s.name;
+    navSel.appendChild(opt);
+  });
+  if (subjects.find(s => s.id === "8Ib9Lkl9iN")) sel.value = "8Ib9Lkl9iN";
   else if (subjects.length > 0) sel.value = subjects[0].id;
+  if (navSel) navSel.value = sel.value;
 }
 
 async function loadClasses() {
-  const snap = await getDocs(collection(db, "classes"));
+  let classes = cacheGet("classes");
+  if (!classes) {
+    const snap = await getDocs(collection(db, "classes"));
+    classes = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (a.name||"").localeCompare(b.name||"", "th"));
+    cacheSet("classes", classes);
+  }
   const sel = document.getElementById("classSelect");
-  const classes = snap.docs.map(d=>{return {id:d.id,...d.data()}})
-    .sort((a,b)=>(a.name||"").localeCompare(b.name||"","th"));
   classes.forEach(c => {
     const opt = document.createElement("option");
     opt.value = c.id; opt.textContent = c.name;
@@ -319,15 +356,21 @@ async function loadClasses() {
 }
 
 window.onClassChange = async function() {
-  currentClassId = document.getElementById("classSelect").value;
+  currentClassId  = document.getElementById("classSelect").value;
   currentSubjectId = document.getElementById("subjectSelect").value;
   if (!currentClassId) return;
-  // load students
-  const sSnap = await getDocs(query(collection(db,"students"), where("classId","==",currentClassId)));
-  students = sSnap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => (a.number||0)-(b.number||0));
-  // load topics
+  // students: cache-first ตาม classId
+  let cached = studentsCacheGet(currentClassId);
+  if (!cached) {
+    const sSnap = await getDocs(query(collection(db, "students"), where("classId", "==", currentClassId)));
+    cached = sSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (a.number||0)-(b.number||0));
+    studentsCacheSet(currentClassId, cached);
+  }
+  students = cached;
   await loadTopics();
 };
+
+// sidebar subjects โหลดพร้อม loadSubjects() แล้ว ไม่ต้อง fetch ซ้ำ
 
 async function loadTopics() {
   const topicFilters = [where("classId","==",currentClassId)];
