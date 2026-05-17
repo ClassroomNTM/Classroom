@@ -508,12 +508,17 @@ window._syncSidebarSubjectTo = function(val) {
 };
 window._onNavSubjectChange = function() {
   const el = document.getElementById('navSubjectSelect');
-  if (!el) return;
-  // find page's own subject select and sync
-  ['subjectSelect','subjectSelectPanel','subjectSelectFilter'].forEach(id => {
+  if (!el || !el.value) return;
+  // ถ้าหน้านี้มี subjectSelect ของตัวเอง → sync; ถ้าไม่มี → navigate ไป attendance.html
+  const localSelects = ['subjectSelect','subjectSelectPanel','subjectSelectFilter'];
+  const found = localSelects.some(id => {
     const s = document.getElementById(id);
-    if (s) { s.value = el.value; s.dispatchEvent(new Event('change')); }
+    if (s) { s.value = el.value; s.dispatchEvent(new Event('change')); return true; }
+    return false;
   });
+  if (!found) {
+    window.location.href = 'attendance.html?subject=' + encodeURIComponent(el.value);
+  }
 };
 
 
