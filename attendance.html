@@ -280,9 +280,9 @@ async function loadSubjects() {
       navSel.appendChild(opt);
     });
   }
-  if (subjects.find(s => s.id === "8Ib9Lkl9iN")) sel.value = "8Ib9Lkl9iN";
-  else if (subjects.length > 0) sel.value = subjects[0].id;
-  if (navSel) navSel.value = sel.value;
+  const defId = subjects[0]?.id || "";
+  sel.value = defId;
+  if (navSel) navSel.value = defId;
 }
 
 // ─── loadClasses ──────────────────────────────────────────────
