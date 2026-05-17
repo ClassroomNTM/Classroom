@@ -224,12 +224,8 @@ tr:last-child td{border-bottom:none;}
 import { initializeApp }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, getDocs, query, where }
+import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, query, where }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-// ─── ⚙️ URL Apps Script Web App ────────────────────────────────
-const GAS_URL = "https://script.google.com/macros/s/AKfycbzyN1b-rW6Grg8LBY5SAXZyvAyhkyWKCVHMcVl3E5zpVJffL3abwZoYlgOrnDn3bTodmA/exec";
-// ────────────────────────────────────────────────────────────
 
 const firebaseConfig = {
   apiKey: "AIzaSyCBXMi3sy-3iDDzHDXVvlmaa6szcmnFbwQ",
@@ -375,15 +371,15 @@ window.loadStudents = async function() {
     }
     students = cachedStudents;
 
-    // attendance รายวัน จาก GAS (ไม่ cache — ต้องการข้อมูล real-time)
-    const params = new URLSearchParams({ action: "queryDay", classId, date });
-    if (subjectId) params.set("subjectId", subjectId);
-    const res  = await fetch(`${GAS_URL}?${params}`);
-    const json = await res.json();
-    if (!json.ok) throw new Error(json.error);
+    // attendance รายวัน จาก Firestore
+    const attQuery = subjectId
+      ? query(collection(db, "attendance"), where("classId","==",classId), where("date","==",date), where("subjectId","==",subjectId))
+      : query(collection(db, "attendance"), where("classId","==",classId), where("date","==",date));
+    const attSnap = await getDocs(attQuery);
 
     attendance = {};
-    json.data.forEach(r => {
+    attSnap.docs.forEach(d => {
+      const r = d.data();
       attendance[r.studentId] = { status: r.status, note: r.note||"" };
     });
 
@@ -495,9 +491,10 @@ window.saveAll = async function() {
 
   try {
     const savedAt = new Date().toISOString();
-    const records = students.map(s => {
-      const a = attendance[s.id] || { status: s.ghost ? "ghost" : "present", note: "" };
-      return {
+    const writes  = students.map(s => {
+      const a   = attendance[s.id] || { status: s.ghost ? "ghost" : "present", note: "" };
+      const docId = `${classId}_${subjectId||"none"}_${date}_${s.id}`;
+      return setDoc(doc(db, "attendance", docId), {
         studentId:   s.id,
         studentName: (s.prefix ? s.prefix+" " : "") + (s.name||""),
         classId,
@@ -506,17 +503,11 @@ window.saveAll = async function() {
         status:      a.status,
         note:        a.note || "",
         savedAt,
-      };
+      });
     });
 
-    const res  = await fetch(GAS_URL, {
-      method: "POST",
-      body:   JSON.stringify({ action: "upsertBatch", records }),
-    });
-    const json = await res.json();
-    if (!json.ok) throw new Error(json.error);
-
-    showToast(`บันทึกการเช็คชื่อเรียบร้อย ✓ (${json.data.upserted} คน)`, "success");
+    await Promise.all(writes);
+    showToast(`บันทึกการเช็คชื่อเรียบร้อย ✓ (${students.length} คน)`, "success");
   } catch(e) {
     showToast("เกิดข้อผิดพลาด: " + e.message, "error");
   }
