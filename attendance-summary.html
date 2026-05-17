@@ -356,10 +356,9 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
 <script type="module">
 import { initializeApp }        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// ─── ⚙️ URL Apps Script Web App ────────────────────────────────
-const GAS_URL = "https://script.google.com/macros/s/AKfycbzyN1b-rW6Grg8LBY5SAXZyvAyhkyWKCVHMcVl3E5zpVJffL3abwZoYlgOrnDn3bTodmA/exec";
+// ─── Firebase config ──────────────────────────────────────────
 
 const firebaseConfig = {
   apiKey: "AIzaSyCBXMi3sy-3iDDzHDXVvlmaa6szcmnFbwQ",
@@ -536,21 +535,29 @@ async function _loadDataAsync() {
     }
     allStudents = cachedStudents;
 
-    // attendance ทั้งเดือน จาก GAS (ไม่ cache — ข้อมูลเปลี่ยนบ่อย)
-    const params = new URLSearchParams({
-      action: "query", classId, dateFrom, dateTo,
-      ...(subjectId ? { subjectId } : {})
-    });
-    const res  = await fetch(`${GAS_URL}?${params}`);
-    const json = await res.json();
-    if (!json.ok) throw new Error(json.error || "Apps Script error");
+    // attendance ทั้งเดือน จาก Firestore
+    let attQuery;
+    if (subjectId) {
+      attQuery = query(collection(db,"attendance"),
+        where("classId","==",classId),
+        where("subjectId","==",subjectId),
+        where("date",">=",dateFrom),
+        where("date","<=",dateTo));
+    } else {
+      attQuery = query(collection(db,"attendance"),
+        where("classId","==",classId),
+        where("date",">=",dateFrom),
+        where("date","<=",dateTo));
+    }
+    const attSnap = await getDocs(attQuery);
 
     attMap = {};
-    json.data.forEach(r => {
+    attSnap.docs.forEach(d => {
+      const r = d.data();
       if (!attMap[r.date]) attMap[r.date] = {};
       const existing = attMap[r.date][r.studentId];
       if (!existing || r.savedAt >= (existing.savedAt||"")) {
-        attMap[r.date][r.studentId] = { status: r.status, note: r.note||"", savedAt: r.savedAt||"" };
+        attMap[r.date][r.studentId] = { status: r.status, note: r.note||"", savedAt: r.savedAt||"", docId: d.id };
       }
     });
 
@@ -794,16 +801,35 @@ window.doDeleteMonth = async function() {
   const btn = document.getElementById("delConfirmBtn");
   btn.disabled=true; btn.textContent="กำลังลบ...";
   try {
-    const res  = await fetch(GAS_URL, {
-      method: "POST",
-      body: JSON.stringify({ action:"deleteMonth", classId, subjectId:subjectId||"", dateFrom, dateTo })
-    });
-    const json = await res.json();
-    if (!json.ok) throw new Error(json.error);
+    // ดึง documents ทั้งหมดที่จะลบ
+    let delQuery;
+    if (subjectId) {
+      delQuery = query(collection(db,"attendance"),
+        where("classId","==",classId),
+        where("subjectId","==",subjectId),
+        where("date",">=",dateFrom),
+        where("date","<=",dateTo));
+    } else {
+      delQuery = query(collection(db,"attendance"),
+        where("classId","==",classId),
+        where("date",">=",dateFrom),
+        where("date","<=",dateTo));
+    }
+    const snap = await getDocs(delQuery);
+
+    // ลบทีละ batch (Firestore จำกัด 500 ต่อ batch)
+    const batchSize = 500;
+    const docs = snap.docs;
+    for (let i = 0; i < docs.length; i += batchSize) {
+      const batch = writeBatch(db);
+      docs.slice(i, i + batchSize).forEach(d => batch.delete(d.ref));
+      await batch.commit();
+    }
+
     attMap = {};
     closeDeleteModal();
     renderGrid(year,mon,daysInMonth);
-    showToast(`ลบข้อมูลเรียบร้อย (${json.data.deleted} รายการ)`,"success");
+    showToast(`ลบข้อมูลเรียบร้อย (${docs.length} รายการ)`,"success");
   } catch(e) {
     showToast("เกิดข้อผิดพลาด: "+e.message,"error");
     btn.disabled=false; btn.textContent="ลบข้อมูล";
@@ -840,25 +866,24 @@ window.applyStatus = async function(newStatus) {
   document.getElementById("popupSaving").style.display = "block";
 
   try {
-    let body;
-    if (newStatus===null) {
-      body = { action:"delete", studentId, subjectId:subjectId||"", date:dateStr };
+    const docId = `${classId}_${subjectId||"none"}_${dateStr}_${studentId}`;
+    if (newStatus === null) {
+      await deleteDoc(doc(db, "attendance", docId));
     } else {
-      body = { action:"upsert", record:{
-        studentId, studentName, classId, subjectId:subjectId||"",
-        date:dateStr, status:newStatus, note:"",
-        savedAt:new Date().toISOString()
-      }};
+      await setDoc(doc(db, "attendance", docId), {
+        studentId, studentName, classId,
+        subjectId: subjectId||"",
+        date: dateStr,
+        status: newStatus,
+        note: "",
+        savedAt: new Date().toISOString()
+      });
     }
-
-    const res  = await fetch(GAS_URL, { method:"POST", body:JSON.stringify(body) });
-    const json = await res.json();
-    if (!json.ok) throw new Error(json.error);
 
     // อัปเดต attMap
     if (!attMap[dateStr]) attMap[dateStr] = {};
     if (newStatus===null) delete attMap[dateStr][studentId];
-    else attMap[dateStr][studentId] = { status:newStatus, note:"", savedAt:new Date().toISOString() };
+    else attMap[dateStr][studentId] = { status:newStatus, note:"", savedAt:new Date().toISOString(), docId };
 
     if (tdEl) tdEl.innerHTML = statusDot(newStatus);
 
