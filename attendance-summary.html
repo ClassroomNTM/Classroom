@@ -96,37 +96,81 @@ select:focus,input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,5
 .th-dayname{background:#fafaf8;font-size:10px;color:var(--muted);padding:4px 2px;}
 .th-daynum{background:#fafaf8;font-size:11px;font-weight:600;color:var(--text);padding:4px 2px;}
 .th-name{background:#f8f8f6;padding:8px 10px;text-align:left;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.05em;}
-.col-weekend.th-dayname{background:#fde0e0!important;color:#b91c1c!important;font-weight:700;}
-.col-weekend.th-daynum{background:#fde0e0!important;color:#b91c1c!important;font-weight:700;}
-td.cell.col-weekend{background:#fff0f0!important;}
-tr.ghost-row td.cell.col-weekend{background:#fceaea!important;}
+/* ── DAY COLOR VARS (set by JS from localStorage) ── */
+:root{
+  --dc-sun-h:#fde0e0;--dc-sun-t:#b91c1c;--dc-sun-c:#fff0f0;
+  --dc-mon-h:#fffde7;--dc-mon-t:#b45309;--dc-mon-c:#fffef5;
+  --dc-tue-h:#fce4ec;--dc-tue-t:#c2185b;--dc-tue-c:#fff5f8;
+  --dc-wed-h:#e8f5e9;--dc-wed-t:#2e7d32;--dc-wed-c:#f5fef5;
+  --dc-thu-h:#fff3e0;--dc-thu-t:#c2410c;--dc-thu-c:#fffaf3;
+  --dc-fri-h:#e3f2fd;--dc-fri-t:#1565c0;--dc-fri-c:#f3f9ff;
+  --dc-sat-h:#fde0e0;--dc-sat-t:#b91c1c;--dc-sat-c:#fff0f0;
+  --dc-today-h:#0f3460;--dc-today-t:#ffffff;
+  --dc-focus:#2563eb;--dc-focus-row:rgba(37,99,235,0.07);--dc-focus-col:rgba(37,99,235,0.07);
+}
+.col-sun.th-dayname{background:var(--dc-sun-h)!important;color:var(--dc-sun-t)!important;font-weight:700;}
+.col-sun.th-daynum{background:var(--dc-sun-h)!important;color:var(--dc-sun-t)!important;font-weight:700;}
+td.cell.col-sun{background:var(--dc-sun-c)!important;}
+.col-mon.th-dayname{background:var(--dc-mon-h)!important;color:var(--dc-mon-t)!important;font-weight:700;}
+.col-mon.th-daynum{background:var(--dc-mon-h)!important;color:var(--dc-mon-t)!important;font-weight:700;}
+td.cell.col-mon{background:var(--dc-mon-c)!important;}
+.col-tue.th-dayname{background:var(--dc-tue-h)!important;color:var(--dc-tue-t)!important;font-weight:700;}
+.col-tue.th-daynum{background:var(--dc-tue-h)!important;color:var(--dc-tue-t)!important;font-weight:700;}
+td.cell.col-tue{background:var(--dc-tue-c)!important;}
+.col-wed.th-dayname{background:var(--dc-wed-h)!important;color:var(--dc-wed-t)!important;font-weight:700;}
+.col-wed.th-daynum{background:var(--dc-wed-h)!important;color:var(--dc-wed-t)!important;font-weight:700;}
+td.cell.col-wed{background:var(--dc-wed-c)!important;}
+.col-thu.th-dayname{background:var(--dc-thu-h)!important;color:var(--dc-thu-t)!important;font-weight:700;}
+.col-thu.th-daynum{background:var(--dc-thu-h)!important;color:var(--dc-thu-t)!important;font-weight:700;}
+td.cell.col-thu{background:var(--dc-thu-c)!important;}
+.col-fri.th-dayname{background:var(--dc-fri-h)!important;color:var(--dc-fri-t)!important;font-weight:700;}
+.col-fri.th-daynum{background:var(--dc-fri-h)!important;color:var(--dc-fri-t)!important;font-weight:700;}
+td.cell.col-fri{background:var(--dc-fri-c)!important;}
+.col-sat.th-dayname{background:var(--dc-sat-h)!important;color:var(--dc-sat-t)!important;font-weight:700;}
+.col-sat.th-daynum{background:var(--dc-sat-h)!important;color:var(--dc-sat-t)!important;font-weight:700;}
+td.cell.col-sat{background:var(--dc-sat-c)!important;}
+.col-today.th-dayname{font-weight:800!important;outline:2px solid var(--dc-today-h);outline-offset:-1px;}
+.col-today.th-daynum{color:var(--dc-today-t)!important;background:var(--dc-today-h)!important;font-weight:800!important;outline:2px solid var(--dc-today-h);outline-offset:-1px;}
+td.cell.col-today{outline:1px solid var(--dc-today-h);outline-offset:-1px;}
 
-/* ── DAY OF WEEK COLORS ── */
-/* Monday (จ) */
-.col-mon.th-dayname{background:#fffde7!important;color:#f57f17!important;font-weight:700;}
-.col-mon.th-daynum{background:#fffde7!important;color:#f57f17!important;font-weight:700;}
-td.cell.col-mon{background:#fffef5!important;}
-/* Tuesday (อ) */
-.col-tue.th-dayname{background:#fce4ec!important;color:#c2185b!important;font-weight:700;}
-.col-tue.th-daynum{background:#fce4ec!important;color:#c2185b!important;font-weight:700;}
-td.cell.col-tue{background:#fff5f8!important;}
-/* Wednesday (พ) */
-.col-wed.th-dayname{background:#e8f5e9!important;color:#2e7d32!important;font-weight:700;}
-.col-wed.th-daynum{background:#e8f5e9!important;color:#2e7d32!important;font-weight:700;}
-td.cell.col-wed{background:#f5fef5!important;}
-/* Thursday (พฤ) */
-.col-thu.th-dayname{background:#fff3e0!important;color:#e65100!important;font-weight:700;}
-.col-thu.th-daynum{background:#fff3e0!important;color:#e65100!important;font-weight:700;}
-td.cell.col-thu{background:#fffaf3!important;}
-/* Friday (ศ) */
-.col-fri.th-dayname{background:#e3f2fd!important;color:#1565c0!important;font-weight:700;}
-.col-fri.th-daynum{background:#e3f2fd!important;color:#1565c0!important;font-weight:700;}
-td.cell.col-fri{background:#f3f9ff!important;}
+/* ── FOCUS CELL (Excel style) ── */
+.att-table tr.focus-row td:not(.cell-name):not(.cell-no){background-color:var(--dc-focus-row)!important;}
+.att-table td.focus-col{background-color:var(--dc-focus-col)!important;}
+.att-table td.focus-cell{outline:2px solid var(--dc-focus)!important;outline-offset:-2px;background:rgba(37,99,235,0.13)!important;z-index:3;position:relative;}
+.att-table th.focus-col-hdr{background:var(--dc-focus-col)!important;color:var(--dc-focus)!important;outline:2px solid var(--dc-focus);outline-offset:-2px;}
+.att-table tr.focus-row td.cell-name{border-left:3px solid var(--dc-focus)!important;}
+.att-table td.cell-name.focus-name{background:var(--dc-focus-row)!important;border-left:3px solid var(--dc-focus)!important;font-weight:600!important;}
 
-/* ── TODAY HIGHLIGHT ── */
-.col-today.th-dayname{font-weight:800!important;outline:2px solid var(--blue);outline-offset:-1px;}
-.col-today.th-daynum{color:white!important;background:var(--blue)!important;font-weight:800!important;outline:2px solid var(--blue);outline-offset:-1px;}
-td.cell.col-today{background:#dbeafe!important;outline:1px solid #93c5fd;outline-offset:-1px;}
+/* ── COLOR PANEL ── */
+.color-panel-overlay{display:none;position:fixed;inset:0;z-index:700;}
+.color-panel-overlay.open{display:block;}
+.color-panel{position:fixed;top:var(--topbar-h);right:0;bottom:0;width:300px;background:white;border-left:1px solid var(--border);box-shadow:-8px 0 32px rgba(0,0,0,.15);display:flex;flex-direction:column;z-index:710;transform:translateX(100%);transition:transform .25s ease;}
+.color-panel.open{transform:translateX(0);}
+.cp-head{padding:13px 14px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.cp-head-title{font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;}
+.cp-close{width:28px;height:28px;border:none;background:#f3f4f6;border-radius:6px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--muted);}
+.cp-close:hover{background:#e5e7eb;}
+.cp-body{padding:10px 12px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;flex:1;}
+.cp-section-title{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding-bottom:4px;border-bottom:1px solid var(--border);margin-bottom:2px;}
+.cp-day-row{display:grid;grid-template-columns:28px 1fr 1fr;align-items:center;gap:7px;padding:4px 6px;border-radius:7px;transition:background .1s;}
+.cp-day-row:hover{background:#f8f8f6;}
+.cp-day-label{font-size:12px;font-weight:700;color:var(--text);}
+.cp-swatch-wrap{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted);}
+.cp-swatch{width:26px;height:26px;border-radius:5px;border:1.5px solid rgba(0,0,0,.12);cursor:pointer;position:relative;overflow:hidden;flex-shrink:0;}
+.cp-swatch input[type=color]{position:absolute;inset:-6px;width:calc(100%+12px);height:calc(100%+12px);border:none;cursor:pointer;opacity:0;}
+.cp-swatch-fill{position:absolute;inset:0;pointer-events:none;}
+.cp-intensity-wrap{display:flex;align-items:center;gap:5px;}
+.cp-intensity-wrap input[type=range]{width:100%;height:3px;accent-color:var(--blue);cursor:pointer;}
+.cp-intensity-val{font-size:10px;color:var(--muted);min-width:24px;text-align:right;}
+.cp-row-single{display:flex;align-items:center;gap:8px;padding:4px 6px;}
+.cp-row-label{font-size:12px;font-weight:600;flex:1;}
+.cp-preview-strip{display:flex;height:6px;border-radius:3px;overflow:hidden;margin-top:2px;}
+.cp-preview-strip div{flex:1;}
+.cp-footer{padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;}
+.cp-btn-reset{flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;background:transparent;font-family:'Sarabun',sans-serif;font-size:12px;cursor:pointer;color:var(--muted);}
+.cp-btn-reset:hover{background:var(--bg);}
+.cp-btn-save{flex:1;padding:8px;border:none;border-radius:8px;background:var(--blue);color:white;font-family:'Sarabun',sans-serif;font-size:12px;cursor:pointer;font-weight:600;}
+.cp-btn-save:hover{background:#0a2847;}
 td.cell{padding:3px 2px;background:#fafafa;}
 td.cell-name{padding:6px 10px;text-align:left;background:white;position:sticky;left:0;z-index:2;border-right:2px solid rgba(0,0,0,0.1);}
 td.cell-no{padding:6px 4px;background:#fafafa;color:var(--muted);font-size:11px;}
@@ -278,6 +322,10 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
         <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Export CSV
       </button>
+      <button class="btn" id="colorPanelBtn" onclick="openColorPanel()" style="display:none;" title="ตั้งค่าสีตาราง">
+        <svg viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor" stroke="none"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor" stroke="none"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor" stroke="none"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor" stroke="none"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+        สีตาราง
+      </button>
     </div>
   </div>
 
@@ -328,6 +376,12 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
     <div class="leg-item"><div class="leg-dot dot-late">ส</div> สาย</div>
     <div class="leg-item"><div class="leg-dot dot-absent">ข</div> ขาด</div>
     <div class="leg-item"><div class="leg-dot dot-ghost">—</div> ไม่มีตัวตน</div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+      <button id="focusToggleBtn" onclick="toggleFocusMode()" style="display:none;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:white;font-family:Sarabun,sans-serif;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:5px;color:var(--muted);">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span id="focusToggleLabel">Focus Mode</span>
+      </button>
+    </div>
   </div>
 
   <div class="table-card">
@@ -344,6 +398,67 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
 </main>
 
 <div id="toast"></div>
+
+<!-- Color Panel -->
+<div class="color-panel-overlay" id="colorPanelOverlay" onclick="closeColorPanel()"></div>
+<div class="color-panel" id="colorPanel">
+  <div class="cp-head">
+    <div class="cp-head-title">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+      ตั้งค่าสีตาราง
+    </div>
+    <button class="cp-close" onclick="closeColorPanel()">✕</button>
+  </div>
+  <div class="cp-body">
+    <div>
+      <div class="cp-section-title">สีประจำวัน</div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:6px;">เลือกสีหลัก → ปรับความเข้ม</div>
+      <div id="cpDayRows"></div>
+      <div class="cp-preview-strip" id="cpPreviewStrip" style="margin-top:8px;"></div>
+    </div>
+    <div>
+      <div class="cp-section-title">วันปัจจุบัน</div>
+      <div class="cp-day-row" style="grid-template-columns:auto 1fr 1fr;">
+        <div class="cp-day-label" style="width:auto;padding-right:4px;">สีพื้น</div>
+        <div class="cp-swatch-wrap">
+          <div class="cp-swatch" id="swTodayH" style="background:#0f3460;">
+            <input type="color" value="#0f3460" oninput="onSwatchInput('today','h',this.value)">
+            <div class="cp-swatch-fill"></div>
+          </div>
+          <span>header</span>
+        </div>
+        <div class="cp-swatch-wrap">
+          <div class="cp-swatch" id="swTodayT" style="background:#ffffff;">
+            <input type="color" value="#ffffff" oninput="onSwatchInput('today','t',this.value)">
+            <div class="cp-swatch-fill"></div>
+          </div>
+          <span>ตัวอักษร</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="cp-section-title">Focus Cell</div>
+      <div class="cp-row-single">
+        <div class="cp-row-label">สีโฟกัส</div>
+        <div class="cp-swatch" id="swFocus" style="background:#2563eb;">
+          <input type="color" value="#2563eb" oninput="onFocusColorInput(this.value)">
+          <div class="cp-swatch-fill"></div>
+        </div>
+      </div>
+      <div class="cp-row-single" style="margin-top:4px;">
+        <div class="cp-row-label" style="font-size:11px;color:var(--muted);">ความเข้มแถว/คอลัมน์</div>
+        <input type="range" min="0" max="30" value="7" id="focusIntensity" oninput="onFocusIntensityInput(this.value)" style="width:80px;accent-color:var(--blue);">
+        <span id="focusIntensityVal" style="font-size:10px;color:var(--muted);min-width:20px;">7%</span>
+      </div>
+    </div>
+  </div>
+  <div class="cp-footer">
+    <button class="cp-btn-reset" onclick="resetColorPanel()">รีเซ็ต</button>
+    <button class="cp-btn-save" onclick="saveColorPanel()">บันทึก ✓</button>
+  </div>
+</div>
+
+
 
 <!-- Status edit popup -->
 <div class="status-popup" id="statusPopup">
@@ -381,7 +496,7 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
 
 <script type="module">
 import { initAuth, doLogout, db } from "./auth-guard.js";
-import { collection, getDocs, doc, setDoc, deleteDoc, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { collection, getDocs, doc, getDoc, setDoc, deleteDoc, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 window.doLogout = doLogout;
 
@@ -429,6 +544,9 @@ initAuth({ requireAdmin: true, onReady: async ({ role }) => {
   userRole = role;
   document.getElementById("adminNavItem").style.display    = "flex";
   document.getElementById("deleteMonthBtn").style.display  = "inline-flex";
+  document.getElementById("colorPanelBtn").style.display   = "inline-flex";
+  document.getElementById("focusToggleBtn").style.display  = "inline-flex";
+  await initColorSystem();
   await loadSubjects();
   await loadClasses();
   loadData();
@@ -587,16 +705,15 @@ function renderGrid(year, mon, daysInMonth) {
                 isWeekend: dow===0||dow===6, isToday: dateStr===today });
   }
 
-  const DOW_CLS = ["","col-mon","col-tue","col-wed","col-thu","col-fri",""];
+  const DOW_CLS = ["col-sun","col-mon","col-tue","col-wed","col-thu","col-fri","col-sat"];
 
   // Header rows
   let hName = `<tr>
     <th class="th-name col-no">#</th>
     <th class="th-name col-name">ชื่อ-สกุล</th>`;
-  days.forEach(({name,isWeekend,isToday,d,dow}) => {
-    const dowCls = !isWeekend ? (DOW_CLS[dow]||"") : "";
-    const cls = [isWeekend?"col-weekend":dowCls, isToday?"col-today":""].filter(Boolean).join(" ");
-    hName += `<th class="th-dayname col-day ${cls}">${name}</th>`;
+  days.forEach(({name,isToday,d,dow}) => {
+    const cls = [DOW_CLS[dow]||"", isToday?"col-today":""].filter(Boolean).join(" ");
+    hName += `<th class="th-dayname col-day ${cls}" data-col-idx="${d}">${name}</th>`;
   });
   hName += `<th class="th-name" style="font-size:10px;">รวม<br>ม</th>
     <th class="th-name" style="font-size:10px;">รวม<br>ส</th>
@@ -607,10 +724,9 @@ function renderGrid(year, mon, daysInMonth) {
     <th class="th-daynum col-no" style="font-size:10px;color:var(--muted);">ที่</th>
     <th class="th-daynum col-name" style="text-align:left;padding-left:10px;font-size:10px;color:var(--muted);">
       เดือน ${THAI_MONTHS[mon]} ${year+543}</th>`;
-  days.forEach(({d,isWeekend,isToday,dow}) => {
-    const dowCls = !isWeekend ? (DOW_CLS[dow]||"") : "";
-    const cls   = [isWeekend?"col-weekend":dowCls, isToday?"col-today":""].filter(Boolean).join(" ");
-    hNum += `<th class="th-daynum col-day ${cls}">${d}</th>`;
+  days.forEach(({d,isToday,dow}) => {
+    const cls = [DOW_CLS[dow]||"", isToday?"col-today":""].filter(Boolean).join(" ");
+    hNum += `<th class="th-daynum col-day ${cls}" data-col-idx="${d}">${d}</th>`;
   });
   hNum += `<th class="th-daynum">—</th><th class="th-daynum">—</th>
     <th class="th-daynum">—</th><th class="th-daynum">—</th></tr>`;
@@ -627,13 +743,11 @@ function renderGrid(year, mon, daysInMonth) {
     let sP=0, sL=0, sA=0;
     let cells = "";
 
-    days.forEach(({dateStr,isWeekend,isToday,dow}) => {
-      const dowCls = !isWeekend ? (DOW_CLS[dow]||"") : "";
-      const wkCls  = isWeekend ? "col-weekend" : dowCls;
-      const tdyCls = isToday   ? "col-today"   : "";
-      const cls    = [wkCls,tdyCls].filter(Boolean).join(" ");
+    days.forEach(({dateStr,isToday,dow,d}) => {
+      const cls = [DOW_CLS[dow]||"", isToday?"col-today":""].filter(Boolean).join(" ");
+      const colIdxAttr = `data-col-idx="${d}"`;
       if (isGhost) {
-        cells += `<td class="cell ${cls}"><span class="dot dot-ghost">—</span></td>`;
+        cells += `<td class="cell ${cls}" ${colIdxAttr}><span class="dot dot-ghost">—</span></td>`;
         return;
       }
       const rec    = attMap[dateStr]?.[s.id];
@@ -642,8 +756,8 @@ function renderGrid(year, mon, daysInMonth) {
       if (status==="late")    { sL++; dayLate[dateStr]=(dayLate[dateStr]||0)+1; }
       if (status==="absent")  { sA++; dayAbsent[dateStr]=(dayAbsent[dateStr]||0)+1; }
       const editAttr = isAdmin
-        ? `data-sid="${s.id}" data-date="${dateStr}" data-name="${(s.prefix?s.prefix+" ":"")+s.name}" class="cell ${cls} editable" onclick="openPopup(this,event)"`
-        : `class="cell ${cls}"`;
+        ? `data-sid="${s.id}" data-date="${dateStr}" data-name="${(s.prefix?s.prefix+" ":"")+s.name}" class="cell ${cls} editable" onclick="openPopup(this,event)" ${colIdxAttr}`
+        : `class="cell ${cls}" ${colIdxAttr}`;
       cells += `<td ${editAttr}>${statusDot(status)}</td>`;
     });
 
@@ -910,6 +1024,368 @@ document.addEventListener("mousedown", e => {
 });
 document.addEventListener("keydown", e => {
   if (e.key==="Escape") document.getElementById("statusPopup")?.classList.remove("open");
+});
+
+
+// ──────────────────────────────────────────────────────────────
+// COLOR SYSTEM
+// ──────────────────────────────────────────────────────────────
+const DAY_DEFS = [
+  { key:"sun", label:"อา", defH:"#fde0e0", defT:"#b91c1c" },
+  { key:"mon", label:"จ",  defH:"#fffde7", defT:"#b45309" },
+  { key:"tue", label:"อ",  defH:"#fce4ec", defT:"#c2185b" },
+  { key:"wed", label:"พ",  defH:"#e8f5e9", defT:"#2e7d32" },
+  { key:"thu", label:"พฤ", defH:"#fff3e0", defT:"#c2410c" },
+  { key:"fri", label:"ศ",  defH:"#e3f2fd", defT:"#1565c0" },
+  { key:"sat", label:"ส",  defH:"#fde0e0", defT:"#b91c1c" },
+];
+const LS_KEY = "att_color_settings_v2";
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return {r,g,b};
+}
+function rgbToHex(r,g,b) {
+  return "#"+[r,g,b].map(v=>Math.round(v).toString(16).padStart(2,"0")).join("");
+}
+function blendToWhite(hex, intensity) {
+  // intensity 0=white, 100=full color
+  const {r,g,b} = hexToRgb(hex);
+  const f = intensity/100;
+  return rgbToHex(255+(r-255)*f, 255+(g-255)*f, 255+(b-255)*f);
+}
+function textColorFor(bgHex) {
+  const {r,g,b} = hexToRgb(bgHex);
+  return (r*299+g*587+b*114)/1000 > 150 ? "#1a1a2e" : "#ffffff";
+}
+
+let colorSettings = null;
+
+function defaultSettings() {
+  const s = { today_h:"#0f3460", today_t:"#ffffff", focus:"#2563eb", focusIntensity:7, days:{} };
+  DAY_DEFS.forEach(d => { s.days[d.key] = { base: d.defH, txt: d.defT, intensity: 60 }; });
+  return s;
+}
+
+async function initColorSystem() {
+  // Try Firestore first, fallback to localStorage, then defaults
+  try {
+    const snap = await getDoc(doc(db, "settings", "tableColors"));
+    if (snap.exists()) {
+      colorSettings = snap.data();
+      // Also cache locally for fast next load
+      try { localStorage.setItem(LS_KEY, JSON.stringify(colorSettings)); } catch{}
+    } else {
+      // No DB doc yet — try localStorage
+      const raw = localStorage.getItem(LS_KEY);
+      colorSettings = raw ? JSON.parse(raw) : defaultSettings();
+    }
+  } catch(err) {
+    // Firestore unavailable — fallback to localStorage
+    console.warn("Color settings: Firestore unavailable, using localStorage", err);
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      colorSettings = raw ? JSON.parse(raw) : defaultSettings();
+    } catch { colorSettings = defaultSettings(); }
+  }
+  applyColorSettings();
+  buildColorPanel();
+}
+
+function applyColorSettings() {
+  const s = colorSettings;
+  const root = document.documentElement;
+  DAY_DEFS.forEach(d => {
+    const ds = s.days[d.key] || { base: d.defH, txt: d.defT, intensity: 60 };
+    const hBg  = blendToWhite(ds.base, ds.intensity);
+    const cBg  = blendToWhite(ds.base, Math.round(ds.intensity * 0.35));
+    root.style.setProperty(`--dc-${d.key}-h`, hBg);
+    root.style.setProperty(`--dc-${d.key}-t`, ds.txt);
+    root.style.setProperty(`--dc-${d.key}-c`, cBg);
+  });
+  root.style.setProperty("--dc-today-h", s.today_h||"#0f3460");
+  root.style.setProperty("--dc-today-t", s.today_t||"#ffffff");
+  const fc = s.focus||"#2563eb";
+  const fi = s.focusIntensity??7;
+  root.style.setProperty("--dc-focus", fc);
+  const {r,g,b} = hexToRgb(fc);
+  root.style.setProperty("--dc-focus-row", `rgba(${r},${g},${b},${fi/100})`);
+  root.style.setProperty("--dc-focus-col", `rgba(${r},${g},${b},${fi/100})`);
+}
+
+function buildColorPanel() {
+  const s = colorSettings;
+  const container = document.getElementById("cpDayRows");
+  if (!container) return;
+  container.innerHTML = "";
+  DAY_DEFS.forEach(d => {
+    const ds = s.days[d.key] || { base: d.defH, txt: d.defT, intensity: 60 };
+    const hBg = blendToWhite(ds.base, ds.intensity);
+    const row = document.createElement("div");
+    row.className = "cp-day-row";
+    row.innerHTML = `
+      <div class="cp-day-label">${d.label}</div>
+      <div class="cp-swatch-wrap">
+        <div class="cp-swatch" id="sw-${d.key}-h" style="background:${hBg};">
+          <input type="color" value="${ds.base}" oninput="window.onSwatchInput('${d.key}','h',this.value)">
+          <div class="cp-swatch-fill" style="background:${hBg};"></div>
+        </div>
+        <div class="cp-intensity-wrap" style="flex:1;">
+          <input type="range" min="5" max="100" value="${ds.intensity}" oninput="window.onIntensityInput('${d.key}',this.value)">
+          <span class="cp-intensity-val" id="iv-${d.key}">${ds.intensity}%</span>
+        </div>
+      </div>
+      <div class="cp-swatch-wrap">
+        <div class="cp-swatch" id="sw-${d.key}-t" style="background:${ds.txt};">
+          <input type="color" value="${ds.txt}" oninput="window.onSwatchInput('${d.key}','t',this.value)">
+          <div class="cp-swatch-fill" style="background:${ds.txt};"></div>
+        </div>
+        <span style="font-size:10px;color:var(--muted);">ตัวอักษร</span>
+      </div>`;
+    container.appendChild(row);
+  });
+  updatePreviewStrip();
+
+  // Today swatches
+  const swTH = document.getElementById("swTodayH");
+  const swTT = document.getElementById("swTodayT");
+  if (swTH) {
+    swTH.style.background = s.today_h||"#0f3460";
+    swTH.querySelector(".cp-swatch-fill").style.background = s.today_h||"#0f3460";
+    swTH.querySelector("input").value = s.today_h||"#0f3460";
+  }
+  if (swTT) {
+    swTT.style.background = s.today_t||"#ffffff";
+    swTT.querySelector(".cp-swatch-fill").style.background = s.today_t||"#ffffff";
+    swTT.querySelector("input").value = s.today_t||"#ffffff";
+  }
+  // Focus
+  const swF = document.getElementById("swFocus");
+  if (swF) {
+    swF.style.background = s.focus||"#2563eb";
+    swF.querySelector(".cp-swatch-fill").style.background = s.focus||"#2563eb";
+    swF.querySelector("input").value = s.focus||"#2563eb";
+  }
+  const fiEl = document.getElementById("focusIntensity");
+  const fiValEl = document.getElementById("focusIntensityVal");
+  if (fiEl) fiEl.value = s.focusIntensity??7;
+  if (fiValEl) fiValEl.textContent = (s.focusIntensity??7)+"%";
+}
+
+function updatePreviewStrip() {
+  const strip = document.getElementById("cpPreviewStrip");
+  if (!strip) return;
+  strip.innerHTML = "";
+  DAY_DEFS.forEach(d => {
+    const ds = colorSettings.days[d.key] || { base: d.defH, intensity: 60 };
+    const hBg = blendToWhite(ds.base, ds.intensity);
+    const el = document.createElement("div");
+    el.style.background = hBg;
+    el.title = d.label;
+    strip.appendChild(el);
+  });
+}
+
+window.onSwatchInput = function(key, part, val) {
+  if (key === "today") {
+    if (part === "h") { colorSettings.today_h = val; }
+    else { colorSettings.today_t = val; }
+    const sw = document.getElementById(`swToday${part==="h"?"H":"T"}`);
+    if (sw) { sw.style.background=val; sw.querySelector(".cp-swatch-fill").style.background=val; }
+  } else {
+    if (!colorSettings.days[key]) colorSettings.days[key] = {};
+    if (part === "h") {
+      colorSettings.days[key].base = val;
+      const ds = colorSettings.days[key];
+      const hBg = blendToWhite(val, ds.intensity||60);
+      const sw = document.getElementById(`sw-${key}-h`);
+      if (sw) { sw.style.background=hBg; sw.querySelector(".cp-swatch-fill").style.background=hBg; }
+    } else {
+      colorSettings.days[key].txt = val;
+      const sw = document.getElementById(`sw-${key}-t`);
+      if (sw) { sw.style.background=val; sw.querySelector(".cp-swatch-fill").style.background=val; }
+    }
+    updatePreviewStrip();
+  }
+  applyColorSettings();
+};
+
+window.onIntensityInput = function(key, val) {
+  if (!colorSettings.days[key]) colorSettings.days[key] = {};
+  colorSettings.days[key].intensity = parseInt(val);
+  const iv = document.getElementById(`iv-${key}`);
+  if (iv) iv.textContent = val+"%";
+  const ds = colorSettings.days[key];
+  const hBg = blendToWhite(ds.base||"#cccccc", ds.intensity);
+  const sw = document.getElementById(`sw-${key}-h`);
+  if (sw) { sw.style.background=hBg; sw.querySelector(".cp-swatch-fill").style.background=hBg; }
+  updatePreviewStrip();
+  applyColorSettings();
+};
+
+window.onFocusColorInput = function(val) {
+  colorSettings.focus = val;
+  const sw = document.getElementById("swFocus");
+  if (sw) { sw.style.background=val; sw.querySelector(".cp-swatch-fill").style.background=val; }
+  applyColorSettings();
+};
+window.onFocusIntensityInput = function(val) {
+  colorSettings.focusIntensity = parseInt(val);
+  const el = document.getElementById("focusIntensityVal");
+  if (el) el.textContent = val+"%";
+  applyColorSettings();
+};
+
+window.openColorPanel = function() {
+  buildColorPanel();
+  document.getElementById("colorPanel").classList.add("open");
+  document.getElementById("colorPanelOverlay").classList.add("open");
+};
+window.closeColorPanel = function() {
+  document.getElementById("colorPanel").classList.remove("open");
+  document.getElementById("colorPanelOverlay").classList.remove("open");
+};
+window.saveColorPanel = async function() {
+  const btn = document.querySelector(".cp-btn-save");
+  if (btn) { btn.textContent = "กำลังบันทึก..."; btn.disabled = true; }
+  // Save locally first (instant)
+  try { localStorage.setItem(LS_KEY, JSON.stringify(colorSettings)); } catch{}
+  applyColorSettings();
+  // Save to Firestore
+  try {
+    await setDoc(doc(db, "settings", "tableColors"), { ...colorSettings, savedAt: new Date().toISOString() });
+    showToast("บันทึกลง Database แล้ว ✓","success");
+  } catch(err) {
+    console.error("Save color to Firestore failed:", err);
+    showToast("บันทึก localStorage แล้ว (Firestore ขัดข้อง)","success");
+  } finally {
+    if (btn) { btn.textContent = "บันทึก ✓"; btn.disabled = false; }
+  }
+  closeColorPanel();
+};
+window.resetColorPanel = async function() {
+  colorSettings = defaultSettings();
+  try { localStorage.removeItem(LS_KEY); } catch{}
+  applyColorSettings();
+  buildColorPanel();
+  // Remove from Firestore
+  try {
+    await setDoc(doc(db, "settings", "tableColors"), { ...colorSettings, savedAt: new Date().toISOString() });
+    showToast("รีเซ็ตสีและบันทึก Database แล้ว","success");
+  } catch {
+    showToast("รีเซ็ตสีเรียบร้อย (localStorage)","success");
+  }
+};
+
+// ──────────────────────────────────────────────────────────────
+// FOCUS CELL SYSTEM
+// ──────────────────────────────────────────────────────────────
+let focusModeActive = false;
+let focusRow = -1, focusCol = -1;
+
+window.toggleFocusMode = function() {
+  focusModeActive = !focusModeActive;
+  const btn = document.getElementById("focusToggleBtn");
+  const lbl = document.getElementById("focusToggleLabel");
+  if (focusModeActive) {
+    btn.style.background = "var(--dc-focus)";
+    btn.style.color = "white";
+    btn.style.borderColor = "var(--dc-focus)";
+    lbl.textContent = "Focus: เปิด";
+  } else {
+    btn.style.background = "white";
+    btn.style.color = "var(--muted)";
+    btn.style.borderColor = "var(--border)";
+    lbl.textContent = "Focus Mode";
+    clearFocus();
+  }
+};
+
+function clearFocus() {
+  document.querySelectorAll(".focus-row,.focus-cell,.focus-col,.focus-col-hdr,.focus-name").forEach(el => {
+    el.classList.remove("focus-row","focus-cell","focus-col","focus-col-hdr","focus-name");
+  });
+  focusRow = -1; focusCol = -1;
+}
+
+function applyFocus(rowIdx, colIdx) {
+  clearFocus();
+  focusRow = rowIdx; focusCol = colIdx;
+  const tbl = document.querySelector(".att-table");
+  if (!tbl) return;
+
+  const rows = tbl.querySelectorAll("tbody tr");
+  const headerRows = tbl.querySelectorAll("thead tr");
+
+  // Highlight row
+  if (rowIdx >= 0 && rowIdx < rows.length) {
+    rows[rowIdx].classList.add("focus-row");
+    // Name cell highlight
+    const nameCell = rows[rowIdx].querySelector(".cell-name");
+    if (nameCell) nameCell.classList.add("focus-name");
+  }
+
+  // Highlight column headers
+  headerRows.forEach(hRow => {
+    hRow.querySelectorAll("th[data-col-idx]").forEach(th => {
+      if (parseInt(th.dataset.colIdx) === colIdx) th.classList.add("focus-col-hdr");
+    });
+  });
+
+  // Highlight column cells + find focus cell
+  rows.forEach((tr, ri) => {
+    tr.querySelectorAll("td[data-col-idx]").forEach(td => {
+      if (parseInt(td.dataset.colIdx) === colIdx) {
+        td.classList.add("focus-col");
+        if (ri === rowIdx) td.classList.add("focus-cell");
+      }
+    });
+  });
+}
+
+// Focus on hover (mouseover) — instant like Excel crosshair
+let _focusRaf = null;
+document.addEventListener("mouseover", function(e) {
+  if (!focusModeActive) return;
+  const td = e.target.closest("td[data-col-idx]");
+  if (!td) return;
+  const tbl = td.closest(".att-table");
+  if (!tbl) return;
+  const row = td.closest("tr");
+  const rows = Array.from(tbl.querySelectorAll("tbody tr"));
+  const rowIdx = rows.indexOf(row);
+  const colIdx = parseInt(td.dataset.colIdx);
+  if (rowIdx < 0 || isNaN(colIdx)) return;
+  if (focusRow === rowIdx && focusCol === colIdx) return; // no change
+  if (_focusRaf) cancelAnimationFrame(_focusRaf);
+  _focusRaf = requestAnimationFrame(() => { applyFocus(rowIdx, colIdx); });
+});
+
+// Clear focus when mouse leaves the table
+document.addEventListener("mouseleave", function(e) {
+  if (!focusModeActive) return;
+  const tbl = e.target.closest(".att-table");
+  if (tbl && !tbl.contains(e.relatedTarget)) clearFocus();
+}, true);
+
+// Keyboard navigation
+document.addEventListener("keydown", function(e) {
+  if (!focusModeActive || focusRow < 0) return;
+  const tbl = document.querySelector(".att-table");
+  if (!tbl) return;
+  const rows = tbl.querySelectorAll("tbody tr");
+  const colIdxes = Array.from(tbl.querySelectorAll("thead th[data-col-idx]")).map(th=>parseInt(th.dataset.colIdx));
+  const curColPos = colIdxes.indexOf(focusCol);
+  let newRow = focusRow, newColPos = curColPos;
+  if (e.key==="ArrowDown"||e.key==="ArrowUp"||e.key==="ArrowLeft"||e.key==="ArrowRight") {
+    e.preventDefault();
+    if (e.key==="ArrowDown")  newRow = Math.min(focusRow+1, rows.length-1);
+    if (e.key==="ArrowUp")    newRow = Math.max(focusRow-1, 0);
+    if (e.key==="ArrowRight") newColPos = Math.min(curColPos+1, colIdxes.length-1);
+    if (e.key==="ArrowLeft")  newColPos = Math.max(curColPos-1, 0);
+    applyFocus(newRow, colIdxes[newColPos]);
+  }
+  if (e.key==="Escape") { clearFocus(); }
 });
 
 function showToast(msg, type) {
