@@ -311,9 +311,9 @@ async function loadSubjects() {
     opt.value = s.id; opt.textContent = s.name;
     navSel.appendChild(opt);
   });
-  if (subjects.find(s => s.id === "8Ib9Lkl9iN")) sel.value = "8Ib9Lkl9iN";
-  else if (subjects.length > 0) sel.value = subjects[0].id;
-  if (navSel) navSel.value = sel.value;
+  const defId = subjects[0]?.id || "";
+  sel.value = defId;
+  if (navSel) navSel.value = defId;
 }
 
 async function loadClasses() {
@@ -607,36 +607,7 @@ window._onNavSubjectChange = function() {
 };
 
 
-// ── Load subjects into sidebar nav select ──
-(async function loadNavSubjects() {
-  try {
-    const { getFirestore, collection, getDocs } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-    // reuse existing app — try to get db from window or re-init
-    if (!window.__navSubjectsLoaded) {
-      window.__navSubjectsLoaded = true;
-      // wait briefly for page's own firebase to init
-      setTimeout(async () => {
-        try {
-          // use page's existing db if available via window
-          const snap = await getDocs(collection(window.__db || getFirestore(), 'subjects'));
-          const sel = document.getElementById('navSubjectSelect');
-          if (!sel) return;
-          snap.docs
-            .map(d => ({id:d.id,...d.data()}))
-            .sort((a,b)=>(a.name||'').localeCompare(b.name||'','th'))
-            .forEach(s => {
-              const o = document.createElement('option');
-              o.value = s.id; o.textContent = s.name;
-              sel.appendChild(o);
-            });
-          // sync initial value from page's subject select
-          const ps = document.getElementById('subjectSelect') || document.getElementById('subjectSelectPanel');
-          if (ps) sel.value = ps.value;
-        } catch(e) { console.warn('nav subjects:', e); }
-      }, 800);
-    }
-  } catch(e) {}
-})();
+
 
 </script>
 </body>
