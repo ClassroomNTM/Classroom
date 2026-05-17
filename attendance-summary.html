@@ -458,8 +458,6 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
   </div>
 </div>
 
-
-
 <!-- Status edit popup -->
 <div class="status-popup" id="statusPopup">
   <div class="popup-header">
@@ -530,13 +528,20 @@ function cacheGet(key) {
     return obj.data;
   } catch { return null; }
 }
+
+// ── students cache: ใช้ format เดียวกับ cacheSet/cacheGet (มี ts + TTL) ──
 function studentsCacheSet(classId, data) {
-  sessionStorage.setItem("students_" + classId, JSON.stringify(data));
+  sessionStorage.setItem("students_" + classId, JSON.stringify({ ts: Date.now(), data }));
 }
 function studentsCacheGet(classId) {
   try {
     const raw = sessionStorage.getItem("students_" + classId);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    // handle format เก่า (plain array ไม่มี ts) → ล้างทิ้ง โหลดใหม่จาก Firestore
+    if (Array.isArray(obj)) { sessionStorage.removeItem("students_" + classId); return null; }
+    if (Date.now() - obj.ts > CACHE_TTL) { sessionStorage.removeItem("students_" + classId); return null; }
+    return obj.data; // unwrap → array เสมอ
   } catch { return null; }
 }
 
@@ -583,7 +588,6 @@ async function loadSubjects() {
       .sort((a, b) => (a.name||"").localeCompare(b.name||"", "th"));
     cacheSet("subjects", subjects);
   }
-  // ใส่ทั้ง subjectSelect และ sidebarSubjectSelect พร้อมกัน
   ["subjectSelect","sidebarSubjectSelect"].forEach(id => {
     const sel = document.getElementById(id);
     subjects.forEach(s => {
@@ -615,7 +619,7 @@ async function loadClasses() {
   if (classes.length > 0) sel.value = classes[0].id;
 }
 
-// ─── Load Attendance จาก GAS + students cache ────────────────
+// ─── Load Attendance ─────────────────────────────────────────
 window.loadData = loadData;
 function loadData() { _loadDataAsync(); }
 
@@ -756,7 +760,6 @@ function renderGrid(year, mon, daysInMonth) {
         return;
       }
       const rec    = attMap[dateStr]?.[s.id];
-      // ถ้า record เดิมเป็น "ghost" แต่ student ไม่ใช่ ghost แล้ว → ถือว่าไม่มีข้อมูล
       const status = (rec?.status === "ghost" && !isGhost) ? undefined : rec?.status;
       if (status==="present") { sP++; dayPresent[dateStr]=(dayPresent[dateStr]||0)+1; }
       if (status==="late")    { sL++; dayLate[dateStr]=(dayLate[dateStr]||0)+1; }
@@ -922,7 +925,6 @@ window.doDeleteMonth = async function() {
   const btn = document.getElementById("delConfirmBtn");
   btn.disabled=true; btn.textContent="กำลังลบ...";
   try {
-    // ดึง documents ทั้งหมดที่จะลบ
     let delQuery;
     if (subjectId) {
       delQuery = query(collection(db,"attendance"),
@@ -938,7 +940,6 @@ window.doDeleteMonth = async function() {
     }
     const snap = await getDocs(delQuery);
 
-    // ลบทีละ batch (Firestore จำกัด 500 ต่อ batch)
     const batchSize = 500;
     const docs = snap.docs;
     for (let i = 0; i < docs.length; i += batchSize) {
@@ -988,7 +989,6 @@ window.applyStatus = async function(newStatus) {
   document.getElementById("popupSaving").style.display = "block";
 
   try {
-    // ── ถ้า ghost state เปลี่ยน → อัปเดต students collection ──
     const stu = (window.__allStudents||[]).find(x => x.id === studentId);
     const wasGhost = stu?.ghost === true;
     const nowGhost = newStatus === "ghost";
@@ -997,14 +997,11 @@ window.applyStatus = async function(newStatus) {
       await setDoc(doc(db, "students", studentId), { ghost: nowGhost }, { merge: true });
       if (stu) stu.ghost = nowGhost;
       window.__allStudents = window.__allStudents || [];
-      // ล้าง students cache เพื่อให้ attendance.html โหลดใหม่
       sessionStorage.removeItem("students_" + classId);
     }
 
-    // ── บันทึก attendance เฉพาะ non-ghost ──
     const docId = `${classId}_${subjectId||"none"}_${dateStr}_${studentId}`;
     if (newStatus === null || nowGhost) {
-      // ghost หรือลบ → ลบ attendance record ออก (ghost ไม่มีใน attendance)
       await deleteDoc(doc(db, "attendance", docId)).catch(()=>{});
       if (!attMap[dateStr]) attMap[dateStr] = {};
       delete attMap[dateStr][studentId];
@@ -1021,7 +1018,6 @@ window.applyStatus = async function(newStatus) {
       attMap[dateStr][studentId] = { status:newStatus, note:"", savedAt:new Date().toISOString(), docId };
     }
 
-    // re-render grid (รวม ghost state ที่เปลี่ยน)
     const [year,mon] = document.getElementById("monthInput").value.split("-").map(Number);
     renderGrid(year, mon, new Date(year,mon,0).getDate());
     showToast("บันทึกเรียบร้อย ✓","success");
@@ -1068,7 +1064,6 @@ function rgbToHex(r,g,b) {
   return "#"+[r,g,b].map(v=>Math.round(v).toString(16).padStart(2,"0")).join("");
 }
 function blendToWhite(hex, intensity) {
-  // intensity 0=white, 100=full color
   const {r,g,b} = hexToRgb(hex);
   const f = intensity/100;
   return rgbToHex(255+(r-255)*f, 255+(g-255)*f, 255+(b-255)*f);
@@ -1087,20 +1082,16 @@ function defaultSettings() {
 }
 
 async function initColorSystem() {
-  // Try Firestore first, fallback to localStorage, then defaults
   try {
     const snap = await getDoc(doc(db, "settings", "tableColors"));
     if (snap.exists()) {
       colorSettings = snap.data();
-      // Also cache locally for fast next load
       try { localStorage.setItem(LS_KEY, JSON.stringify(colorSettings)); } catch{}
     } else {
-      // No DB doc yet — try localStorage
       const raw = localStorage.getItem(LS_KEY);
       colorSettings = raw ? JSON.parse(raw) : defaultSettings();
     }
   } catch(err) {
-    // Firestore unavailable — fallback to localStorage
     console.warn("Color settings: Firestore unavailable, using localStorage", err);
     try {
       const raw = localStorage.getItem(LS_KEY);
@@ -1165,7 +1156,6 @@ function buildColorPanel() {
   });
   updatePreviewStrip();
 
-  // Today swatches
   const swTH = document.getElementById("swTodayH");
   const swTT = document.getElementById("swTodayT");
   if (swTH) {
@@ -1178,7 +1168,6 @@ function buildColorPanel() {
     swTT.querySelector(".cp-swatch-fill").style.background = s.today_t||"#ffffff";
     swTT.querySelector("input").value = s.today_t||"#ffffff";
   }
-  // Focus
   const swF = document.getElementById("swFocus");
   if (swF) {
     swF.style.background = s.focus||"#2563eb";
@@ -1267,10 +1256,8 @@ window.closeColorPanel = function() {
 window.saveColorPanel = async function() {
   const btn = document.querySelector(".cp-btn-save");
   if (btn) { btn.textContent = "กำลังบันทึก..."; btn.disabled = true; }
-  // Save locally first (instant)
   try { localStorage.setItem(LS_KEY, JSON.stringify(colorSettings)); } catch{}
   applyColorSettings();
-  // Save to Firestore
   try {
     await setDoc(doc(db, "settings", "tableColors"), { ...colorSettings, savedAt: new Date().toISOString() });
     showToast("บันทึกลง Database แล้ว ✓","success");
@@ -1287,7 +1274,6 @@ window.resetColorPanel = async function() {
   try { localStorage.removeItem(LS_KEY); } catch{}
   applyColorSettings();
   buildColorPanel();
-  // Remove from Firestore
   try {
     await setDoc(doc(db, "settings", "tableColors"), { ...colorSettings, savedAt: new Date().toISOString() });
     showToast("รีเซ็ตสีและบันทึก Database แล้ว","success");
@@ -1336,22 +1322,18 @@ function applyFocus(rowIdx, colIdx) {
   const rows = tbl.querySelectorAll("tbody tr");
   const headerRows = tbl.querySelectorAll("thead tr");
 
-  // Highlight row
   if (rowIdx >= 0 && rowIdx < rows.length) {
     rows[rowIdx].classList.add("focus-row");
-    // Name cell highlight
     const nameCell = rows[rowIdx].querySelector(".cell-name");
     if (nameCell) nameCell.classList.add("focus-name");
   }
 
-  // Highlight column headers
   headerRows.forEach(hRow => {
     hRow.querySelectorAll("th[data-col-idx]").forEach(th => {
       if (parseInt(th.dataset.colIdx) === colIdx) th.classList.add("focus-col-hdr");
     });
   });
 
-  // Highlight column cells + find focus cell
   rows.forEach((tr, ri) => {
     tr.querySelectorAll("td[data-col-idx]").forEach(td => {
       if (parseInt(td.dataset.colIdx) === colIdx) {
@@ -1362,7 +1344,6 @@ function applyFocus(rowIdx, colIdx) {
   });
 }
 
-// Focus on hover (mouseover) — instant like Excel crosshair
 let _focusRaf = null;
 document.addEventListener("mouseover", function(e) {
   if (!focusModeActive) return;
@@ -1375,19 +1356,17 @@ document.addEventListener("mouseover", function(e) {
   const rowIdx = rows.indexOf(row);
   const colIdx = parseInt(td.dataset.colIdx);
   if (rowIdx < 0 || isNaN(colIdx)) return;
-  if (focusRow === rowIdx && focusCol === colIdx) return; // no change
+  if (focusRow === rowIdx && focusCol === colIdx) return;
   if (_focusRaf) cancelAnimationFrame(_focusRaf);
   _focusRaf = requestAnimationFrame(() => { applyFocus(rowIdx, colIdx); });
 });
 
-// Clear focus when mouse leaves the table
 document.addEventListener("mouseleave", function(e) {
   if (!focusModeActive) return;
   const tbl = e.target.closest(".att-table");
   if (tbl && !tbl.contains(e.relatedTarget)) clearFocus();
 }, true);
 
-// Keyboard navigation
 document.addEventListener("keydown", function(e) {
   if (!focusModeActive || focusRow < 0) return;
   const tbl = document.querySelector(".att-table");
