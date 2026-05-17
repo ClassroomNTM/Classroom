@@ -253,19 +253,13 @@ function cacheGet(key) {
 }
 
 // students cache แยกตาม classId
-const STUDENTS_CACHE_TTL = 5 * 60 * 1000; // 5 นาที
 function studentsCacheSet(classId, data) {
-  sessionStorage.setItem("students_" + classId, JSON.stringify({ ts: Date.now(), data }));
+  sessionStorage.setItem("students_" + classId, JSON.stringify(data));
 }
 function studentsCacheGet(classId) {
   try {
     const raw = sessionStorage.getItem("students_" + classId);
-    if (!raw) return null;
-    const obj = JSON.parse(raw);
-    // รองรับทั้ง format เก่า (array) และใหม่ (object with ts)
-    if (Array.isArray(obj)) { sessionStorage.removeItem("students_" + classId); return null; }
-    if (Date.now() - obj.ts > STUDENTS_CACHE_TTL) { sessionStorage.removeItem("students_" + classId); return null; }
-    return obj.data;
+    return raw ? JSON.parse(raw) : null;
   } catch { return null; }
 }
 
@@ -423,17 +417,46 @@ function renderTable() {
   }).join("");
 }
 
-window.setStatus = function(sid, status) {
+window.setStatus = async function(sid, status) {
+  const s = students.find(x => x.id === sid);
+  if (!s) return;
+
+  const wasGhost = s.ghost === true;
+  const nowGhost = status === "ghost";
+
+  // ถ้า ghost status เปลี่ยน → อัปเดต Firestore students และล้าง cache
+  if (wasGhost !== nowGhost) {
+    try {
+      await setDoc(doc(db, "students", sid), { ghost: nowGhost }, { merge: true });
+      s.ghost = nowGhost; // อัปเดต local students array
+      // ล้าง students cache เพื่อให้หน้าอื่นโหลดใหม่
+      const classId = document.getElementById("classSelect").value;
+      sessionStorage.removeItem("students_" + classId);
+    } catch(e) {
+      showToast("อัปเดตสถานะไม่สำเร็จ: " + e.message, "error");
+      return;
+    }
+  }
+
+  attendance[sid] = attendance[sid] || { status, note: "" };
   attendance[sid].status = status;
-  const row = document.getElementById("row-"+sid);
-  row.querySelectorAll(".stat-btn").forEach(b => {
-    b.classList.remove("active-present","active-late","active-absent","active-ghost");
-  });
-  const map = {present:"active-present",late:"active-late",absent:"active-absent",ghost:"active-ghost"};
-  const btn = row.querySelector(".stat-btn."+status);
-  if (btn) btn.classList.add(map[status]);
-  if (status === "ghost") row.style.background = "#fff8f8";
-  else row.style.background = "";
+
+  // re-render ทั้ง table เพราะ ghost state เปลี่ยน (row จะเปลี่ยนรูปแบบ)
+  if (wasGhost !== nowGhost) {
+    renderTable();
+  } else {
+    const row = document.getElementById("row-"+sid);
+    if (row) {
+      row.querySelectorAll(".stat-btn").forEach(b => {
+        b.classList.remove("active-present","active-late","active-absent","active-ghost");
+      });
+      const map = {present:"active-present",late:"active-late",absent:"active-absent",ghost:"active-ghost"};
+      const btn = row.querySelector(".stat-btn."+status);
+      if (btn) btn.classList.add(map[status]);
+      if (status === "ghost") row.style.background = "#fff8f8";
+      else row.style.background = "";
+    }
+  }
   updateSummary();
 };
 
