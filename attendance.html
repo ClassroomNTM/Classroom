@@ -224,8 +224,12 @@ tr:last-child td{border-bottom:none;}
 import { initializeApp }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, getDocs, doc, setDoc, query, where, deleteDoc }
+import { getFirestore, collection, getDocs, query, where }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// ─── ⚙️ ใส่ URL Apps Script Web App ที่ Deploy แล้ว ───────────
+const GAS_URL = "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec";
+// ────────────────────────────────────────────────────────────
 
 const firebaseConfig = {
   apiKey: "AIzaSyCBXMi3sy-3iDDzHDXVvlmaa6szcmnFbwQ",
@@ -313,20 +317,30 @@ window.loadStudents = async function() {
   document.getElementById("studentTbody").innerHTML =
     '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px;">กำลังโหลด...</td></tr>';
 
-  // load students
-  const snap = await getDocs(query(collection(db,"students"),where("classId","==",classId)));
-  students = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.number||0)-(b.number||0));
+  try {
+    // โหลด students จาก Firestore (ข้อมูลน้อย เร็ว)
+    const snap = await getDocs(query(collection(db,"students"),where("classId","==",classId)));
+    students = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.number||0)-(b.number||0));
 
-  // load existing attendance
-  const attFilters = [where("classId","==",classId), where("date","==",date)];
-  if (subjectId) attFilters.push(where("subjectId","==",subjectId));
-  const attSnap = await getDocs(query(collection(db,"attendance"), ...attFilters));
-  attendance = {};
-  attSnap.docs.forEach(d => { const x=d.data(); attendance[x.studentId]={status:x.status,note:x.note||""}; });
+    // โหลด attendance รายวัน จาก Google Sheets
+    const params = new URLSearchParams({ action:"queryDay", classId, date });
+    if (subjectId) params.set("subjectId", subjectId);
+    const res  = await fetch(`${GAS_URL}?${params}`);
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error);
 
-  renderTable();
-  document.getElementById("summaryRow").style.display = "flex";
-  updateSummary();
+    attendance = {};
+    json.data.forEach(r => {
+      attendance[r.studentId] = { status: r.status, note: r.note||"" };
+    });
+
+    renderTable();
+    document.getElementById("summaryRow").style.display = "flex";
+    updateSummary();
+  } catch(err) {
+    document.getElementById("studentTbody").innerHTML =
+      `<tr><td colspan="4" style="text-align:center;color:#b91c1c;padding:20px;">⚠ โหลดไม่ได้: ${err.message}</td></tr>`;
+  }
 };
 
 function renderTable() {
@@ -427,19 +441,31 @@ window.saveAll = async function() {
   btn.textContent = "กำลังบันทึก...";
 
   try {
-    const writes = students.map(s => {
-      const a  = attendance[s.id] || {status: s.ghost?"ghost":"present", note:""};
-      const id = `${s.id}_${subjectId||"default"}_${date}`;
-      return setDoc(doc(db,"attendance",id),{
-        studentId: s.id, studentName: s.name,
-        classId, subjectId: subjectId||"", date, status: a.status, note: a.note||"",
-        savedAt: new Date().toISOString()
-      });
+    const savedAt = new Date().toISOString();
+    const records = students.map(s => {
+      const a = attendance[s.id] || { status: s.ghost ? "ghost" : "present", note: "" };
+      return {
+        studentId:   s.id,
+        studentName: (s.prefix ? s.prefix+" " : "") + (s.name||""),
+        classId,
+        subjectId:   subjectId || "",
+        date,
+        status:      a.status,
+        note:        a.note || "",
+        savedAt,
+      };
     });
-    await Promise.all(writes);
-    showToast("บันทึกการเช็คชื่อเรียบร้อย ✓","success");
+
+    const res  = await fetch(GAS_URL, {
+      method: "POST",
+      body:   JSON.stringify({ action: "upsertBatch", records }),
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error);
+
+    showToast(`บันทึกการเช็คชื่อเรียบร้อย ✓ (${json.data.upserted} คน)`, "success");
   } catch(e) {
-    showToast("เกิดข้อผิดพลาด: "+e.message,"error");
+    showToast("เกิดข้อผิดพลาด: " + e.message, "error");
   }
 
   btn.disabled = false;
