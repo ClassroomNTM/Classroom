@@ -372,8 +372,14 @@ function renderTable() {
 
   tbody.innerHTML = students.map(s => {
     const isGhost = s.ghost === true;
-    const cur = attendance[s.id] || {status: isGhost ? "ghost" : "present", note:""};
-    if (!attendance[s.id]) attendance[s.id] = {status: isGhost ? "ghost" : "present", note:""};
+    // ถ้ามี record เดิมที่ status="ghost" แต่ student ไม่ใช่ ghost แล้ว → ให้ใช้ "present" แทน
+    const existingRec = attendance[s.id];
+    const defaultStatus = isGhost ? "ghost" : "present";
+    const resolvedStatus = (existingRec && existingRec.status === "ghost" && !isGhost) ? "present" : (existingRec?.status || defaultStatus);
+    const cur = { status: resolvedStatus, note: existingRec?.note || "" };
+    if (!attendance[s.id] || (attendance[s.id].status === "ghost" && !isGhost)) {
+      attendance[s.id] = { status: resolvedStatus, note: cur.note };
+    }
 
     const nameHtml = isGhost
       ? `<span class="ghost-name-att">${s.prefix?s.prefix+" ":""}${s.name}</span><span class="ghost-tag-att">ไม่มีตัวตน</span>`
@@ -436,15 +442,15 @@ window.markAllPresent = function() {
 };
 
 function updateSummary() {
-  const vals  = Object.values(attendance);
-  const p = vals.filter(v=>v.status==="present").length;
-  const l = vals.filter(v=>v.status==="late").length;
-  const a = vals.filter(v=>v.status==="absent").length;
-  const g = vals.filter(v=>v.status==="ghost").length;
+  const activeStudents = students.filter(s => !s.ghost);
+  const ghostCount     = students.length - activeStudents.length;
+  const p = activeStudents.filter(s => attendance[s.id]?.status==="present").length;
+  const l = activeStudents.filter(s => attendance[s.id]?.status==="late").length;
+  const a = activeStudents.filter(s => attendance[s.id]?.status==="absent").length;
   document.getElementById("presentCount").textContent = "มา: "+p;
   document.getElementById("lateCount").textContent    = "สาย: "+l;
   document.getElementById("absentCount").textContent  = "ขาด: "+a;
-  document.getElementById("totalCount").textContent   = "ทั้งหมด: "+(students.length-g)+" (ไม่มีตัวตน: "+g+")";
+  document.getElementById("totalCount").textContent   = "ทั้งหมด: "+activeStudents.length+(ghostCount>0?" (ไม่มีตัวตน: "+ghostCount+")":"");
 }
 
 window.saveAll = async function() {
@@ -460,8 +466,10 @@ window.saveAll = async function() {
 
   try {
     const savedAt = new Date().toISOString();
-    const writes  = students.map(s => {
-      const a   = attendance[s.id] || { status: s.ghost ? "ghost" : "present", note: "" };
+    // กรอง ghost students ออก — ไม่บันทึกลง attendance
+    const activeStudents = students.filter(s => !s.ghost);
+    const writes  = activeStudents.map(s => {
+      const a   = attendance[s.id] || { status: "present", note: "" };
       const docId = `${classId}_${subjectId||"none"}_${date}_${s.id}`;
       return setDoc(doc(db, "attendance", docId), {
         studentId:   s.id,
@@ -476,7 +484,7 @@ window.saveAll = async function() {
     });
 
     await Promise.all(writes);
-    showToast(`บันทึกการเช็คชื่อเรียบร้อย ✓ (${students.length} คน)`, "success");
+    showToast(`บันทึกการเช็คชื่อเรียบร้อย ✓ (${activeStudents.length} คน)`, "success");
   } catch(e) {
     showToast("เกิดข้อผิดพลาด: " + e.message, "error");
   }
