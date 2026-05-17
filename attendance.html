@@ -66,9 +66,11 @@ tr:last-child td{border-bottom:none;}
 .stat-btn.present{background:#f0fdf4;color:#166534;border-color:#bbf7d0;}
 .stat-btn.late   {background:#fffbeb;color:#92400e;border-color:#fde68a;}
 .stat-btn.absent {background:#fef2f2;color:#b91c1c;border-color:#fecaca;}
+.stat-btn.ghost  {background:#fef2f2;color:#b91c1c;border-color:#fecaca;}
 .stat-btn.active-present{background:#166534;color:white;}
 .stat-btn.active-late   {background:#92400e;color:white;}
 .stat-btn.active-absent {background:#b91c1c;color:white;}
+.stat-btn.active-ghost  {background:#b91c1c;color:white;}
 .note-input{width:120px;height:30px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-family:'Sarabun',sans-serif;font-size:12px;background:#fafafa;}
 
 /* Toast */
@@ -82,8 +84,6 @@ tr:last-child td{border-bottom:none;}
 /* ghost student row */
 .ghost-name-att{color:#b91c1c;text-decoration:line-through;font-style:italic;}
 .ghost-tag-att{background:#fef2f2;color:#b91c1c;padding:2px 6px;border-radius:99px;font-size:10px;font-weight:500;margin-left:5px;}
-.stat-btn.ghost{background:#fef2f2;color:#b91c1c;border-color:#fecaca;}
-.stat-btn.active-ghost{background:#b91c1c;color:white;}
 
 /* ── HAMBURGER ── */
 .hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:6px;border:none;background:transparent;margin-right:4px;}
@@ -114,7 +114,6 @@ tr:last-child td{border-bottom:none;}
   .btn-logout{display:none;}
   .role-badge{display:none;}
 }
-
 </style>
 </head>
 <body>
@@ -135,7 +134,7 @@ tr:last-child td{border-bottom:none;}
   </div>
 </header>
 
-<nav class="sidebar">
+<nav class="sidebar" id="sidebar">
   <div class="sidebar-label">เมนูหลัก</div>
   <a href="dashboard.html" class="nav-item"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
   <a href="attendance.html" class="nav-item active"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>เช็คชื่อ</a>
@@ -222,7 +221,7 @@ tr:last-child td{border-bottom:none;}
 
 <script type="module">
 import { initAuth, doLogout, db } from "./auth-guard.js";
-import { collection, getDocs, doc, setDoc, deleteDoc, query, where }
+import { collection, getDocs, doc, setDoc, query, where, updateDoc }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 window.__db = db;
@@ -379,7 +378,6 @@ function renderTable() {
 
   tbody.innerHTML = students.map(s => {
     const isGhost = s.ghost === true;
-    // ถ้ามี record เดิมที่ status="ghost" แต่ student ไม่ใช่ ghost แล้ว → ให้ใช้ "present" แทน
     const existingRec = attendance[s.id];
     const defaultStatus = isGhost ? "ghost" : "present";
     const resolvedStatus = (existingRec && existingRec.status === "ghost" && !isGhost) ? "present" : (existingRec?.status || defaultStatus);
@@ -449,7 +447,7 @@ window.markAllPresent = function() {
 };
 
 function updateSummary() {
-  const activeStudents = students.filter(s => !s.ghost);
+  const activeStudents = students.filter(s => attendance[s.id]?.status !== "ghost");
   const ghostCount     = students.length - activeStudents.length;
   const p = activeStudents.filter(s => attendance[s.id]?.status==="present").length;
   const l = activeStudents.filter(s => attendance[s.id]?.status==="late").length;
@@ -473,9 +471,20 @@ window.saveAll = async function() {
 
   try {
     const savedAt = new Date().toISOString();
-    // กรอง ghost students ออก — ไม่บันทึกลง attendance
-    const activeStudents = students.filter(s => !s.ghost);
-    const writes  = activeStudents.map(s => {
+
+    // ── อัพเดต ghost field ใน collection students ──
+    const ghostUpdates = students.map(s => {
+      const isGhostNow = attendance[s.id]?.status === "ghost";
+      // อัพเดตเฉพาะเมื่อ flag เปลี่ยน เพื่อลด Firestore write
+      if (isGhostNow !== (s.ghost === true)) {
+        return updateDoc(doc(db, "students", s.id), { ghost: isGhostNow });
+      }
+      return Promise.resolve();
+    });
+
+    // ── บันทึก attendance เฉพาะนักเรียนที่ไม่ใช่ ghost ──
+    const activeStudents = students.filter(s => attendance[s.id]?.status !== "ghost");
+    const writes = activeStudents.map(s => {
       const a   = attendance[s.id] || { status: "present", note: "" };
       const docId = `${classId}_${subjectId||"none"}_${date}_${s.id}`;
       return setDoc(doc(db, "attendance", docId), {
@@ -490,7 +499,11 @@ window.saveAll = async function() {
       });
     });
 
-    await Promise.all(writes);
+    await Promise.all([...ghostUpdates, ...writes]);
+
+    // ── ล้าง students cache ของ classId นี้ เพราะ ghost flag อาจเปลี่ยน ──
+    sessionStorage.removeItem("students_" + classId);
+
     showToast(`บันทึกการเช็คชื่อเรียบร้อย ✓ (${activeStudents.length} คน)`, "success");
   } catch(e) {
     showToast("เกิดข้อผิดพลาด: " + e.message, "error");
@@ -533,16 +546,11 @@ window._syncSidebarSubjectTo = function(val) {
 window._onNavSubjectChange = function() {
   const el = document.getElementById('navSubjectSelect');
   if (!el) return;
-  // find page's own subject select and sync
   ['subjectSelect','subjectSelectPanel','subjectSelectFilter'].forEach(id => {
     const s = document.getElementById(id);
     if (s) { s.value = el.value; s.dispatchEvent(new Event('change')); }
   });
 };
-
-
-// sidebar subjects โหลดพร้อม loadSubjects() แล้ว ไม่ต้อง fetch ซ้ำ
-
 </script>
 </body>
 </html>
