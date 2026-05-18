@@ -245,6 +245,12 @@ tr:hover td{background:#fafafa;}
 <div class="modal-overlay" id="roundModal">
   <div class="modal">
     <div class="modal-title" id="roundModalTitle">เพิ่มรอบการเก็บเงิน</div>
+    <div class="form-group" id="roundClassGroup">
+      <label class="form-label">ห้องเรียน</label>
+      <select id="roundClassSelect" style="width:100%;">
+        <option value="">— เลือกห้อง —</option>
+      </select>
+    </div>
     <div class="form-group">
       <label class="form-label">ชื่อรายการ</label>
       <input type="text" id="roundName" placeholder="เช่น ค่ากิจกรรมเดือนพฤษภาคม">
@@ -378,6 +384,18 @@ async function loadClasses(){
   classes.forEach(c=>{
     const o=document.createElement("option");
     o.value=c.id; o.textContent=c.name; sel.appendChild(o);
+  });
+}
+
+function populateRoundClassSelect(selectedId){
+  const classes = cacheGet("classes") || [];
+  const sel = document.getElementById("roundClassSelect");
+  sel.innerHTML = '<option value="">— เลือกห้อง —</option>';
+  classes.forEach(c=>{
+    const o=document.createElement("option");
+    o.value=c.id; o.textContent=c.name;
+    if(c.id === selectedId) o.selected = true;
+    sel.appendChild(o);
   });
 }
 
@@ -665,6 +683,8 @@ window.openAddRound = function(){
   document.getElementById("roundDue").value = "";
   document.getElementById("roundNote").value = "";
   document.getElementById("editRoundId").value = "";
+  populateRoundClassSelect(currentClassId);
+  document.getElementById("roundClassGroup").style.display = "flex";
   document.getElementById("roundModal").classList.add("open");
 };
 window.openEditRound = function(id){
@@ -678,6 +698,8 @@ window.openEditRound = function(id){
     : "";
   document.getElementById("roundNote").value = r.note||"";
   document.getElementById("editRoundId").value = id;
+  populateRoundClassSelect(r.classId || currentClassId);
+  document.getElementById("roundClassGroup").style.display = "none"; // แก้ไขไม่ให้เปลี่ยนห้อง
   document.getElementById("roundModal").classList.add("open");
 };
 window.closeRoundModal = function(){ document.getElementById("roundModal").classList.remove("open"); };
@@ -687,10 +709,12 @@ window.saveRound = async function(){
   const due    = document.getElementById("roundDue").value;
   const note   = document.getElementById("roundNote").value.trim();
   const editId = document.getElementById("editRoundId").value;
+  // ใช้ห้องจาก modal select (กรณีไม่ได้เลือกไว้ก่อน) หรือจาก currentClassId
+  const selectedClass = document.getElementById("roundClassSelect").value || currentClassId;
   if(!name){ showToast("กรุณาระบุชื่อรายการ","error"); return; }
-  if(!currentClassId){ showToast("กรุณาเลือกห้อง","error"); return; }
+  if(!selectedClass){ showToast("กรุณาเลือกห้องเรียน","error"); return; }
   const payload = {
-    name, amountPerPerson: amount, note, classId: currentClassId,
+    name, amountPerPerson: amount, note, classId: selectedClass,
     dueDate: due ? Timestamp.fromDate(new Date(due)) : null,
   };
   try{
@@ -701,10 +725,18 @@ window.saveRound = async function(){
       payload.createdAt = serverTimestamp();
       await addDoc(collection(db,"fundRounds"), payload);
       showToast("เพิ่มรอบการเก็บเงินแล้ว","success");
+      // ถ้าผู้ใช้เพิ่งเลือกห้องใน modal → sync กลับ dropdown หลัก
+      if(!currentClassId && selectedClass){
+        const sel = document.getElementById("classSelect");
+        sel.value = selectedClass;
+        await onClassChange();
+        closeRoundModal();
+        return;
+      }
     }
     closeRoundModal();
     await loadRounds();
-  }catch(e){ showToast("เกิดข้อผิดพลาด","error"); console.error(e); }
+  }catch(e){ showToast("เกิดข้อผิดพลาด: "+e.message,"error"); console.error(e); }
 };
 window.deleteRound = async function(id){
   if(!confirm("ลบรอบการเก็บเงินนี้? (ข้อมูลการจ่ายและรายจ่ายทั้งหมดจะหายไป)")) return;
