@@ -294,6 +294,29 @@ import { createUserWithEmailAndPassword, updateProfile }
 window.__db = db;
 window.doLogout = doLogout;
 
+// ── logAction → Google Sheet ──────────────────────────────────
+async function logAction(actionType, description, detail={}, status="success", errorMsg="") {
+  const url = "https://script.google.com/macros/s/AKfycbxarf3f9nPgFImUgxv9wkeCZcEfEOO-a79va2-T7E4RoNinBIZdQt_3e9qStx3_gHuPeg/exec";
+  if (!url) return;
+  try {
+    const payload = {
+      userId:    sessionStorage.getItem("userId")   || "",
+      userName:  sessionStorage.getItem("userName") || "",
+      userEmail: sessionStorage.getItem("userEmail") || "",
+      userRole:  sessionStorage.getItem("userRole") || "admin",
+      actionType, description, detail, status, errorMsg,
+      timestamp: new Date().toISOString()
+    };
+    fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify(payload)
+    }).catch(e => console.warn("logAction:", e));
+  } catch(e) {
+    console.warn("logAction error:", e);
+  }
+}
+
 let userRole = "", users = [], currentTab = "users";
 
 // requireAdmin: true → user ถูก redirect ไป submit.html อัตโนมัติ
@@ -404,6 +427,10 @@ window.createUser = async function() {
     await setDoc(doc(db,"users",cred.user.uid), {
       email, displayName: name, role, createdAt: new Date().toISOString()
     });
+    await logAction("user_manage",
+      `สร้างบัญชีผู้ใช้ใหม่: ${name} (${email}) สิทธิ์: ${role}`,
+      { targetEmail: email, targetName: name, role }
+    );
     // Re-sign-in admin won't work client-side; show notice
     showToast("สร้างบัญชีเรียบร้อย (คุณอาจต้องล็อกอินใหม่)","success");
     closeUserModal();
@@ -412,6 +439,7 @@ window.createUser = async function() {
     let msg = e.message;
     if (e.code === "auth/email-already-in-use") msg = "อีเมลนี้มีบัญชีอยู่แล้ว";
     if (e.code === "auth/invalid-email") msg = "รูปแบบอีเมลไม่ถูกต้อง";
+    await logAction("user_manage", `สร้างบัญชีล้มเหลว: ${email}`, { email }, "error", msg);
     showToast(msg,"error");
   }
 };
