@@ -211,6 +211,30 @@ import { collection, getDocs, doc, setDoc, query, where, updateDoc }
 window.__db = db;
 window.doLogout = doLogout;
 
+// ── logAction → Google Sheet ──────────────────────────────────
+const GAS_URL_KEY = "gasScriptUrl";
+async function logAction(actionType, description, detail={}, status="success", errorMsg="") {
+  const url = "https://script.google.com/macros/s/AKfycbxarf3f9nPgFImUgxv9wkeCZcEfEOO-a79va2-T7E4RoNinBIZdQt_3e9qStx3_gHuPeg/exec";
+  if (!url) return;
+  try {
+    const payload = {
+      userId:    sessionStorage.getItem("userId")   || "",
+      userName:  sessionStorage.getItem("userName") || "",
+      userEmail: sessionStorage.getItem("userEmail") || "",
+      userRole:  sessionStorage.getItem("userRole") || "user",
+      actionType, description, detail, status, errorMsg,
+      timestamp: new Date().toISOString()
+    };
+    fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify(payload)
+    }).catch(e => console.warn("logAction:", e));
+  } catch(e) {
+    console.warn("logAction error:", e);
+  }
+}
+
 let userRole   = "user";
 let students   = [];
 let attendance = {};
@@ -513,8 +537,13 @@ window.saveAll = async function() {
     await Promise.all([...ghostUpdates, ...writes]);
     sessionStorage.removeItem("students_" + classId);
 
+    await logAction("attendance",
+      `บันทึกเช็คชื่อ ${activeStudents.length} คน วันที่ ${date}`,
+      { classId, subjectId, date, studentCount: activeStudents.length }
+    );
     showToast(`บันทึกการเช็คชื่อเรียบร้อย ✓ (${activeStudents.length} คน)`, "success");
   } catch(e) {
+    await logAction("attendance", `บันทึกเช็คชื่อล้มเหลว`, {}, "error", e.message);
     showToast("เกิดข้อผิดพลาด: " + e.message, "error");
   }
 
