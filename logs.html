@@ -572,7 +572,7 @@ function renderTable() {
         <td>${log.userRole==="admin"?`<span class="rbadge rbadge-admin">Admin</span>`:`<span class="rbadge rbadge-user">User</span>`}</td>
         <td>${getActionChip(log.actionType)}</td>
         <td style="max-width:220px;"><div style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(log.description||"–")}</div></td>
-        <td style="max-width:160px;"><div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(summariseDetail(log.detail))}</div></td>
+        <td style="max-width:200px;"><div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${humanDetail(log.detail, log.actionType)}</div></td>
         <td>${getStatusChip(log.status)}</td>
       </tr>
       <tr class="detail-row" id="${detId}">
@@ -580,7 +580,7 @@ function renderTable() {
           <div class="detail-kv">
             ${log.userId    ? `<span><b>User ID:</b> ${escHtml(log.userId)}</span>` : ""}
             ${log.actionType? `<span><b>Type:</b> ${escHtml(log.actionType)}</span>` : ""}
-            ${log.detail    ? `<span><b>Detail:</b> ${escHtml(JSON.stringify(log.detail))}</span>` : ""}
+            ${log.detail    ? formatDetailKV(log.detail) : ""}
             ${log.errorMsg  ? `<span style="color:#b91c1c;"><b>Error:</b> ${escHtml(log.errorMsg)}</span>` : ""}
           </div>
         </td>
@@ -656,6 +656,99 @@ function summariseDetail(d) {
   if (!d) return "";
   if (typeof d==="string") return d.slice(0,80);
   try { const s=JSON.stringify(d); return s.length>80?s.slice(0,80)+"…":s; } catch { return ""; }
+}
+
+// แปลง detail object เป็นข้อความอ่านได้สำหรับคอลัมน์สรุป
+function humanDetail(d, actionType) {
+  if (!d) return "";
+  let obj = d;
+  if (typeof d === "string") {
+    try { obj = JSON.parse(d); } catch { return d.slice(0, 80); }
+  }
+  if (typeof obj !== "object" || obj === null) return String(obj).slice(0, 80);
+
+  // Label map สำหรับ key ที่พบบ่อย
+  const labelMap = {
+    studentId: "รหัสนักเรียน", studentName: "ชื่อนักเรียน",
+    date: "วันที่", status: "สถานะ", classId: "ชั้นเรียน",
+    className: "ชั้น", subjectId: "รายวิชา", subjectName: "วิชา",
+    score: "คะแนน", maxScore: "เต็ม", description: "รายละเอียด",
+    note: "หมายเหตุ", userId: "User ID", action: "การกระทำ",
+    before: "ก่อน", after: "หลัง", fileName: "ไฟล์", fileUrl: "URL",
+    count: "จำนวน", total: "รวม", period: "คาบ",
+  };
+
+  // สร้าง label สำหรับ attendance/status แบบเฉพาะ
+  const statusTh = { present: "มาเรียน", absent: "ขาดเรียน", late: "มาสาย", leave: "ลา" };
+
+  const parts = [];
+
+  // ดึง key ที่มีความหมาย ก่อน
+  const priority = ["studentName","className","subjectName","date","status","score","fileName","description","note","count"];
+  const seen = new Set();
+
+  for (const key of priority) {
+    if (obj[key] !== undefined && obj[key] !== null && obj[key] !== "") {
+      const label = labelMap[key] || key;
+      let val = String(obj[key]);
+      if (key === "status") val = statusTh[val] || val;
+      parts.push(`${label}: ${val}`);
+      seen.add(key);
+      if (parts.length >= 3) break;
+    }
+  }
+
+  // ถ้ายังไม่มีเลย เอา key แรกๆ มาแสดง
+  if (parts.length === 0) {
+    for (const [k, v] of Object.entries(obj)) {
+      if (k === "studentId" || k === "classId" || k === "subjectId") continue; // skip long IDs
+      const label = labelMap[k] || k;
+      let val = String(v);
+      if (val.length > 30) val = val.slice(0, 30) + "…";
+      parts.push(`${label}: ${val}`);
+      if (parts.length >= 2) break;
+    }
+  }
+
+  const result = parts.join(" · ");
+  return result.length > 100 ? result.slice(0, 100) + "…" : result;
+}
+
+// แสดง detail แบบ key-value ใน expand row
+function formatDetailKV(d) {
+  if (!d) return "";
+  let obj = d;
+  if (typeof d === "string") {
+    try { obj = JSON.parse(d); } catch { return `<span><b>รายละเอียด:</b> ${escHtml(d)}</span>`; }
+  }
+  if (typeof obj !== "object" || obj === null) {
+    return `<span><b>รายละเอียด:</b> ${escHtml(String(obj))}</span>`;
+  }
+
+  const labelMap = {
+    studentId: "รหัสนักเรียน", studentName: "ชื่อนักเรียน",
+    date: "วันที่", status: "สถานะ", classId: "ชั้นเรียน (ID)",
+    className: "ชั้นเรียน", subjectId: "รายวิชา (ID)", subjectName: "วิชา",
+    score: "คะแนน", maxScore: "คะแนนเต็ม", description: "รายละเอียด",
+    note: "หมายเหตุ", userId: "User ID", action: "การกระทำ",
+    before: "ค่าก่อน", after: "ค่าหลัง", fileName: "ชื่อไฟล์",
+    fileUrl: "ลิงก์ไฟล์", count: "จำนวน", total: "รวมทั้งหมด",
+    period: "คาบเรียน", day: "วัน", d: "วันที่",
+    presentCount: "มาเรียน", absentCount: "ขาด", lateCount: "มาสาย",
+    leaveCount: "ลา",
+  };
+  const statusTh = { present: "มาเรียน ✓", absent: "ขาดเรียน ✗", late: "มาสาย ⏰", leave: "ลา 📋" };
+
+  return Object.entries(obj).map(([k, v]) => {
+    const label = labelMap[k] || k;
+    let val = v;
+    if (k === "status") val = statusTh[String(v)] || v;
+    val = String(val);
+    // ถ้า val ยาวมาก (เช่น Firestore ID) ตัดสั้น
+    const isId = k.toLowerCase().endsWith("id") || k === "userId";
+    const display = isId && val.length > 20 ? `<span title="${escHtml(val)}" style="cursor:help;">${escHtml(val.slice(0,16))}…</span>` : escHtml(val);
+    return `<span><b>${escHtml(label)}:</b> ${display}</span>`;
+  }).join("");
 }
 function formatDate(d) { return d.toLocaleDateString("th-TH",{year:"numeric",month:"short",day:"numeric"}); }
 function formatTime(d) { return d.toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit",second:"2-digit"}); }
