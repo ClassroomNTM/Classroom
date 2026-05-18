@@ -337,9 +337,35 @@ window.loadStudents = async function() {
     renderTable();
     document.getElementById("summaryRow").style.display = "flex";
     updateSummary();
+
+    // ── Log: โหลดข้อมูลสำเร็จ ──
+    const clsNameLoad = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
+    const subNameLoad = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
+    const activeLoad  = students.filter(s => !s.ghost);
+    window.logAction && window.logAction("attendance",
+      `เปิดดูเช็คชื่อ — ${clsNameLoad}${subNameLoad?" / "+subNameLoad:""} วันที่ ${date}`,
+      {
+        action:       "loadAttendance",
+        date,
+        classId,
+        className:    clsNameLoad,
+        subjectId:    subjectId || "",
+        subjectName:  subNameLoad,
+        totalStudents: students.length,
+        activeStudents: activeLoad.length,
+        ghostStudents:  students.length - activeLoad.length,
+        hasExistingData: attSnap.docs.length > 0,
+        existingRecords: attSnap.docs.length,
+      }
+    );
   } catch(err) {
     document.getElementById("studentTbody").innerHTML =
       `<tr><td colspan="4" style="text-align:center;color:#b91c1c;padding:20px;">⚠ โหลดไม่ได้: ${err.message}</td></tr>`;
+    window.logAction && window.logAction("attendance",
+      `โหลดข้อมูลเช็คชื่อล้มเหลว: ${err.message}`,
+      { action:"loadAttendance", error: err.message, classId, date },
+      "error", err.message
+    );
   }
 };
 
@@ -532,6 +558,12 @@ window.markAllPresent = function() {
         })),
       }
     );
+  } else {
+    window.logAction && window.logAction("attendance",
+      `ตั้งมาเรียนทุกคน — ไม่มีการเปลี่ยนแปลง`,
+      { action:"markAllPresent", date, classId, className: clsName,
+        subjectId: subjectId||"", subjectName: subName, changedCount: 0 }
+    );
   }
 };
 
@@ -643,6 +675,38 @@ function showToast(msg, type) {
   t.className   = "show " + type;
   setTimeout(() => { t.className = ""; }, 3000);
 }
+
+// ─── logFilterChange: บันทึกเมื่อเปลี่ยน filter ──────────────
+let _filterLogTimer = null;
+function logFilterChange() {
+  clearTimeout(_filterLogTimer);
+  _filterLogTimer = setTimeout(() => {
+    const classId   = document.getElementById("classSelect").value;
+    const subjectId = document.getElementById("subjectSelect").value;
+    const date      = document.getElementById("dateInput").value;
+    if (!classId || !date) return;
+    const clsName = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
+    const subName = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
+    window.logAction && window.logAction("attendance",
+      `เปลี่ยน filter เช็คชื่อ — ${clsName}${subName?" / "+subName:""} วันที่ ${date}`,
+      {
+        action:     "changeFilter",
+        classId,
+        className:  clsName,
+        subjectId:  subjectId || "",
+        subjectName: subName,
+        date,
+      }
+    );
+  }, 1500);
+}
+// Hook filter controls หลังจาก DOM พร้อม
+document.addEventListener("DOMContentLoaded", () => {
+  ["classSelect","subjectSelect","dateInput"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("change", logFilterChange);
+  });
+});
 
 // ── Mobile sidebar toggle ──
 window._sidebarToggle = function() {
