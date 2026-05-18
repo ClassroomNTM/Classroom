@@ -498,29 +498,6 @@ import { collection, getDocs, doc, getDoc, setDoc, deleteDoc, query, where, writ
 
 window.doLogout = doLogout;
 
-// ── logAction → Google Sheet ──────────────────────────────────
-async function logAction(actionType, description, detail={}, status="success", errorMsg="") {
-  const url = "https://script.google.com/macros/s/AKfycbxarf3f9nPgFImUgxv9wkeCZcEfEOO-a79va2-T7E4RoNinBIZdQt_3e9qStx3_gHuPeg/exec";
-  if (!url) return;
-  try {
-    const payload = {
-      userId:    sessionStorage.getItem("userId")   || "",
-      userName:  sessionStorage.getItem("userName") || "",
-      userEmail: sessionStorage.getItem("userEmail") || "",
-      userRole:  sessionStorage.getItem("userRole") || "user",
-      actionType, description, detail, status, errorMsg,
-      timestamp: new Date().toISOString()
-    };
-    fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify(payload)
-    }).catch(e => console.warn("logAction:", e));
-  } catch(e) {
-    console.warn("logAction error:", e);
-  }
-}
-
 const THAI_MONTHS     = ["","มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน",
                           "กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const THAI_DAYS_SHORT = ["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -976,13 +953,8 @@ window.doDeleteMonth = async function() {
     attMap = {};
     closeDeleteModal();
     renderGrid(year,mon,daysInMonth);
-    await logAction("attendance",
-      `ลบข้อมูลเช็คชื่อทั้งเดือน ${THAI_MONTHS[mon]} ${year+543}`,
-      { classId, subjectId, month: `${year}-${String(mon).padStart(2,"0")}`, deletedCount: docs.length }
-    );
     showToast(`ลบข้อมูลเรียบร้อย (${docs.length} รายการ)`,"success");
   } catch(e) {
-    await logAction("attendance", `ลบข้อมูลเช็คชื่อล้มเหลว`, {}, "error", e.message);
     showToast("เกิดข้อผิดพลาด: "+e.message,"error");
     btn.disabled=false; btn.textContent="ลบข้อมูล";
   }
@@ -1018,6 +990,13 @@ window.applyStatus = async function(newStatus) {
   if (!studentId||!dateStr||!classId) return;
   document.getElementById("popupSaving").style.display = "block";
 
+  // snapshot before
+  const oldRec    = attMap[dateStr]?.[studentId];
+  const oldStatus = oldRec?.status || null;
+  const clsName   = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
+  const subName   = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
+  const statusLabel = { present:"มาเรียน", late:"สาย", absent:"ขาดเรียน", ghost:"ไม่มีตัวตน" };
+
   try {
     const stu = (window.__allStudents||[]).find(x => x.id === studentId);
     const wasGhost = stu?.ghost === true;
@@ -1048,15 +1027,28 @@ window.applyStatus = async function(newStatus) {
       attMap[dateStr][studentId] = { status:newStatus, note:"", savedAt:new Date().toISOString(), docId };
     }
 
+    window.logAction && window.logAction("attendance",
+      `แก้ไขสถานะเช็คชื่อ "${studentName}" จาก ${statusLabel[oldStatus]||oldStatus||"(ว่าง)"} → ${statusLabel[newStatus]||newStatus||"(ลบ)"}`,
+      {
+        action:      "editAttendance",
+        studentId,
+        studentName,
+        date:        dateStr,
+        before:      oldStatus,
+        after:       newStatus,
+        beforeLabel: statusLabel[oldStatus] || oldStatus || "(ว่าง)",
+        afterLabel:  statusLabel[newStatus] || newStatus || "(ลบ)",
+        classId,
+        className:   clsName,
+        subjectId:   subjectId || "",
+        subjectName: subName,
+      }
+    );
+
     const [year,mon] = document.getElementById("monthInput").value.split("-").map(Number);
     renderGrid(year, mon, new Date(year,mon,0).getDate());
-    await logAction("attendance",
-      `แก้ไขสถานะเช็คชื่อ "${studentName}" วันที่ ${dateStr} → ${newStatus || "ลบ"}`,
-      { studentId, dateStr, subjectId, classId, newStatus }
-    );
     showToast("บันทึกเรียบร้อย ✓","success");
   } catch(e) {
-    await logAction("attendance", `แก้ไขสถานะเช็คชื่อล้มเหลว`, {}, "error", e.message);
     showToast("เกิดข้อผิดพลาด: "+e.message,"error");
   }
   document.getElementById("statusPopup").classList.remove("open");
