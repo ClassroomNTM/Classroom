@@ -211,30 +211,6 @@ import { collection, getDocs, doc, setDoc, query, where, updateDoc }
 window.__db = db;
 window.doLogout = doLogout;
 
-// ── logAction → Google Sheet ──────────────────────────────────
-const GAS_URL_KEY = "gasScriptUrl";
-async function logAction(actionType, description, detail={}, status="success", errorMsg="") {
-  const url = "https://script.google.com/macros/s/AKfycbxarf3f9nPgFImUgxv9wkeCZcEfEOO-a79va2-T7E4RoNinBIZdQt_3e9qStx3_gHuPeg/exec";
-  if (!url) return;
-  try {
-    const payload = {
-      userId:    sessionStorage.getItem("userId")   || "",
-      userName:  sessionStorage.getItem("userName") || "",
-      userEmail: sessionStorage.getItem("userEmail") || "",
-      userRole:  sessionStorage.getItem("userRole") || "user",
-      actionType, description, detail, status, errorMsg,
-      timestamp: new Date().toISOString()
-    };
-    fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify(payload)
-    }).catch(e => console.warn("logAction:", e));
-  } catch(e) {
-    console.warn("logAction error:", e);
-  }
-}
-
 let userRole   = "user";
 let students   = [];
 let attendance = {};
@@ -440,8 +416,12 @@ function renderTable() {
 window.restoreStudent = async function(sid) {
   if (userRole !== "admin") return;
   try {
-    await updateDoc(doc(db, "students", sid), { ghost: false });
+    const s = students.find(x => x.id === sid);
+    const sName = s ? (s.prefix ? s.prefix+" " : "") + s.name : sid;
     const classId = document.getElementById("classSelect").value;
+    const clsName = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
+
+    await updateDoc(doc(db, "students", sid), { ghost: false });
     sessionStorage.removeItem("students_" + classId);
     // อัพเดต local array ด้วย
     const idx = students.findIndex(s => s.id === sid);
@@ -449,6 +429,23 @@ window.restoreStudent = async function(sid) {
     attendance[sid] = { status: "present", note: "" };
     renderTable();
     updateSummary();
+
+    window.logAction && window.logAction("attendance",
+      `แก้สถานะ "${sName}" จาก ไม่มีตัวตน → มีตัวตน`,
+      {
+        action:      "restoreStudent",
+        studentId:   sid,
+        studentName: sName,
+        classId,
+        className:   clsName,
+        before:      "ghost",
+        after:       "present",
+        beforeLabel: "ไม่มีตัวตน",
+        afterLabel:  "มีตัวตน (มาเรียน)",
+        date:        document.getElementById("dateInput").value,
+      }
+    );
+
     showToast("แก้เป็นมีตัวตนเรียบร้อย ✓", "success");
   } catch(e) {
     showToast("เกิดข้อผิดพลาด: " + e.message, "error");
@@ -457,6 +454,7 @@ window.restoreStudent = async function(sid) {
 
 // ─── setStatus ────────────────────────────────────────────────
 window.setStatus = function(sid, status) {
+  const prevStatus = attendance[sid]?.status || "present";
   attendance[sid].status = status;
   const row = document.getElementById("row-"+sid);
   row.querySelectorAll(".stat-btn").forEach(b => {
@@ -467,16 +465,74 @@ window.setStatus = function(sid, status) {
   if (btn) btn.classList.add(map[status]);
   row.style.background = "";
   updateSummary();
+
+  // Log only if status actually changed
+  if (prevStatus !== status) {
+    const s      = students.find(x => x.id === sid);
+    const sName  = s ? (s.prefix ? s.prefix+" " : "") + s.name : sid;
+    const date   = document.getElementById("dateInput").value;
+    const classId   = document.getElementById("classSelect").value;
+    const subjectId = document.getElementById("subjectSelect").value;
+    const clsName = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
+    const subName = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
+    const statusLabel = { present:"มาเรียน", late:"สาย", absent:"ขาดเรียน" };
+    window.logAction && window.logAction("attendance",
+      `เปลี่ยนสถานะ "${sName}" จาก ${statusLabel[prevStatus]||prevStatus} → ${statusLabel[status]||status}`,
+      {
+        studentId:   sid,
+        studentName: sName,
+        date,
+        before:      prevStatus,
+        after:       status,
+        beforeLabel: statusLabel[prevStatus] || prevStatus,
+        afterLabel:  statusLabel[status]     || status,
+        classId,
+        className:   clsName,
+        subjectId:   subjectId || "",
+        subjectName: subName,
+      }
+    );
+  }
 };
 
 // ─── markAllPresent ───────────────────────────────────────────
 window.markAllPresent = function() {
   if (userRole !== "admin") return;
+  const date      = document.getElementById("dateInput").value;
+  const classId   = document.getElementById("classSelect").value;
+  const subjectId = document.getElementById("subjectSelect").value;
+  const clsName   = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
+  const subName   = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
+
+  // snapshot before
+  const changed = students.filter(s => !s.ghost && attendance[s.id]?.status !== "present");
+
   students.forEach(s => {
     if (!s.ghost) attendance[s.id] = { status: "present", note: "" };
   });
   renderTable();
   updateSummary();
+
+  if (changed.length > 0) {
+    window.logAction && window.logAction("attendance",
+      `ตั้งมาเรียนทุกคน (${changed.length} คนที่เปลี่ยน)`,
+      {
+        action:      "markAllPresent",
+        date,
+        classId,
+        className:   clsName,
+        subjectId:   subjectId || "",
+        subjectName: subName,
+        changedCount: changed.length,
+        changedStudents: changed.map(s => ({
+          studentId:   s.id,
+          studentName: (s.prefix ? s.prefix+" " : "") + s.name,
+          before:      attendance[s.id]?.status || "present",
+          after:       "present",
+        })),
+      }
+    );
+  }
 };
 
 // ─── updateSummary ────────────────────────────────────────────
@@ -537,18 +593,42 @@ window.saveAll = async function() {
     await Promise.all([...ghostUpdates, ...writes]);
     sessionStorage.removeItem("students_" + classId);
 
-    await logAction("attendance", `แก้ไขสถานะเช็คชื่อ "${studentName}"`, {
-  studentId,
-  studentName,
-  date,
-  before: "ขาดเรียน",   // ← สถานะเดิมก่อนแก้
-  after:  "มาเรียน",    // ← สถานะใหม่หลังแก้
-  className,
-  subjectName
-});
+    const clsName = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
+    const subName = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
+
+    // สรุปยอดที่บันทึก
+    const summary = activeStudents.reduce((acc, s) => {
+      const st = attendance[s.id]?.status || "present";
+      acc[st] = (acc[st] || 0) + 1;
+      return acc;
+    }, {});
+
+    window.logAction && window.logAction("attendance",
+      `บันทึกเช็คชื่อ ${activeStudents.length} คน — ${clsName}${subName?" / "+subName:""}`,
+      {
+        action:      "saveAll",
+        date,
+        classId,
+        className:   clsName,
+        subjectId:   subjectId || "",
+        subjectName: subName,
+        totalStudents: activeStudents.length,
+        summary: {
+          present: summary["present"] || 0,
+          late:    summary["late"]    || 0,
+          absent:  summary["absent"]  || 0,
+        },
+        students: activeStudents.map(s => ({
+          studentId:   s.id,
+          studentName: (s.prefix ? s.prefix+" " : "") + (s.name||""),
+          status:      attendance[s.id]?.status || "present",
+          note:        attendance[s.id]?.note   || "",
+        })),
+      }
+    );
+
     showToast(`บันทึกการเช็คชื่อเรียบร้อย ✓ (${activeStudents.length} คน)`, "success");
   } catch(e) {
-    await logAction("attendance", `บันทึกเช็คชื่อล้มเหลว`, {}, "error", e.message);
     showToast("เกิดข้อผิดพลาด: " + e.message, "error");
   }
 
