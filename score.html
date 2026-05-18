@@ -287,7 +287,11 @@ initAuth({ requireAdmin: true, onReady: async ({ role }) => {
   document.getElementById("saveScoreBtn").style.display = "inline-flex";
   await loadSubjects();
   await loadClasses();
-  window.onClassChange();
+  // trigger หลัง loadClasses() เพื่อให้ classSelect มีค่าจริงแล้ว
+  const classEl = document.getElementById("classSelect");
+  if (classEl.value) {
+    await window.onClassChange();
+  }
 }});
 
 async function loadSubjects() {

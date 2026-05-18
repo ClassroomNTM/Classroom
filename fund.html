@@ -400,10 +400,14 @@ window.onClassChange = async function(){
 async function loadRounds(){
   const snap = await getDocs(query(
     collection(db,"fundRounds"),
-    where("classId","==",currentClassId),
-    orderBy("createdAt","desc")
+    where("classId","==",currentClassId)
   ));
-  rounds = snap.docs.map(d=>({id:d.id,...d.data()}));
+  rounds = snap.docs.map(d=>({id:d.id,...d.data()}))
+    .sort((a,b)=>{
+      const ta = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+      const tb = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+      return tb - ta;
+    });
   renderRoundsList();
   if(rounds.length>0) await selectRound(rounds[0].id);
   else {
@@ -449,10 +453,14 @@ async function loadPayments(){
 async function loadExpenses(){
   const snap = await getDocs(query(
     collection(db,"fundExpenses"),
-    where("roundId","==",currentRoundId),
-    orderBy("date","desc")
+    where("roundId","==",currentRoundId)
   ));
-  expenses = snap.docs.map(d=>({id:d.id,...d.data()}));
+  expenses = snap.docs.map(d=>({id:d.id,...d.data()}))
+    .sort((a,b)=>{
+      const ta = a.date?.toDate ? a.date.toDate().getTime() : (a.date ? new Date(a.date).getTime() : 0);
+      const tb = b.date?.toDate ? b.date.toDate().getTime() : (b.date ? new Date(b.date).getTime() : 0);
+      return tb - ta;
+    });
 }
 
 // ── Render ─────────────────────────────────────────────────────
@@ -783,23 +791,27 @@ window.saveExpense = async function(){
   const note   = document.getElementById("expenseNote").value.trim();
   const editId = document.getElementById("editExpenseId").value;
   if(!name){ showToast("กรุณาระบุรายการ","error"); return; }
-  const payload = {
-    name, amount, note, roundId: currentRoundId, classId: currentClassId,
-    date: dateV ? Timestamp.fromDate(new Date(dateV)) : serverTimestamp(),
-  };
+  if(!currentRoundId){ showToast("กรุณาเลือกรอบการเก็บเงินก่อน","error"); return; }
   try{
     if(editId){
+      const payload = { name, amount, note,
+        date: dateV ? Timestamp.fromDate(new Date(dateV)) : serverTimestamp(),
+      };
       await updateDoc(doc(db,"fundExpenses",editId), payload);
       showToast("อัปเดตแล้ว","success");
     } else {
-      payload.createdAt = serverTimestamp();
+      const payload = {
+        name, amount, note, roundId: currentRoundId, classId: currentClassId,
+        date: dateV ? Timestamp.fromDate(new Date(dateV)) : serverTimestamp(),
+        createdAt: serverTimestamp(),
+      };
       await addDoc(collection(db,"fundExpenses"), payload);
       showToast("เพิ่มรายจ่ายแล้ว","success");
     }
     closeExpenseModal();
     await loadExpenses();
     renderAll();
-  }catch(e){ showToast("เกิดข้อผิดพลาด","error"); console.error(e); }
+  }catch(e){ showToast("เกิดข้อผิดพลาด: "+e.message,"error"); console.error(e); }
 };
 window.deleteExpense = async function(id){
   if(!confirm("ลบรายจ่ายนี้?")) return;
