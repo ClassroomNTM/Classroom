@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Activity Logs — ระบบจัดการนักเรียน</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f5f4f0; --surface: #ffffff; --blue: #0f3460; --blue-lt: #e6eef7;
+  --red: #e94560; --text: #1a1a2e; --muted: #6b7280; --border: rgba(0,0,0,0.08);
+  --radius: 12px; --sidebar-w: 200px; --topbar-h: 56px;
+}
+body { font-family:'Sarabun',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+/* TOPBAR */
+.topbar { position:fixed; top:0; left:0; right:0; height:var(--topbar-h); background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 20px; z-index:100; }
+.brand { display:flex; align-items:center; gap:10px; font-size:15px; font-weight:600; color:var(--text); text-decoration:none; }
+.brand-dot { width:32px; height:32px; background:var(--blue); border-radius:8px; display:flex; align-items:center; justify-content:center; }
+.brand-dot svg { width:18px; height:18px; fill:white; }
+.topbar-right { display:flex; align-items:center; gap:14px; }
+.user-info { font-size:13px; color:var(--text); display:flex; align-items:center; gap:8px; }
+.avatar { width:32px; height:32px; border-radius:50%; background:var(--blue); color:white; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; }
+.role-badge { padding:2px 8px; border-radius:99px; font-size:11px; font-weight:500; }
+.role-admin { background:#fef2f2; color:#b91c1c; }
+.role-user  { background:#f0fdf4; color:#166534; }
+.btn-logout { padding:6px 12px; border:1px solid var(--border); border-radius:8px; background:transparent; font-family:'Sarabun',sans-serif; font-size:13px; color:var(--muted); cursor:pointer; transition:all .15s; }
+.btn-logout:hover { background:var(--bg); color:var(--text); }
+.hamburger { display:none; flex-direction:column; gap:5px; cursor:pointer; padding:6px; border:none; background:transparent; margin-right:4px; }
+.hamburger span { display:block; width:22px; height:2px; background:var(--text); border-radius:2px; transition:.25s; }
+.hamburger.open span:nth-child(1) { transform:rotate(45deg) translate(5px,5px); }
+.hamburger.open span:nth-child(2) { opacity:0; }
+.hamburger.open span:nth-child(3) { transform:rotate(-45deg) translate(5px,-5px); }
+
+/* SIDEBAR */
+.sidebar { position:fixed; top:var(--topbar-h); left:0; bottom:0; width:var(--sidebar-w); background:var(--surface); border-right:1px solid var(--border); padding:16px 10px; display:flex; flex-direction:column; gap:2px; overflow-y:auto; }
+.sidebar-label { font-size:10px; font-weight:600; letter-spacing:.08em; color:var(--muted); padding:8px 10px 4px; text-transform:uppercase; }
+.nav-item { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:8px; font-size:13px; color:var(--muted); text-decoration:none; transition:all .15s; }
+.nav-item svg { width:17px; height:17px; flex-shrink:0; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.nav-item:hover { background:var(--bg); color:var(--text); }
+.nav-item.active { background:var(--blue-lt); color:var(--blue); font-weight:500; }
+.nav-sep { height:1px; background:var(--border); margin:8px 0; }
+.sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:150; }
+.sidebar-overlay.open { display:block; }
+
+/* MAIN */
+.main { margin-left:var(--sidebar-w); margin-top:var(--topbar-h); padding:24px; }
+.page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
+.page-title { font-size:20px; font-weight:600; }
+.page-sub { font-size:13px; color:var(--muted); margin-top:2px; }
+
+/* CONFIG BANNER */
+.config-banner { background:#fffbeb; border:1px solid #fde68a; border-radius:var(--radius); padding:14px 18px; margin-bottom:16px; display:flex; align-items:flex-start; gap:12px; }
+.config-banner svg { width:18px; height:18px; flex-shrink:0; margin-top:1px; stroke:#92400e; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.config-banner-text { font-size:13px; color:#92400e; line-height:1.6; }
+.config-banner input { height:34px; border:1px solid #fde68a; border-radius:6px; padding:0 10px; font-family:'Sarabun',sans-serif; font-size:12px; color:var(--text); background:white; outline:none; width:100%; margin-top:8px; }
+.config-banner input:focus { border-color:#f59e0b; }
+.btn-save-url { margin-top:8px; padding:6px 14px; background:#0f3460; color:white; border:none; border-radius:6px; font-family:'Sarabun',sans-serif; font-size:12px; cursor:pointer; }
+.config-banner.connected { background:#f0fdf4; border-color:#bbf7d0; }
+.config-banner.connected svg { stroke:#166534; }
+.config-banner.connected .config-banner-text { color:#166534; }
+
+/* FILTER BAR */
+.filter-bar { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; margin-bottom:16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.filter-group { display:flex; align-items:center; gap:6px; }
+.filter-label { font-size:12px; color:var(--muted); white-space:nowrap; }
+select, input[type="date"], input[type="text"] { height:36px; border:1px solid var(--border); border-radius:8px; padding:0 10px; font-family:'Sarabun',sans-serif; font-size:13px; color:var(--text); background:#fafafa; outline:none; transition:border-color .2s; }
+select:focus, input:focus { border-color:var(--blue); }
+.filter-sep { width:1px; height:24px; background:var(--border); }
+.btn { display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border:1px solid var(--border); border-radius:8px; font-family:'Sarabun',sans-serif; font-size:13px; font-weight:500; cursor:pointer; background:var(--surface); color:var(--text); transition:all .15s; }
+.btn:hover { background:var(--bg); }
+.btn-primary { background:var(--blue); color:white; border-color:var(--blue); }
+.btn-primary:hover { background:#0a2847; }
+.btn svg { width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+
+/* METRICS */
+.metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+.metric { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; }
+.m-label { font-size:11px; color:var(--muted); margin-bottom:6px; display:flex; align-items:center; gap:5px; }
+.m-label svg { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.m-val { font-size:26px; font-weight:600; line-height:1; }
+.m-sub { font-size:11px; color:var(--muted); margin-top:4px; }
+
+/* TABLE */
+.card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); }
+.card-head { padding:14px 18px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); }
+.card-title { font-size:14px; font-weight:600; }
+.card-meta { font-size:12px; color:var(--muted); }
+.tbl-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th { text-align:left; padding:9px 14px; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); border-bottom:1px solid var(--border); white-space:nowrap; }
+td { padding:10px 14px; border-bottom:1px solid var(--border); vertical-align:middle; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:#fafafa; }
+
+/* CHIPS */
+.chip { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:99px; font-size:11px; font-weight:500; white-space:nowrap; }
+.chip-blue   { background:#eff6ff; color:#1e40af; }
+.chip-green  { background:#f0fdf4; color:#166534; }
+.chip-red    { background:#fef2f2; color:#b91c1c; }
+.chip-amber  { background:#fffbeb; color:#92400e; }
+.chip-purple { background:#f5f3ff; color:#6d28d9; }
+.chip-gray   { background:#f9fafb; color:#374151; border:1px solid #e5e7eb; }
+.chip-teal   { background:#f0fdfa; color:#0f766e; }
+
+/* ROLE BADGE */
+.rbadge { padding:2px 8px; border-radius:99px; font-size:11px; font-weight:500; display:inline-block; }
+.rbadge-admin { background:#fef2f2; color:#b91c1c; }
+.rbadge-user  { background:#f0fdf4; color:#166534; }
+
+/* ACTION ICON */
+.action-ico { width:28px; height:28px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
+.action-ico svg { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+
+/* PAGINATION */
+.pager { display:flex; align-items:center; justify-content:space-between; padding:12px 18px; border-top:1px solid var(--border); }
+.pager-info { font-size:12px; color:var(--muted); }
+.pager-btns { display:flex; gap:4px; }
+.pager-btn { width:30px; height:30px; border:1px solid var(--border); border-radius:6px; background:var(--surface); cursor:pointer; font-family:'Sarabun',sans-serif; font-size:12px; display:flex; align-items:center; justify-content:center; color:var(--muted); transition:all .15s; }
+.pager-btn:hover { background:var(--bg); color:var(--text); }
+.pager-btn.active { background:var(--blue); color:white; border-color:var(--blue); }
+.pager-btn:disabled { opacity:.4; cursor:default; }
+.pager-btn svg { width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+
+/* LOADING / EMPTY */
+.loading-row td { text-align:center; color:var(--muted); font-size:13px; padding:40px; }
+.spinner { width:20px; height:20px; border:2px solid var(--border); border-top-color:var(--blue); border-radius:50%; animation:spin .6s linear infinite; display:inline-block; vertical-align:middle; margin-right:8px; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.empty { padding:48px; text-align:center; color:var(--muted); }
+.empty svg { width:40px; height:40px; stroke:var(--border); fill:none; stroke-width:1.5; margin-bottom:12px; }
+.empty p { font-size:13px; }
+
+/* TOAST */
+#toast { position:fixed; bottom:24px; right:24px; padding:11px 16px; border-radius:10px; font-size:13px; font-weight:500; z-index:999; opacity:0; transform:translateY(8px); transition:all .25s; pointer-events:none; }
+#toast.show { opacity:1; transform:translateY(0); }
+#toast.success { background:#052e16; color:#86efac; }
+#toast.error   { background:#450a0a; color:#fca5a5; }
+
+/* SEARCH */
+.search-wrap { position:relative; }
+.search-wrap input { padding-left:34px; width:200px; }
+.search-ico { position:absolute; left:10px; top:50%; transform:translateY(-50%); pointer-events:none; }
+.search-ico svg { width:14px; height:14px; stroke:var(--muted); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+
+/* DETAIL EXPAND */
+.detail-row { display:none; background:#fafafa; }
+.detail-row.open { display:table-row; }
+.detail-cell { padding:10px 14px 14px 44px; font-size:12px; color:var(--muted); }
+.detail-kv { display:flex; flex-wrap:wrap; gap:12px; }
+.detail-kv span { display:inline-block; }
+.detail-kv b { color:var(--text); font-weight:500; }
+
+/* RESPONSIVE */
+@media (max-width:768px) {
+  .hamburger { display:flex; }
+  :root { --sidebar-w:220px; }
+  .sidebar { transform:translateX(-100%); z-index:160; transition:transform .25s ease; }
+  .sidebar.mobile-open { transform:translateX(0); }
+  .main { margin-left:0; }
+  .metrics { grid-template-columns:repeat(2,1fr); }
+  .filter-bar { flex-direction:column; align-items:flex-start; }
+  .search-wrap input { width:100%; }
+}
+@media (max-width:480px) {
+  .metrics { grid-template-columns:1fr 1fr; }
+  .main { padding:16px; }
+  .page-header { flex-direction:column; align-items:flex-start; }
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="_closeSidebar()"></div>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div style="display:flex;align-items:center;gap:8px;">
+    <button class="hamburger" id="hamburger" onclick="_sidebarToggle()" aria-label="เปิดเมนู">
+      <span></span><span></span><span></span>
+    </button>
+    <a href="dashboard.html" class="brand">
+      <div class="brand-dot">
+        <svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg>
+      </div>
+      ระบบจัดการนักเรียน
+    </a>
+  </div>
+  <div class="topbar-right">
+    <div class="user-info">
+      <div class="avatar" id="avatarEl">–</div>
+      <span id="userNameEl">–</span>
+      <span class="role-badge" id="roleBadgeEl">–</span>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">ออกจากระบบ</button>
+  </div>
+</header>
+
+<!-- SIDEBAR -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-label">เมนูหลัก</div>
+  <a href="dashboard.html" class="nav-item"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
+  <a href="attendance.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>เช็คชื่อ</a>
+  <a href="attendance-summary.html" class="nav-item"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>สรุปเช็คชื่อ</a>
+  <a href="score.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>คะแนน</a>
+  <a href="submit.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>ส่งงาน</a>
+  <div class="nav-sep"></div>
+  <div class="sidebar-label">จัดการ</div>
+  <a href="class.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>ชั้นเรียน</a>
+  <a href="subject.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>รายวิชา</a>
+  <a href="admin.html" class="nav-item" id="adminNavItem" style="display:none;"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>จัดการผู้ใช้</a>
+  <a href="logs.html" class="nav-item active" id="logsNavItem" style="display:none;"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>Activity Logs</a>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Activity Logs</div>
+      <div class="page-sub">บันทึกการกระทำของผู้ใช้ทุกคน — เก็บใน Google Sheet</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="btn" onclick="exportCSV()">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export CSV
+      </button>
+      <button class="btn btn-primary" onclick="loadLogs()">
+        <svg viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+        รีเฟรช
+      </button>
+    </div>
+  </div>
+
+  <!-- CONFIG BANNER -->
+  <div class="config-banner" id="configBanner">
+    <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <div class="config-banner-text">
+      <strong>ยังไม่ได้ตั้งค่า Google Apps Script URL</strong><br>
+      วาง Web App URL ที่ได้จากการ Deploy Apps Script แล้วกดบันทึก
+      <input type="text" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/…/exec">
+      <button class="btn-save-url" onclick="saveScriptUrl()">บันทึก URL</button>
+    </div>
+  </div>
+
+  <!-- METRICS -->
+  <div class="metrics" id="metricsRow">
+    <div class="metric">
+      <div class="m-label"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>รายการทั้งหมด</div>
+      <div class="m-val" id="mTotal">–</div>
+      <div class="m-sub" id="mTotalSub">กำลังโหลด…</div>
+    </div>
+    <div class="metric">
+      <div class="m-label"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>วันนี้</div>
+      <div class="m-val" id="mToday">–</div>
+      <div class="m-sub">รายการวันนี้</div>
+    </div>
+    <div class="metric">
+      <div class="m-label"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>ผู้ใช้งาน</div>
+      <div class="m-val" id="mUsers">–</div>
+      <div class="m-sub">คนที่ active</div>
+    </div>
+    <div class="metric">
+      <div class="m-label"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Error</div>
+      <div class="m-val" id="mErrors">–</div>
+      <div class="m-sub">รายการผิดพลาด</div>
+    </div>
+  </div>
+
+  <!-- FILTER BAR -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <span class="filter-label">Role:</span>
+      <select id="fRole" onchange="applyFilters()">
+        <option value="">ทั้งหมด</option>
+        <option value="admin">Admin</option>
+        <option value="user">User</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">ประเภท:</span>
+      <select id="fAction" onchange="applyFilters()">
+        <option value="">ทั้งหมด</option>
+        <option value="login">เข้าสู่ระบบ</option>
+        <option value="logout">ออกจากระบบ</option>
+        <option value="attendance">เช็คชื่อ</option>
+        <option value="score">คะแนน</option>
+        <option value="submit">ส่งงาน</option>
+        <option value="class">ชั้นเรียน</option>
+        <option value="subject">รายวิชา</option>
+        <option value="user_manage">จัดการผู้ใช้</option>
+        <option value="error">Error</option>
+      </select>
+    </div>
+    <div class="filter-sep"></div>
+    <div class="filter-group">
+      <span class="filter-label">จาก:</span>
+      <input type="date" id="fFrom" onchange="applyFilters()">
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">ถึง:</span>
+      <input type="date" id="fTo" onchange="applyFilters()">
+    </div>
+    <div class="filter-sep"></div>
+    <div class="search-wrap">
+      <div class="search-ico"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+      <input type="text" id="fSearch" placeholder="ค้นหาผู้ใช้, การกระทำ…" oninput="applyFilters()">
+    </div>
+    <button class="btn" onclick="clearFilters()">ล้างตัวกรอง</button>
+  </div>
+
+  <!-- TABLE -->
+  <div class="card">
+    <div class="card-head">
+      <span class="card-title">รายการ Activity Log</span>
+      <span class="card-meta" id="tableCount">–</span>
+    </div>
+    <div class="tbl-wrap">
+      <table id="logsTable">
+        <thead>
+          <tr>
+            <th style="width:36px;"></th>
+            <th>วันที่ / เวลา</th>
+            <th>ผู้ใช้</th>
+            <th>Role</th>
+            <th>ประเภท</th>
+            <th>การกระทำ</th>
+            <th>รายละเอียด</th>
+            <th>สถานะ</th>
+          </tr>
+        </thead>
+        <tbody id="logsBody">
+          <tr class="loading-row"><td colspan="8"><div class="spinner"></div>กำลังโหลด…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pager" id="pagerEl">
+      <span class="pager-info" id="pagerInfo">–</span>
+      <div class="pager-btns" id="pagerBtns"></div>
+    </div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCBXMi3sy-3iDDzHDXVvlmaa6szcmnFbwQ",
+  authDomain: "classroom-93c8b.firebaseapp.com",
+  projectId: "classroom-93c8b",
+  storageBucket: "classroom-93c8b.firebasestorage.app",
+  messagingSenderId: "659092749098",
+  appId: "1:659092749098:web:36f249557c4badc088fc53"
+};
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+// ── State ──
+let currentUser = null;
+let allLogs     = [];
+let filtered    = [];
+let currentPage = 1;
+const PAGE_SIZE = 25;
+
+// ── Script URL (hardcoded) ──
+const URL_KEY = "gasScriptUrl";
+const HARDCODED_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxarf3f9nPgFImUgxv9wkeCZcEfEOO-a79va2-T7E4RoNinBIZdQt_3e9qStx3_gHuPeg/exec";
+
+function getScriptUrl() {
+  return HARDCODED_SCRIPT_URL;
+}
+
+window.saveScriptUrl = function() {
+  const val = document.getElementById("scriptUrlInput")?.value.trim();
+  if (val && !val.startsWith("https://script.google.com/")) {
+    showToast("URL ไม่ถูกต้อง ต้องขึ้นต้นด้วย https://script.google.com/", "error");
+    return;
+  }
+  updateConfigBanner();
+  showToast("บันทึก URL สำเร็จ", "success");
+  loadLogs();
+};
+
+function updateConfigBanner() {
+  const url    = getScriptUrl();
+  const banner = document.getElementById("configBanner");
+  banner.className = "config-banner connected";
+  banner.innerHTML = `
+    <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    <div class="config-banner-text">
+      <strong>เชื่อมต่อ Google Sheet สำเร็จ</strong><br>
+      URL: <span style="font-size:11px;word-break:break-all;">${url}</span>
+    </div>`;
+}
+
+window.resetUrl = function() {
+  location.reload();
+};
+
+// ── Auth guard ──
+onAuthStateChanged(auth, async (user) => {
+  if (!user) { window.location.href = "index.html"; return; }
+
+  const snap = await getDoc(doc(db, "users", user.uid));
+  if (!snap.exists() || snap.data().role !== "admin") {
+    window.location.href = "dashboard.html";
+    return;
+  }
+
+  const data = snap.data();
+  currentUser = { uid: user.uid, ...data };
+  const name  = data.displayName || user.email;
+  document.getElementById("avatarEl").textContent    = name.charAt(0).toUpperCase();
+  document.getElementById("userNameEl").textContent  = name;
+  document.getElementById("roleBadgeEl").textContent = data.role;
+  document.getElementById("roleBadgeEl").className   = `role-badge role-${data.role}`;
+  document.getElementById("adminNavItem").style.display = "";
+  document.getElementById("logsNavItem").style.display  = "";
+
+  // Store in sessionStorage for logAction use
+  sessionStorage.setItem("userId",   user.uid);
+  sessionStorage.setItem("userName", name);
+  sessionStorage.setItem("userRole", data.role);
+
+  updateConfigBanner();
+  await loadLogs();
+});
+
+// ── Load logs from Google Sheet ──
+window.loadLogs = async function() {
+  const url = getScriptUrl();
+  if (!url) { showToast("ยังไม่ได้ตั้งค่า URL", "error"); return; }
+
+  document.getElementById("logsBody").innerHTML =
+    `<tr class="loading-row"><td colspan="8"><div class="spinner"></div>กำลังโหลดจาก Google Sheet…</td></tr>`;
+
+  try {
+    const res  = await fetch(`${url}?limit=500`, { method: "GET" });
+    const json = await res.json();
+
+    if (!json.ok) throw new Error(json.error || "Apps Script ส่ง error กลับมา");
+
+    allLogs = json.logs || [];
+    updateMetrics(allLogs);
+    applyFilters();
+    showToast(`โหลด ${allLogs.length} รายการ`, "success");
+  } catch (err) {
+    console.error(err);
+    document.getElementById("logsBody").innerHTML =
+      `<tr class="loading-row"><td colspan="8" style="color:#b91c1c;">
+        โหลดข้อมูลไม่ได้: ${err.message}<br>
+        <small>ตรวจสอบว่า Deploy เป็น "Anyone" และ URL ถูกต้อง</small>
+      </td></tr>`;
+    showToast("โหลดไม่สำเร็จ", "error");
+  }
+};
+
+// ── logAction — ส่งไป Google Sheet ──
+window.logAction = async function(actionType, description, detail={}, status="success", errorMsg="") {
+  const url = getScriptUrl();
+  if (!url) return;  // ยังไม่ตั้งค่า — ข้ามได้
+
+  try {
+    const payload = {
+      userId:      sessionStorage.getItem("userId")   || currentUser?.uid || "",
+      userName:    sessionStorage.getItem("userName") || currentUser?.displayName || "",
+      userEmail:   auth.currentUser?.email || "",
+      userRole:    sessionStorage.getItem("userRole") || "user",
+      actionType, description, detail, status, errorMsg,
+      timestamp:   new Date().toISOString()
+    };
+
+    // fire-and-forget — ไม่ await เพื่อไม่ block UI
+    fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },  // ใช้ text/plain หลีกเลี่ยง CORS preflight
+      body: JSON.stringify(payload)
+    }).catch(e => console.warn("logAction failed:", e));
+  } catch(e) {
+    console.warn("logAction error:", e);
+  }
+};
+
+// ── Metrics ──
+function updateMetrics(logs) {
+  const todayStr  = new Date().toISOString().slice(0,10);
+  const todayLogs = logs.filter(l => (l.timestamp||"").slice(0,10) === todayStr);
+  const uniqueUsers = new Set(logs.map(l => l.userId).filter(Boolean)).size;
+  const errors    = logs.filter(l => l.status === "error").length;
+
+  document.getElementById("mTotal").textContent    = logs.length.toLocaleString();
+  document.getElementById("mTotalSub").textContent = "รวมทั้งหมด";
+  document.getElementById("mToday").textContent    = todayLogs.length.toLocaleString();
+  document.getElementById("mUsers").textContent    = uniqueUsers.toLocaleString();
+  document.getElementById("mErrors").textContent   = errors.toLocaleString();
+}
+
+// ── Filter ──
+window.applyFilters = function() {
+  const role   = document.getElementById("fRole").value;
+  const action = document.getElementById("fAction").value;
+  const from   = document.getElementById("fFrom").value;
+  const to     = document.getElementById("fTo").value;
+  const search = document.getElementById("fSearch").value.toLowerCase();
+
+  filtered = allLogs.filter(l => {
+    const dateStr = (l.timestamp||"").slice(0,10);
+    if (role   && l.userRole   !== role)   return false;
+    if (action && l.actionType !== action) return false;
+    if (from   && dateStr < from)          return false;
+    if (to     && dateStr > to)            return false;
+    if (search) {
+      const hay = [l.userName||"", l.userEmail||"", l.actionType||"", l.description||""].join(" ").toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+  currentPage = 1;
+  renderTable();
+};
+
+window.clearFilters = function() {
+  ["fRole","fAction","fFrom","fTo","fSearch"].forEach(id => {
+    document.getElementById(id).value = "";
+  });
+  applyFilters();
+};
+
+// ── Render Table ──
+function renderTable() {
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const page  = filtered.slice(start, start + PAGE_SIZE);
+  const total = filtered.length;
+
+  document.getElementById("tableCount").textContent = `${total.toLocaleString()} รายการ`;
+  document.getElementById("pagerInfo").textContent  =
+    `แสดง ${Math.min(start+1, total)}–${Math.min(start+PAGE_SIZE, total)} จาก ${total.toLocaleString()}`;
+
+  if (page.length === 0) {
+    document.getElementById("logsBody").innerHTML =
+      `<tr><td colspan="8"><div class="empty">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <p>ไม่พบรายการที่ตรงกับตัวกรอง</p>
+      </div></td></tr>`;
+    renderPager(total);
+    return;
+  }
+
+  const rows = page.map((log, idx) => {
+    const ts = log.timestamp ? new Date(log.timestamp) : new Date(0);
+    const dateStr = formatDate(ts);
+    const timeStr = formatTime(ts);
+    const rowId   = `row-${log.id || idx}`;
+    const detId   = `detail-${log.id || idx}`;
+
+    return `
+      <tr onclick="toggleDetail('${detId}')" style="cursor:pointer;">
+        <td><div class="action-ico" style="${getActionBg(log.actionType)}">${getActionSvg(log.actionType)}</div></td>
+        <td>
+          <div style="font-size:13px;font-weight:500;">${dateStr}</div>
+          <div style="font-size:11px;color:var(--muted);">${timeStr}</div>
+        </td>
+        <td>
+          <div style="font-size:13px;">${escHtml(log.userName||"–")}</div>
+          <div style="font-size:11px;color:var(--muted);">${escHtml(log.userEmail||"")}</div>
+        </td>
+        <td>${log.userRole==="admin"?`<span class="rbadge rbadge-admin">Admin</span>`:`<span class="rbadge rbadge-user">User</span>`}</td>
+        <td>${getActionChip(log.actionType)}</td>
+        <td style="max-width:220px;"><div style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(log.description||"–")}</div></td>
+        <td style="max-width:160px;"><div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(summariseDetail(log.detail))}</div></td>
+        <td>${getStatusChip(log.status)}</td>
+      </tr>
+      <tr class="detail-row" id="${detId}">
+        <td class="detail-cell" colspan="8">
+          <div class="detail-kv">
+            ${log.userId    ? `<span><b>User ID:</b> ${escHtml(log.userId)}</span>` : ""}
+            ${log.actionType? `<span><b>Type:</b> ${escHtml(log.actionType)}</span>` : ""}
+            ${log.detail    ? `<span><b>Detail:</b> ${escHtml(JSON.stringify(log.detail))}</span>` : ""}
+            ${log.errorMsg  ? `<span style="color:#b91c1c;"><b>Error:</b> ${escHtml(log.errorMsg)}</span>` : ""}
+          </div>
+        </td>
+      </tr>`;
+  }).join("");
+
+  document.getElementById("logsBody").innerHTML = rows;
+  renderPager(total);
+}
+
+window.toggleDetail = function(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle("open");
+};
+
+function renderPager(total) {
+  const pages = Math.ceil(total / PAGE_SIZE);
+  const btns  = document.getElementById("pagerBtns");
+  if (pages <= 1) { btns.innerHTML = ""; return; }
+
+  let html = `<button class="pager-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?"disabled":""}><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>`;
+  pageRange(currentPage, pages).forEach(p => {
+    if (p === "…") html += `<button class="pager-btn" disabled>…</button>`;
+    else html += `<button class="pager-btn ${p===currentPage?"active":""}" onclick="goPage(${p})">${p}</button>`;
+  });
+  html += `<button class="pager-btn" onclick="goPage(${currentPage+1})" ${currentPage===pages?"disabled":""}><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>`;
+  btns.innerHTML = html;
+}
+function pageRange(cur, total) {
+  if (total<=7) return Array.from({length:total},(_,i)=>i+1);
+  if (cur<=4)   return [1,2,3,4,5,"…",total];
+  if (cur>=total-3) return [1,"…",total-4,total-3,total-2,total-1,total];
+  return [1,"…",cur-1,cur,cur+1,"…",total];
+}
+window.goPage = function(p) { currentPage=p; renderTable(); window.scrollTo({top:0,behavior:"smooth"}); };
+
+// ── Helpers ──
+function getActionChip(type) {
+  const map = {
+    login:['chip-green','เข้าสู่ระบบ'], logout:['chip-gray','ออกจากระบบ'],
+    attendance:['chip-blue','เช็คชื่อ'], score:['chip-purple','คะแนน'],
+    submit:['chip-teal','ส่งงาน'], class:['chip-amber','ชั้นเรียน'],
+    subject:['chip-amber','รายวิชา'], user_manage:['chip-red','จัดการผู้ใช้'],
+    error:['chip-red','Error'],
+  };
+  const [cls,label] = map[type]||['chip-gray',type||"–"];
+  return `<span class="chip ${cls}">${label}</span>`;
+}
+function getStatusChip(s) {
+  if (s==="error")   return `<span class="chip chip-red">ผิดพลาด</span>`;
+  if (s==="warning") return `<span class="chip chip-amber">คำเตือน</span>`;
+  return `<span class="chip chip-green">สำเร็จ</span>`;
+}
+function getActionBg(type) {
+  const m = {login:"background:#f0fdf4;color:#166534;",logout:"background:#f9fafb;color:#6b7280;",attendance:"background:#eff6ff;color:#1e40af;",score:"background:#f5f3ff;color:#6d28d9;",submit:"background:#f0fdfa;color:#0f766e;",class:"background:#fffbeb;color:#92400e;",subject:"background:#fffbeb;color:#92400e;",user_manage:"background:#fef2f2;color:#b91c1c;",error:"background:#fef2f2;color:#b91c1c;"};
+  return m[type]||"background:#f3f4f6;color:#6b7280;";
+}
+function getActionSvg(type) {
+  const m = {
+    login:`<svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>`,
+    logout:`<svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`,
+    attendance:`<svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>`,
+    score:`<svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>`,
+    submit:`<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`,
+    class:`<svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>`,
+    subject:`<svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>`,
+    user_manage:`<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>`,
+    error:`<svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg>`,
+  };
+  return m[type]||`<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>`;
+}
+function summariseDetail(d) {
+  if (!d) return "";
+  if (typeof d==="string") return d.slice(0,80);
+  try { const s=JSON.stringify(d); return s.length>80?s.slice(0,80)+"…":s; } catch { return ""; }
+}
+function formatDate(d) { return d.toLocaleDateString("th-TH",{year:"numeric",month:"short",day:"numeric"}); }
+function formatTime(d) { return d.toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit",second:"2-digit"}); }
+function escHtml(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+// ── Export CSV ──
+window.exportCSV = function() {
+  const rows = [["วันที่","เวลา","ผู้ใช้","อีเมล","Role","ประเภท","การกระทำ","สถานะ","รายละเอียด"]];
+  filtered.forEach(l => {
+    const ts = l.timestamp ? new Date(l.timestamp) : new Date(0);
+    rows.push([ts.toLocaleDateString("th-TH"),ts.toLocaleTimeString("th-TH"),l.userName||"",l.userEmail||"",l.userRole||"",l.actionType||"",l.description||"",l.status||"success",summariseDetail(l.detail)]);
+  });
+  const csv  = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const blob = new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"});
+  const a    = document.createElement("a");
+  a.href     = URL.createObjectURL(blob);
+  a.download = `activity_logs_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  showToast("Export สำเร็จ","success");
+};
+
+// ── Logout ──
+window.doLogout = async function() {
+  await window.logAction("logout","ออกจากระบบ",{},"success");
+  setTimeout(async () => {
+    await signOut(auth);
+    sessionStorage.clear();
+    window.location.href = "index.html";
+  }, 300);
+};
+
+// ── Mobile sidebar ──
+window._sidebarToggle = function() {
+  document.getElementById("sidebar").classList.toggle("mobile-open");
+  document.getElementById("sidebarOverlay").classList.toggle("open");
+  document.getElementById("hamburger").classList.toggle("open");
+};
+window._closeSidebar = function() {
+  document.getElementById("sidebar").classList.remove("mobile-open");
+  document.getElementById("sidebarOverlay").classList.remove("open");
+  document.getElementById("hamburger").classList.remove("open");
+};
+
+// ── Toast ──
+function showToast(msg,type="success") {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.className = `show ${type}`;
+  setTimeout(()=>{t.className="";},3000);
+}
+window.showToast = showToast;
+</script>
+</body>
+</html>
