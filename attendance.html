@@ -537,10 +537,15 @@ window.saveAll = async function() {
     await Promise.all([...ghostUpdates, ...writes]);
     sessionStorage.removeItem("students_" + classId);
 
-    await logAction("attendance",
-      `บันทึกเช็คชื่อ ${activeStudents.length} คน วันที่ ${date}`,
-      { classId, subjectId, date, studentCount: activeStudents.length }
-    );
+    await logAction("attendance", `แก้ไขสถานะเช็คชื่อ "${studentName}"`, {
+  studentId,
+  studentName,
+  date,
+  before: "ขาดเรียน",   // ← สถานะเดิมก่อนแก้
+  after:  "มาเรียน",    // ← สถานะใหม่หลังแก้
+  className,
+  subjectName
+});
     showToast(`บันทึกการเช็คชื่อเรียบร้อย ✓ (${activeStudents.length} คน)`, "success");
   } catch(e) {
     await logAction("attendance", `บันทึกเช็คชื่อล้มเหลว`, {}, "error", e.message);
