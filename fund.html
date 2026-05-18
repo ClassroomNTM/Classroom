@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>เงินเก็บห้อง — ระบบจัดการนักเรียน</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#f5f4f0;--surface:#ffffff;--blue:#0f3460;--blue-lt:#e6eef7;
+  --text:#1a1a2e;--muted:#6b7280;--border:rgba(0,0,0,0.08);
+  --radius:12px;--sidebar-w:200px;--topbar-h:56px;
+}
+body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+.topbar{position:fixed;top:0;left:0;right:0;height:var(--topbar-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:100;}
+.brand{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;color:var(--text);text-decoration:none;}
+.brand-dot{width:32px;height:32px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;}
+.brand-dot svg{width:18px;height:18px;fill:white;}
+.topbar-right{display:flex;align-items:center;gap:14px;}
+.user-info{font-size:13px;display:flex;align-items:center;gap:8px;}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--blue);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;}
+.role-badge{padding:2px 8px;border-radius:99px;font-size:11px;font-weight:500;}
+.role-admin{background:#fef2f2;color:#b91c1c;}.role-user{background:#f0fdf4;color:#166534;}
+.btn-logout{padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:transparent;font-family:'Sarabun',sans-serif;font-size:13px;color:var(--muted);cursor:pointer;}
+.btn-logout:hover{background:var(--bg);}
+/* hamburger */
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:6px;border:none;background:transparent;margin-right:4px;}
+.hamburger span{display:block;width:22px;height:2px;background:var(--text);border-radius:2px;transition:.25s;}
+.hamburger.open span:nth-child(1){transform:rotate(45deg) translate(5px,5px);}
+.hamburger.open span:nth-child(2){opacity:0;}
+.hamburger.open span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px);}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:150;}
+.sidebar-overlay.open{display:block;}
+/* sidebar */
+.sidebar{position:fixed;top:var(--topbar-h);left:0;bottom:0;width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);padding:16px 10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;}
+.sidebar-label{font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--muted);padding:8px 10px 4px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;font-size:13px;color:var(--muted);text-decoration:none;transition:all .15s;}
+.nav-item svg{width:17px;height:17px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.nav-item:hover{background:var(--bg);color:var(--text);}
+.nav-item.active{background:var(--blue-lt);color:var(--blue);font-weight:500;}
+.nav-sep{height:1px;background:var(--border);margin:8px 0;}
+/* main */
+.main{margin-left:var(--sidebar-w);margin-top:var(--topbar-h);padding:24px;display:grid;grid-template-columns:240px 1fr;gap:20px;align-items:start;}
+/* rounds panel */
+.rounds-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;position:sticky;top:calc(var(--topbar-h) + 24px);}
+.rounds-head{padding:14px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between;}
+.rounds-list{padding:8px;}
+.round-item{padding:9px 10px;border-radius:8px;font-size:13px;cursor:pointer;transition:all .15s;border:1px solid transparent;margin-bottom:2px;}
+.round-item:hover{background:var(--bg);}
+.round-item.active{background:var(--blue-lt);color:var(--blue);font-weight:500;border-color:rgba(15,52,96,.12);}
+.round-item .r-name{font-size:13px;}
+.round-item .r-meta{font-size:11px;color:var(--muted);margin-top:1px;display:flex;gap:6px;flex-wrap:wrap;}
+.round-item.active .r-meta{color:rgba(15,52,96,.7);}
+/* content */
+.content-area{min-width:0;}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+.page-title{font-size:20px;font-weight:600;}
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid var(--border);border-radius:8px;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:500;cursor:pointer;background:var(--surface);color:var(--text);transition:all .15s;}
+.btn:hover{background:var(--bg);}
+.btn:active{transform:scale(.97);}
+.btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.btn-primary{background:var(--blue);color:white;border-color:var(--blue);}
+.btn-primary:hover{background:#0a2847;}
+.btn-danger{background:#fef2f2;color:#b91c1c;border-color:#fecaca;}
+.btn-danger:hover{background:#fee2e2;}
+.btn-success{background:#f0fdf4;color:#166534;border-color:#bbf7d0;}
+.btn-success:hover{background:#dcfce7;}
+.btn-sm{padding:5px 10px;font-size:12px;}
+/* filters */
+.filters{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;align-items:flex-end;}
+.fgroup{display:flex;flex-direction:column;gap:4px;}
+.flabel{font-size:11px;font-weight:500;color:var(--muted);}
+select,input[type="text"],input[type="number"],input[type="date"]{
+  height:38px;border:1px solid var(--border);border-radius:8px;padding:0 12px;
+  font-family:'Sarabun',sans-serif;font-size:13px;color:var(--text);background:white;outline:none;}
+select:focus,input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);}
+textarea{border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:'Sarabun',sans-serif;font-size:13px;color:var(--text);background:white;outline:none;resize:vertical;width:100%;}
+textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);}
+/* metrics */
+.metrics-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;}
+.m-label{font-size:11px;color:var(--muted);margin-bottom:4px;display:flex;align-items:center;gap:5px;}
+.m-label svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.m-val{font-size:26px;font-weight:600;line-height:1;}
+.m-sub{font-size:11px;color:var(--muted);margin-top:3px;}
+.m-val-green{color:#166534;}.m-val-red{color:#b91c1c;}.m-val-blue{color:#1e40af;}
+/* progress */
+.prog-wrap{margin-bottom:20px;}
+.prog-label{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px;}
+.prog-bg{height:7px;background:#f3f4f6;border-radius:99px;overflow:hidden;}
+.prog-fill{height:7px;background:var(--blue);border-radius:99px;transition:width .4s ease;}
+/* card / table */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.card-head{padding:12px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;padding:10px 12px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--border);background:#fafafa;}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#fafafa;}
+.stu-cell{display:flex;align-items:center;gap:8px;}
+.stu-av{width:30px;height:30px;border-radius:50%;background:var(--blue-lt);color:var(--blue);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;}
+.stu-name{font-size:13px;font-weight:500;}
+.stu-num{font-size:11px;color:var(--muted);}
+/* chip */
+.chip{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:500;}
+.chip-green{background:#f0fdf4;color:#166534;}
+.chip-red{background:#fef2f2;color:#b91c1c;}
+.chip-amber{background:#fffbeb;color:#92400e;}
+.chip-gray{background:#f9fafb;color:#6b7280;border:1px solid #e5e7eb;}
+/* modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:200;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:white;border-radius:16px;padding:24px 28px;width:460px;max-width:95vw;animation:fadeUp .25s ease;}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:18px;}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;}
+.form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.form-label{font-size:12px;font-weight:500;color:var(--text);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+/* expense section */
+.expense-section{margin-top:20px;}
+.expense-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.expense-title{font-size:14px;font-weight:600;}
+/* empty */
+.empty-state{padding:40px;text-align:center;color:var(--muted);}
+.empty-state svg{width:40px;height:40px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;margin:0 auto 10px;display:block;opacity:.4;}
+.empty-state p{font-size:13px;}
+/* toast */
+#toast{position:fixed;bottom:24px;right:24px;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;}
+#toast.show{opacity:1;transform:translateY(0);}
+#toast.success{background:#052e16;color:#86efac;}
+#toast.error{background:#450a0a;color:#fca5a5;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+/* mobile */
+@media(max-width:768px){
+  :root{--sidebar-w:220px;}
+  .sidebar{transform:translateX(-100%);z-index:160;transition:transform .25s ease;}
+  .sidebar.mobile-open{transform:translateX(0);}
+  .hamburger{display:flex;}
+  .main{margin-left:0!important;grid-template-columns:1fr;}
+  .rounds-panel{position:static;}
+  .topbar-username{display:none;}
+  .page-title{font-size:17px!important;}
+}
+@media(max-width:480px){
+  .topbar{padding:0 10px!important;}
+  .btn-logout{display:none;}
+  .role-badge{display:none;}
+  .metrics-row{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="_closeSidebar()"></div>
+
+<header class="topbar">
+  <a href="dashboard.html" class="brand">
+    <button class="hamburger" id="hamburgerBtn" onclick="_toggleSidebar()" aria-label="เมนู">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="brand-dot"><svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg></div>
+    ระบบจัดการนักเรียน
+  </a>
+  <div class="topbar-right">
+    <div class="user-info">
+      <div class="avatar" id="avatarEl">?</div>
+      <span id="userNameEl" class="topbar-username">ผู้ใช้</span>
+      <span class="role-badge" id="roleBadgeEl">—</span>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">ออกจากระบบ</button>
+  </div>
+</header>
+
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-label">เมนูหลัก</div>
+  <a href="dashboard.html" class="nav-item">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard
+  </a>
+  <a href="attendance.html" class="nav-item">
+    <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>เช็คชื่อ
+  </a>
+  <a href="attendance-summary.html" class="nav-item">
+    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>สรุปเช็คชื่อ
+  </a>
+  <a href="score.html" class="nav-item">
+    <svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>คะแนน
+  </a>
+  <a href="fund.html" class="nav-item active">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>เงินเก็บห้อง
+  </a>
+  <a href="submit.html" class="nav-item">
+    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>ส่งงาน
+  </a>
+  <div class="nav-sep"></div>
+  <div class="sidebar-label">จัดการ</div>
+  <a href="class.html" class="nav-item">
+    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>ชั้นเรียน
+  </a>
+  <a href="subject.html" class="nav-item">
+    <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>รายวิชา
+  </a>
+  <a href="admin.html" class="nav-item" id="adminNavItem" style="display:none;">
+    <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>จัดการผู้ใช้
+  </a>
+</nav>
+
+<main class="main">
+  <!-- Rounds panel (left) -->
+  <div class="rounds-panel">
+    <div class="rounds-head">
+      รอบการเก็บเงิน
+      <button class="btn btn-sm btn-primary" id="addRoundBtn" onclick="openAddRound()" style="display:none;">+ เพิ่ม</button>
+    </div>
+    <div class="rounds-list" id="roundsList">
+      <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">เลือกห้องเรียนก่อน</div>
+    </div>
+  </div>
+
+  <!-- Content (right) -->
+  <div class="content-area">
+    <div class="page-header">
+      <div class="page-title">เงินเก็บห้อง</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <div class="fgroup">
+          <div class="flabel">ห้องเรียน</div>
+          <select id="classSelect" onchange="onClassChange()" style="width:140px;">
+            <option value="">— เลือกห้อง —</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div id="mainArea">
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
+        <p>เลือกห้องเรียนและรอบการเก็บเงิน</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ─── Modal: เพิ่ม/แก้ไขรอบการเก็บเงิน ─── -->
+<div class="modal-overlay" id="roundModal">
+  <div class="modal">
+    <div class="modal-title" id="roundModalTitle">เพิ่มรอบการเก็บเงิน</div>
+    <div class="form-group">
+      <label class="form-label">ชื่อรายการ</label>
+      <input type="text" id="roundName" placeholder="เช่น ค่ากิจกรรมเดือนพฤษภาคม">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">จำนวนเงิน/คน (บาท)</label>
+        <input type="number" id="roundAmount" placeholder="200" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">ครบกำหนด</label>
+        <input type="date" id="roundDue">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">หมายเหตุ (ไม่บังคับ)</label>
+      <textarea id="roundNote" rows="2" placeholder="รายละเอียดเพิ่มเติม..."></textarea>
+    </div>
+    <input type="hidden" id="editRoundId">
+    <div class="modal-footer">
+      <button class="btn" onclick="closeRoundModal()">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveRound()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Modal: บันทึกการจ่ายเงิน ─── -->
+<div class="modal-overlay" id="payModal">
+  <div class="modal">
+    <div class="modal-title">บันทึกการจ่ายเงิน</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:14px;" id="payStudentName"></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">วันที่จ่าย</label>
+        <input type="date" id="payDate">
+      </div>
+      <div class="form-group">
+        <label class="form-label">จำนวน (บาท)</label>
+        <input type="number" id="payAmount" min="0">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">หมายเหตุ</label>
+      <textarea id="payNote" rows="2" placeholder="ไม่มี"></textarea>
+    </div>
+    <input type="hidden" id="payStudentId">
+    <div class="modal-footer">
+      <button class="btn" onclick="closePayModal()">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="savePay()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Modal: รายจ่าย ─── -->
+<div class="modal-overlay" id="expenseModal">
+  <div class="modal">
+    <div class="modal-title" id="expenseModalTitle">เพิ่มรายจ่าย</div>
+    <div class="form-group">
+      <label class="form-label">รายการ</label>
+      <input type="text" id="expenseName" placeholder="เช่น ซื้ออุปกรณ์">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">จำนวนเงิน (บาท)</label>
+        <input type="number" id="expenseAmount" min="0" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">วันที่</label>
+        <input type="date" id="expenseDate">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">หมายเหตุ</label>
+      <textarea id="expenseNote" rows="2" placeholder="ไม่มี"></textarea>
+    </div>
+    <input type="hidden" id="editExpenseId">
+    <div class="modal-footer">
+      <button class="btn" onclick="closeExpenseModal()">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveExpense()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+import { initAuth, doLogout, db } from "./auth-guard.js";
+import {
+  collection, doc, getDocs, getDoc, setDoc, addDoc, deleteDoc, updateDoc,
+  query, where, orderBy, serverTimestamp, Timestamp
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+window.doLogout = doLogout;
+
+let userRole = "";
+let currentClassId = "";
+let currentRoundId = "";
+let students = [];       // รายชื่อนักเรียนในห้อง
+let payments = {};       // { studentId: { paid, paidDate, amount, note } }
+let expenses = [];       // รายจ่ายของ round นี้
+let rounds = [];         // รอบการเก็บเงินทั้งหมดของห้อง
+
+// ── Cache ──────────────────────────────────────────────────────
+const CACHE_TTL = 30 * 60 * 1000;
+function cacheSet(k, v){ sessionStorage.setItem(k, JSON.stringify({ts:Date.now(),data:v})); }
+function cacheGet(k){
+  try{ const o=JSON.parse(sessionStorage.getItem(k)||"null"); if(!o) return null;
+    if(Date.now()-o.ts>CACHE_TTL){sessionStorage.removeItem(k);return null;} return o.data; }
+  catch{ return null; }
+}
+function stuCacheSet(cid, v){ sessionStorage.setItem("stu_"+cid, JSON.stringify(v)); }
+function stuCacheGet(cid){ try{ const r=sessionStorage.getItem("stu_"+cid); return r?JSON.parse(r):null; }catch{return null;} }
+
+// ── Init ───────────────────────────────────────────────────────
+initAuth({ requireAdmin: true, onReady: async ({ role }) => {
+  userRole = role;
+  document.getElementById("adminNavItem").style.display = "flex";
+  document.getElementById("addRoundBtn").style.display = "inline-flex";
+  await loadClasses();
+}});
+
+async function loadClasses(){
+  let classes = cacheGet("classes");
+  if(!classes){
+    const snap = await getDocs(collection(db,"classes"));
+    classes = snap.docs.map(d=>({id:d.id,...d.data()}))
+      .sort((a,b)=>(a.name||"").localeCompare(b.name||"","th"));
+    cacheSet("classes", classes);
+  }
+  const sel = document.getElementById("classSelect");
+  classes.forEach(c=>{
+    const o=document.createElement("option");
+    o.value=c.id; o.textContent=c.name; sel.appendChild(o);
+  });
+}
+
+window.onClassChange = async function(){
+  currentClassId = document.getElementById("classSelect").value;
+  currentRoundId = "";
+  if(!currentClassId){ document.getElementById("roundsList").innerHTML='<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">เลือกห้องเรียนก่อน</div>'; return; }
+  // load students
+  let cached = stuCacheGet(currentClassId);
+  if(!cached){
+    const snap = await getDocs(query(collection(db,"students"), where("classId","==",currentClassId)));
+    cached = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.number||0)-(b.number||0));
+    stuCacheSet(currentClassId, cached);
+  }
+  students = cached;
+  await loadRounds();
+};
+
+// ── Rounds ─────────────────────────────────────────────────────
+async function loadRounds(){
+  const snap = await getDocs(query(
+    collection(db,"fundRounds"),
+    where("classId","==",currentClassId),
+    orderBy("createdAt","desc")
+  ));
+  rounds = snap.docs.map(d=>({id:d.id,...d.data()}));
+  renderRoundsList();
+  if(rounds.length>0) await selectRound(rounds[0].id);
+  else {
+    document.getElementById("roundsList").innerHTML='<div style="padding:12px 10px;font-size:12px;color:var(--muted);">ยังไม่มีรอบ กด "+ เพิ่ม"</div>';
+    document.getElementById("mainArea").innerHTML='<div class="empty-state"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg><p>ยังไม่มีรอบการเก็บเงิน</p></div>';
+  }
+}
+
+function renderRoundsList(){
+  const el = document.getElementById("roundsList");
+  if(!rounds.length){ el.innerHTML='<div style="padding:12px 10px;font-size:12px;color:var(--muted);">ยังไม่มีรอบ</div>'; return; }
+  el.innerHTML = rounds.map(r=>{
+    const due = r.dueDate ? fmtDate(r.dueDate.toDate ? r.dueDate.toDate() : new Date(r.dueDate)) : "";
+    return `<div class="round-item ${r.id===currentRoundId?'active':''}" onclick="selectRound('${r.id}')">
+      <div class="r-name">${esc(r.name)}</div>
+      <div class="r-meta">
+        <span>฿${num(r.amountPerPerson)}/คน</span>
+        ${due ? `<span>ครบ ${due}</span>` : ""}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+window.selectRound = async function(roundId){
+  currentRoundId = roundId;
+  renderRoundsList();
+  await loadPayments();
+  await loadExpenses();
+  renderAll();
+};
+
+// ── Payments ───────────────────────────────────────────────────
+async function loadPayments(){
+  const snap = await getDocs(query(
+    collection(db,"fundPayments"),
+    where("roundId","==",currentRoundId)
+  ));
+  payments = {};
+  snap.docs.forEach(d=>{ const x=d.data(); payments[x.studentId]=x; });
+}
+
+// ── Expenses ───────────────────────────────────────────────────
+async function loadExpenses(){
+  const snap = await getDocs(query(
+    collection(db,"fundExpenses"),
+    where("roundId","==",currentRoundId),
+    orderBy("date","desc")
+  ));
+  expenses = snap.docs.map(d=>({id:d.id,...d.data()}));
+}
+
+// ── Render ─────────────────────────────────────────────────────
+function renderAll(){
+  const round = rounds.find(r=>r.id===currentRoundId);
+  if(!round) return;
+
+  const totalIncome   = Object.values(payments).reduce((s,p)=>s+(p.amount||0),0);
+  const totalExpense  = expenses.reduce((s,e)=>s+(e.amount||0),0);
+  const balance       = totalIncome - totalExpense;
+  const paidCount     = Object.values(payments).filter(p=>p.paid).length;
+  const total         = students.length;
+  const pct           = total>0 ? Math.round((paidCount/total)*100) : 0;
+
+  const dueStr = round.dueDate
+    ? fmtDate(round.dueDate.toDate ? round.dueDate.toDate() : new Date(round.dueDate))
+    : "—";
+
+  document.getElementById("mainArea").innerHTML = `
+    <!-- round header -->
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+      <div>
+        <div style="font-size:18px;font-weight:600;">${esc(round.name)}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:3px;">฿${num(round.amountPerPerson)} / คน &nbsp;·&nbsp; ครบกำหนด ${dueStr}${round.note?` &nbsp;·&nbsp; ${esc(round.note)}`:""}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-sm" onclick="openEditRound('${round.id}')">
+          <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>แก้ไข
+        </button>
+        <button class="btn btn-sm btn-danger" onclick="deleteRound('${round.id}')">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>ลบ
+        </button>
+      </div>
+    </div>
+
+    <!-- metrics -->
+    <div class="metrics-row">
+      <div class="metric">
+        <div class="m-label">
+          <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 110 20A10 10 0 0112 2zm0 6v4l3 1.5"/></svg>
+          ยอดคงเหลือ
+        </div>
+        <div class="m-val ${balance>=0?'m-val-green':'m-val-red'}">฿${num(balance)}</div>
+        <div class="m-sub">รับ − จ่าย</div>
+      </div>
+      <div class="metric">
+        <div class="m-label">
+          <svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+          รายรับรวม
+        </div>
+        <div class="m-val m-val-blue">฿${num(totalIncome)}</div>
+        <div class="m-sub">${paidCount} / ${total} คน</div>
+      </div>
+      <div class="metric">
+        <div class="m-label">
+          <svg viewBox="0 0 24 24"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
+          รายจ่ายรวม
+        </div>
+        <div class="m-val m-val-red">฿${num(totalExpense)}</div>
+        <div class="m-sub">${expenses.length} รายการ</div>
+      </div>
+    </div>
+
+    <!-- progress -->
+    <div class="prog-wrap">
+      <div class="prog-label">
+        <span>ความคืบหน้าการเก็บเงิน</span>
+        <span>${paidCount} / ${total} คน (${pct}%)</span>
+      </div>
+      <div class="prog-bg"><div class="prog-fill" style="width:${pct}%"></div></div>
+    </div>
+
+    <!-- student payment table -->
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-head">
+        <span>รายชื่อนักเรียน</span>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <select id="filterStatus" onchange="renderStudentRows()" style="height:32px;font-size:12px;width:130px;">
+            <option value="all">ทั้งหมด</option>
+            <option value="paid">จ่ายแล้ว</option>
+            <option value="unpaid">ยังไม่จ่าย</option>
+          </select>
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th style="width:48px;">เลขที่</th>
+            <th>ชื่อ-สกุล</th>
+            <th>จำนวน</th>
+            <th>วันที่จ่าย</th>
+            <th>หมายเหตุ</th>
+            <th>สถานะ</th>
+            <th style="width:90px;"></th>
+          </tr></thead>
+          <tbody id="studentRows"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- expenses -->
+    <div class="expense-section">
+      <div class="expense-head">
+        <div class="expense-title">รายจ่าย</div>
+        <button class="btn btn-sm btn-primary" onclick="openAddExpense()">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>เพิ่มรายจ่าย
+        </button>
+      </div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>วันที่</th><th>รายการ</th><th>จำนวน</th><th>หมายเหตุ</th><th style="width:80px;"></th>
+            </tr></thead>
+            <tbody id="expenseRows"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+
+  renderStudentRows();
+  renderExpenseRows();
+}
+
+window.renderStudentRows = function(){
+  const filter = document.getElementById("filterStatus")?.value || "all";
+  const tbody = document.getElementById("studentRows");
+  if(!tbody) return;
+  const round = rounds.find(r=>r.id===currentRoundId);
+  if(!round) return;
+
+  let list = students;
+  if(filter==="paid")   list = students.filter(s=>payments[s.id]?.paid);
+  if(filter==="unpaid") list = students.filter(s=>!payments[s.id]?.paid);
+
+  if(!list.length){
+    tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted);">ไม่มีรายการ</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map(s=>{
+    const p = payments[s.id];
+    const paid = p?.paid;
+    const paidDate = paid && p.paidDate ? fmtDate(p.paidDate.toDate ? p.paidDate.toDate() : new Date(p.paidDate)) : "—";
+    const amount   = paid ? `฿${num(p.amount)}` : "—";
+    const note     = paid && p.note ? esc(p.note) : "—";
+    const initials = (s.name||"?").substring(0,2);
+    const chipCls  = paid ? "chip chip-green" : "chip chip-red";
+    const chipTxt  = paid ? "จ่ายแล้ว" : "ยังไม่จ่าย";
+
+    const actionBtn = paid
+      ? `<button class="btn btn-sm btn-danger" onclick="cancelPay('${s.id}')">ยกเลิก</button>`
+      : `<button class="btn btn-sm btn-success" onclick="openPayModal('${s.id}','${esc(s.name)}',${round.amountPerPerson||0})">บันทึก</button>`;
+
+    return `<tr>
+      <td style="color:var(--muted);font-size:12px;">${s.number||"—"}</td>
+      <td><div class="stu-cell"><div class="stu-av">${initials}</div><span class="stu-name">${esc(s.name)}</span></div></td>
+      <td>${amount}</td>
+      <td>${paidDate}</td>
+      <td style="color:var(--muted);font-size:12px;">${note}</td>
+      <td><span class="${chipCls}">${chipTxt}</span></td>
+      <td>${actionBtn}</td>
+    </tr>`;
+  }).join("");
+};
+
+function renderExpenseRows(){
+  const tbody = document.getElementById("expenseRows");
+  if(!tbody) return;
+  if(!expenses.length){
+    tbody.innerHTML=`<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted);">ยังไม่มีรายจ่าย</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = expenses.map(e=>{
+    const dt = e.date ? fmtDate(e.date.toDate ? e.date.toDate() : new Date(e.date)) : "—";
+    return `<tr>
+      <td>${dt}</td>
+      <td>${esc(e.name)}</td>
+      <td style="color:#b91c1c;">฿${num(e.amount)}</td>
+      <td style="color:var(--muted);font-size:12px;">${e.note?esc(e.note):"—"}</td>
+      <td>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-sm" onclick="openEditExpense('${e.id}')">
+            <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button class="btn btn-sm btn-danger" onclick="deleteExpense('${e.id}')">
+            <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+          </button>
+        </div>
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+// ── Round CRUD ─────────────────────────────────────────────────
+window.openAddRound = function(){
+  document.getElementById("roundModalTitle").textContent = "เพิ่มรอบการเก็บเงิน";
+  document.getElementById("roundName").value = "";
+  document.getElementById("roundAmount").value = "";
+  document.getElementById("roundDue").value = "";
+  document.getElementById("roundNote").value = "";
+  document.getElementById("editRoundId").value = "";
+  document.getElementById("roundModal").classList.add("open");
+};
+window.openEditRound = function(id){
+  const r = rounds.find(x=>x.id===id);
+  if(!r) return;
+  document.getElementById("roundModalTitle").textContent = "แก้ไขรอบการเก็บเงิน";
+  document.getElementById("roundName").value = r.name||"";
+  document.getElementById("roundAmount").value = r.amountPerPerson||"";
+  document.getElementById("roundDue").value = r.dueDate
+    ? (r.dueDate.toDate ? r.dueDate.toDate() : new Date(r.dueDate)).toISOString().split("T")[0]
+    : "";
+  document.getElementById("roundNote").value = r.note||"";
+  document.getElementById("editRoundId").value = id;
+  document.getElementById("roundModal").classList.add("open");
+};
+window.closeRoundModal = function(){ document.getElementById("roundModal").classList.remove("open"); };
+window.saveRound = async function(){
+  const name   = document.getElementById("roundName").value.trim();
+  const amount = parseFloat(document.getElementById("roundAmount").value)||0;
+  const due    = document.getElementById("roundDue").value;
+  const note   = document.getElementById("roundNote").value.trim();
+  const editId = document.getElementById("editRoundId").value;
+  if(!name){ showToast("กรุณาระบุชื่อรายการ","error"); return; }
+  if(!currentClassId){ showToast("กรุณาเลือกห้อง","error"); return; }
+  const payload = {
+    name, amountPerPerson: amount, note, classId: currentClassId,
+    dueDate: due ? Timestamp.fromDate(new Date(due)) : null,
+  };
+  try{
+    if(editId){
+      await updateDoc(doc(db,"fundRounds",editId), payload);
+      showToast("อัปเดตเรียบร้อย","success");
+    } else {
+      payload.createdAt = serverTimestamp();
+      await addDoc(collection(db,"fundRounds"), payload);
+      showToast("เพิ่มรอบการเก็บเงินแล้ว","success");
+    }
+    closeRoundModal();
+    await loadRounds();
+  }catch(e){ showToast("เกิดข้อผิดพลาด","error"); console.error(e); }
+};
+window.deleteRound = async function(id){
+  if(!confirm("ลบรอบการเก็บเงินนี้? (ข้อมูลการจ่ายและรายจ่ายทั้งหมดจะหายไป)")) return;
+  try{
+    // delete payments & expenses
+    const pSnap = await getDocs(query(collection(db,"fundPayments"), where("roundId","==",id)));
+    const eSnap = await getDocs(query(collection(db,"fundExpenses"), where("roundId","==",id)));
+    await Promise.all([...pSnap.docs.map(d=>deleteDoc(d.ref)), ...eSnap.docs.map(d=>deleteDoc(d.ref))]);
+    await deleteDoc(doc(db,"fundRounds",id));
+    showToast("ลบแล้ว","success");
+    await loadRounds();
+  }catch(e){ showToast("เกิดข้อผิดพลาด","error"); console.error(e); }
+};
+
+// ── Payment CRUD ───────────────────────────────────────────────
+window.openPayModal = function(studentId, studentName, defaultAmount){
+  document.getElementById("payStudentName").textContent = `นักเรียน: ${studentName}`;
+  document.getElementById("payDate").value = new Date().toISOString().split("T")[0];
+  document.getElementById("payAmount").value = defaultAmount || "";
+  document.getElementById("payNote").value = "";
+  document.getElementById("payStudentId").value = studentId;
+  document.getElementById("payModal").classList.add("open");
+};
+window.closePayModal = function(){ document.getElementById("payModal").classList.remove("open"); };
+window.savePay = async function(){
+  const studentId = document.getElementById("payStudentId").value;
+  const dateVal   = document.getElementById("payDate").value;
+  const amount    = parseFloat(document.getElementById("payAmount").value)||0;
+  const note      = document.getElementById("payNote").value.trim();
+  if(!dateVal){ showToast("กรุณาระบุวันที่","error"); return; }
+  try{
+    const docId = `${currentRoundId}_${studentId}`;
+    await setDoc(doc(db,"fundPayments",docId), {
+      roundId: currentRoundId, studentId, classId: currentClassId,
+      paid: true, amount,
+      paidDate: Timestamp.fromDate(new Date(dateVal)),
+      note, updatedAt: serverTimestamp()
+    });
+    payments[studentId] = { paid:true, amount, paidDate: Timestamp.fromDate(new Date(dateVal)), note };
+    closePayModal();
+    renderAll();
+    showToast("บันทึกการจ่ายเงินแล้ว","success");
+  }catch(e){ showToast("เกิดข้อผิดพลาด","error"); console.error(e); }
+};
+window.cancelPay = async function(studentId){
+  if(!confirm("ยกเลิกการจ่ายเงินของนักเรียนคนนี้?")) return;
+  try{
+    const docId = `${currentRoundId}_${studentId}`;
+    await deleteDoc(doc(db,"fundPayments",docId));
+    delete payments[studentId];
+    renderAll();
+    showToast("ยกเลิกแล้ว","success");
+  }catch(e){ showToast("เกิดข้อผิดพลาด","error"); console.error(e); }
+};
+
+// ── Expense CRUD ───────────────────────────────────────────────
+window.openAddExpense = function(){
+  document.getElementById("expenseModalTitle").textContent = "เพิ่มรายจ่าย";
+  document.getElementById("expenseName").value = "";
+  document.getElementById("expenseAmount").value = "";
+  document.getElementById("expenseDate").value = new Date().toISOString().split("T")[0];
+  document.getElementById("expenseNote").value = "";
+  document.getElementById("editExpenseId").value = "";
+  document.getElementById("expenseModal").classList.add("open");
+};
+window.openEditExpense = function(id){
+  const e = expenses.find(x=>x.id===id);
+  if(!e) return;
+  document.getElementById("expenseModalTitle").textContent = "แก้ไขรายจ่าย";
+  document.getElementById("expenseName").value = e.name||"";
+  document.getElementById("expenseAmount").value = e.amount||"";
+  document.getElementById("expenseDate").value = e.date
+    ? (e.date.toDate ? e.date.toDate() : new Date(e.date)).toISOString().split("T")[0]
+    : "";
+  document.getElementById("expenseNote").value = e.note||"";
+  document.getElementById("editExpenseId").value = id;
+  document.getElementById("expenseModal").classList.add("open");
+};
+window.closeExpenseModal = function(){ document.getElementById("expenseModal").classList.remove("open"); };
+window.saveExpense = async function(){
+  const name   = document.getElementById("expenseName").value.trim();
+  const amount = parseFloat(document.getElementById("expenseAmount").value)||0;
+  const dateV  = document.getElementById("expenseDate").value;
+  const note   = document.getElementById("expenseNote").value.trim();
+  const editId = document.getElementById("editExpenseId").value;
+  if(!name){ showToast("กรุณาระบุรายการ","error"); return; }
+  const payload = {
+    name, amount, note, roundId: currentRoundId, classId: currentClassId,
+    date: dateV ? Timestamp.fromDate(new Date(dateV)) : serverTimestamp(),
+  };
+  try{
+    if(editId){
+      await updateDoc(doc(db,"fundExpenses",editId), payload);
+      showToast("อัปเดตแล้ว","success");
+    } else {
+      payload.createdAt = serverTimestamp();
+      await addDoc(collection(db,"fundExpenses"), payload);
+      showToast("เพิ่มรายจ่ายแล้ว","success");
+    }
+    closeExpenseModal();
+    await loadExpenses();
+    renderAll();
+  }catch(e){ showToast("เกิดข้อผิดพลาด","error"); console.error(e); }
+};
+window.deleteExpense = async function(id){
+  if(!confirm("ลบรายจ่ายนี้?")) return;
+  try{
+    await deleteDoc(doc(db,"fundExpenses",id));
+    expenses = expenses.filter(e=>e.id!==id);
+    renderAll();
+    showToast("ลบแล้ว","success");
+  }catch(e){ showToast("เกิดข้อผิดพลาด","error"); console.error(e); }
+};
+
+// ── Sidebar mobile ─────────────────────────────────────────────
+window._toggleSidebar = function(){
+  const s=document.getElementById("sidebar");
+  const o=document.getElementById("sidebarOverlay");
+  const h=document.getElementById("hamburgerBtn");
+  s.classList.toggle("mobile-open");
+  o.classList.toggle("open");
+  h.classList.toggle("open");
+};
+window._closeSidebar = function(){
+  document.getElementById("sidebar").classList.remove("mobile-open");
+  document.getElementById("sidebarOverlay").classList.remove("open");
+  document.getElementById("hamburgerBtn").classList.remove("open");
+};
+
+// ── Helpers ────────────────────────────────────────────────────
+function esc(str){ const d=document.createElement("div"); d.textContent=str||""; return d.innerHTML; }
+function num(n){ return (Number(n)||0).toLocaleString("th-TH"); }
+function fmtDate(d){
+  const months=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()+543}`;
+}
+
+let toastTimer;
+function showToast(msg, type="success"){
+  const el=document.getElementById("toast");
+  el.textContent=msg; el.className="show "+type;
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{ el.className=""; }, 3000);
+}
+</script>
+</body>
+</html>
