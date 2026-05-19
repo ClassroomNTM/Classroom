@@ -598,7 +598,6 @@ function cacheGet(key) {
   } catch { return null; }
 }
 
-// ── students cache: ใช้ format เดียวกับ cacheSet/cacheGet (มี ts + TTL) ──
 function studentsCacheSet(classId, data) {
   sessionStorage.setItem("students_" + classId, JSON.stringify({ ts: Date.now(), data }));
 }
@@ -607,10 +606,9 @@ function studentsCacheGet(classId) {
     const raw = sessionStorage.getItem("students_" + classId);
     if (!raw) return null;
     const obj = JSON.parse(raw);
-    // handle format เก่า (plain array ไม่มี ts) → ล้างทิ้ง โหลดใหม่จาก Firestore
     if (Array.isArray(obj)) { sessionStorage.removeItem("students_" + classId); return null; }
     if (Date.now() - obj.ts > CACHE_TTL) { sessionStorage.removeItem("students_" + classId); return null; }
-    return obj.data; // unwrap → array เสมอ
+    return obj.data;
   } catch { return null; }
 }
 
@@ -626,7 +624,6 @@ initAuth({ requireAdmin: true, onReady: async ({ role }) => {
   await loadSubjects();
   await loadClasses();
   loadData();
-  // เปิด Focus Mode อัตโนมัติ
   window.toggleFocusMode();
 }});
 
@@ -651,7 +648,7 @@ window.syncSubjectToSidebar = function() {
   document.getElementById("sidebarSubjectSelect").value = document.getElementById("subjectSelect").value;
 };
 
-// ─── loadSubjects: cache-first ────────────────────────────────
+// ─── loadSubjects ────────────────────────────────────────────
 async function loadSubjects() {
   let subjects = cacheGet("subjects");
   if (!subjects) {
@@ -668,13 +665,12 @@ async function loadSubjects() {
       sel.appendChild(opt);
     });
   });
-  // build subjectMap id→name สำหรับ tooltip
   window.__subjectMap = Object.fromEntries(subjects.map(s => [s.id, s.name]));
   document.getElementById("subjectSelect").value        = "";
   document.getElementById("sidebarSubjectSelect").value = "";
 }
 
-// ─── loadClasses: cache-first ────────────────────────────────
+// ─── loadClasses ─────────────────────────────────────────────
 async function loadClasses() {
   let classes = cacheGet("classes");
   if (!classes) {
@@ -718,7 +714,6 @@ async function _loadDataAsync() {
     const dateFrom    = `${year}-${String(mon).padStart(2,"0")}-01`;
     const dateTo      = `${year}-${String(mon).padStart(2,"0")}-${String(daysInMonth).padStart(2,"0")}`;
 
-    // students: cache-first ตาม classId
     let cachedStudents = studentsCacheGet(classId);
     if (!cachedStudents) {
       const sSnap = await getDocs(query(collection(db, "students"), where("classId", "==", classId)));
@@ -729,7 +724,6 @@ async function _loadDataAsync() {
     allStudents = cachedStudents;
     window.__allStudents = allStudents;
 
-    // attendance ทั้งเดือน จาก Firestore
     let attQuery;
     if (subjectId) {
       attQuery = query(collection(db,"attendance"),
@@ -746,7 +740,6 @@ async function _loadDataAsync() {
     const attSnap = await getDocs(attQuery);
 
     attMap = {};
-    // subjectId="" = โหมดทั้งหมด → เก็บ array เพื่อแสดงหลายวิชาต่อช่อง
     const multiMode = !subjectId;
     attSnap.docs.forEach(d => {
       const r = d.data();
@@ -765,7 +758,6 @@ async function _loadDataAsync() {
 
     renderGrid(year, mon, daysInMonth);
 
-    // ── Log: โหลดสรุปสำเร็จ ──
     const clsNameLD = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
     const subNameLD = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
     const activeLD  = allStudents.filter(s => !s.ghost);
@@ -773,30 +765,17 @@ async function _loadDataAsync() {
     window.logAction && window.logAction("attendance",
       `เปิดดูสรุปเช็คชื่อ — ${clsNameLD}${subNameLD?" / "+subNameLD:""} เดือน ${THAI_MONTHS[mon]} ${year+543}`,
       {
-        action:         "viewSummary",
-        month,
-        year,
-        monthName:      THAI_MONTHS[mon],
-        classId,
-        className:      clsNameLD,
-        subjectId:      subjectId || "",
-        subjectName:    subNameLD,
-        totalStudents:  allStudents.length,
-        activeStudents: activeLD.length,
-        ghostStudents:  allStudents.length - activeLD.length,
-        daysWithData:   daysLoadedCount,
-        totalRecords:   attSnap.docs.length,
+        action:"viewSummary", month, year, monthName:THAI_MONTHS[mon],
+        classId, className:clsNameLD, subjectId:subjectId||"", subjectName:subNameLD,
+        totalStudents:allStudents.length, activeStudents:activeLD.length,
+        ghostStudents:allStudents.length-activeLD.length,
+        daysWithData:daysLoadedCount, totalRecords:attSnap.docs.length,
       }
     );
   } catch(err) {
     document.getElementById("tableArea").innerHTML =
       `<div class="state-box" style="color:#b91c1c;">⚠ โหลดข้อมูลไม่ได้: ${err.message}</div>`;
     console.error("attendance-summary error:", err);
-    window.logAction && window.logAction("attendance",
-      `โหลดสรุปเช็คชื่อล้มเหลว: ${err.message}`,
-      { action:"viewSummary", error: err.message, month, classId },
-      "error", err.message
-    );
   }
 }
 
@@ -810,13 +789,11 @@ function statusDot(status) {
   return `<span class="dot dot-empty">·</span>`;
 }
 
-// แสดง multi-subject dots (array of records) พร้อม tooltip
 function multiStatusDot(records) {
   if (!records || records.length === 0) return `<span class="dot dot-empty">·</span>`;
   return records.map(r => statusDot(r.status)).join('<span style="font-size:8px;color:#d1d5db;margin:0 1px;">|</span>');
 }
 
-// นับสถานะจาก array records (multiMode)
 function countFromRecords(records, status) {
   if (!records || !Array.isArray(records)) return 0;
   return records.filter(r => r.status === status).length;
@@ -835,7 +812,6 @@ function renderGrid(year, mon, daysInMonth) {
 
   const DOW_CLS = ["col-sun","col-mon","col-tue","col-wed","col-thu","col-fri","col-sat"];
 
-  // Header rows
   let hName = `<tr>
     <th class="th-name col-no">#</th>
     <th class="th-name col-name">ชื่อ-สกุล</th>`;
@@ -890,7 +866,6 @@ function renderGrid(year, mon, daysInMonth) {
         if (p) dayPresent[dateStr]=(dayPresent[dateStr]||0)+1;
         if (l) dayLate[dateStr]=(dayLate[dateStr]||0)+1;
         if (a) dayAbsent[dateStr]=(dayAbsent[dateStr]||0)+1;
-        // multi: ไม่ให้กดแก้ไข (เพราะไม่รู้วิชาไหน)
         const _subMap = window.__subjectMap || {};
         const _stLabel = { present:"มาเรียน", late:"สาย", absent:"ขาด", ghost:"ไม่มีตัวตน" };
         const tooltip = recs.length === 0
@@ -935,7 +910,6 @@ function renderGrid(year, mon, daysInMonth) {
     </tr>`;
   });
 
-  // Footer row
   let footerCells = "";
   days.forEach(({dateStr}) => {
     const p=dayPresent[dateStr]||0, l=dayLate[dateStr]||0, a=dayAbsent[dateStr]||0;
@@ -962,7 +936,6 @@ function renderGrid(year, mon, daysInMonth) {
   document.getElementById("tableArea").innerHTML =
     `<table class="att-table"><thead>${hName}${hNum}</thead><tbody>${dataRows}${footerRow}</tbody></table>`;
 
-  // Metrics
   document.getElementById("mDays").textContent    = daysWithData.size;
   document.getElementById("mPresent").textContent = daysWithData.size>0
     ? (totalPresent/daysWithData.size).toFixed(1) : "—";
@@ -1033,23 +1006,15 @@ window.exportCSV = function() {
   document.body.removeChild(a); URL.revokeObjectURL(url);
   showToast("Export สำเร็จ ✓","success");
 
-  // ── Log: Export CSV ──
   const activeExport = allStudents.filter(s => !s.ghost);
   window.logAction && window.logAction("attendance",
     `Export CSV สรุปเช็คชื่อ — ${clsName}${subName?" / "+subName:""} เดือน ${THAI_MONTHS[mon]} ${year+543}`,
     {
-      action:         "exportCSV",
-      month,
-      year,
-      monthName:      THAI_MONTHS[mon],
-      classId,
-      className:      clsName,
-      subjectId:      subjectId || "",
-      subjectName:    subName,
-      fileName:       `เช็คชื่อ_${clsName}_${THAI_MONTHS[mon]}${year+543}.csv`,
-      totalStudents:  allStudents.length,
-      activeStudents: activeExport.length,
-      totalRows:      rows.length - 1,
+      action:"exportCSV", month, year, monthName:THAI_MONTHS[mon],
+      classId, className:clsName, subjectId:subjectId||"", subjectName:subName,
+      fileName:`เช็คชื่อ_${clsName}_${THAI_MONTHS[mon]}${year+543}.csv`,
+      totalStudents:allStudents.length, activeStudents:activeExport.length,
+      totalRows:rows.length-1,
     }
   );
 };
@@ -1075,6 +1040,7 @@ window.checkDelConfirm = function() {
   document.getElementById("delConfirmBtn").disabled =
     document.getElementById("delConfirmInput").value.trim() !== "ยืนยันลบ";
 };
+
 // ─── Delete Day ──────────────────────────────────────────────
 window.openDeleteDayModal = function() {
   const classId = document.getElementById("classSelect").value;
@@ -1084,7 +1050,6 @@ window.openDeleteDayModal = function() {
   const subName = document.getElementById("subjectSelect").selectedOptions[0]?.text||"";
   document.getElementById("delDayClassLabel").textContent =
     `${clsName}${subName?" — "+subName:""}`;
-  // default to first day of selected month
   document.getElementById("delDayDateInput").value = month+"-01";
   document.getElementById("delDayDateInput").min   = month+"-01";
   const [yr,mn] = month.split("-").map(Number);
@@ -1144,7 +1109,6 @@ window.doDeleteDay = async function() {
     snap.docs.forEach(d => batch.delete(d.ref));
     await batch.commit();
 
-    // update local attMap
     if (attMap[dateVal]) delete attMap[dateVal];
 
     closeDeleteDayModal();
@@ -1204,38 +1168,24 @@ window.doDeleteMonth = async function() {
     renderGrid(year,mon,daysInMonth);
     showToast(`ลบข้อมูลเรียบร้อย (${docs.length} รายการ)`,"success");
 
-    // ── Log: ลบข้อมูลเดือน ──
     const clsNameDel = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
     const subNameDel = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
     window.logAction && window.logAction("attendance",
       `ลบข้อมูลเช็คชื่อทั้งเดือน — ${clsNameDel}${subNameDel?" / "+subNameDel:""} เดือน${THAI_MONTHS[mon]} ${year+543} (${docs.length} รายการ)`,
       {
-        action:       "deleteMonth",
-        month:        `${year}-${String(mon).padStart(2,"0")}`,
-        year,
-        monthName:    THAI_MONTHS[mon],
-        classId,
-        className:    clsNameDel,
-        subjectId:    subjectId || "",
-        subjectName:  subNameDel,
-        deletedCount: docs.length,
-        dateFrom,
-        dateTo,
+        action:"deleteMonth", month:`${year}-${String(mon).padStart(2,"0")}`,
+        year, monthName:THAI_MONTHS[mon], classId, className:clsNameDel,
+        subjectId:subjectId||"", subjectName:subNameDel,
+        deletedCount:docs.length, dateFrom, dateTo,
       }
     );
   } catch(e) {
     showToast("เกิดข้อผิดพลาด: "+e.message,"error");
     btn.disabled=false; btn.textContent="ลบข้อมูล";
-    window.logAction && window.logAction("attendance",
-      `ลบข้อมูลเช็คชื่อล้มเหลว: ${e.message}`,
-      { action:"deleteMonth", error: e.message, month, classId },
-      "error", e.message
-    );
   }
 };
 
-// ─── Popup ────────────────────────────────────────────────────
-// ─── Multi-subject Popup (multiMode) ──────────────────────────
+// ─── Multi-subject Popup ──────────────────────────────────────
 let _mpState = { studentId:null, dateStr:null, classId:null, studentName:"", selectedSubjectId:null, selectedDocId:null };
 
 window.openMultiPopup = function(td, event) {
@@ -1248,7 +1198,6 @@ window.openMultiPopup = function(td, event) {
   document.getElementById("mpDate").textContent = `${dd}/${dm}/${parseInt(dy)+543}`;
   document.getElementById("mpSaving").style.display = "none";
 
-  // render step1: รายวิชา
   const recs = attMap[td.dataset.date]?.[td.dataset.sid];
   const recArr = Array.isArray(recs) ? recs : (recs ? [recs] : []);
   const subMap = window.__subjectMap || {};
@@ -1274,17 +1223,17 @@ window.openMultiPopup = function(td, event) {
   document.getElementById("mpStep1").style.gap = "4px";
   document.getElementById("mpStep2").classList.remove("open");
 
-  // position
+  // ── position popup (fixed ไม่มี scroll offset) ──
   const pop  = document.getElementById("multiPopup");
   pop.classList.add("open");
   const rect = td.getBoundingClientRect();
-  const popW = 220, popH = 60 + recArr.length * 46;
-  const popW = 220, popH = Math.min(60 + recArr.length * 46, window.innerHeight - 80);
-let left = rect.left, top = rect.bottom + 6;
-if (left + popW > window.innerWidth - 8) left = window.innerWidth - popW - 8;
-if (left < 8) left = 8;
-if (top + popH > window.innerHeight - 8) top = rect.top - popH - 6;
-if (top < 60) top = 60;
+  const popW = 220;
+  const popH = Math.min(60 + recArr.length * 46, window.innerHeight - 80);
+  let left = rect.left, top = rect.bottom + 6;
+  if (left + popW > window.innerWidth - 8)  left = window.innerWidth - popW - 8;
+  if (left < 8) left = 8;
+  if (top + popH > window.innerHeight - 8)  top = rect.top - popH - 6;
+  if (top < 60) top = 60;
   pop.style.left = left + "px";
   pop.style.top  = top  + "px";
 };
@@ -1315,7 +1264,6 @@ window.mpApplyStatus = async function(newStatus) {
   const statusLabel = { present:"มาเรียน", late:"สาย", absent:"ขาดเรียน", ghost:"ไม่มีตัวตน" };
   const clsName = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
 
-  // หา oldStatus จาก attMap array
   const recs = attMap[dateStr]?.[studentId];
   const recArr = Array.isArray(recs) ? recs : (recs ? [recs] : []);
   const oldRec = recArr.find(r => r.subjectId === selectedSubjectId);
@@ -1328,7 +1276,6 @@ window.mpApplyStatus = async function(newStatus) {
 
     if (newStatus === null) {
       await deleteDoc(doc(db, "attendance", docId)).catch(()=>{});
-      // remove from local attMap array
       if (attMap[dateStr]?.[studentId]) {
         attMap[dateStr][studentId] = recArr.filter(r => r.subjectId !== selectedSubjectId);
         if (attMap[dateStr][studentId].length === 0) delete attMap[dateStr][studentId];
@@ -1342,7 +1289,6 @@ window.mpApplyStatus = async function(newStatus) {
         note: "",
         savedAt: new Date().toISOString()
       });
-      // update local attMap array
       if (!attMap[dateStr]) attMap[dateStr] = {};
       if (!Array.isArray(attMap[dateStr][studentId])) attMap[dateStr][studentId] = [];
       const idx = attMap[dateStr][studentId].findIndex(r => r.subjectId === selectedSubjectId);
@@ -1369,9 +1315,9 @@ window.closeMultiPopup = function() {
   document.getElementById("multiPopup").classList.remove("open");
 };
 
+// ─── Status Popup ─────────────────────────────────────────────
 window.openPopup = function(td, event) {
   if (event) event.stopPropagation();
-  const sid = td.dataset.sid;
   const classId   = document.getElementById("classSelect").value;
   const subjectId = document.getElementById("subjectSelect").value;
   _popup = { studentId:td.dataset.sid, dateStr:td.dataset.date, subjectId,
@@ -1381,17 +1327,18 @@ window.openPopup = function(td, event) {
   document.getElementById("popupDate").textContent = `${dd}/${dm}/${parseInt(dy)+543}`;
   document.getElementById("popupSaving").style.display = "none";
 
+  // ── position popup (fixed ไม่มี scroll offset) ──
   const pop  = document.getElementById("statusPopup");
   pop.classList.add("open");
   const rect = td.getBoundingClientRect();
-  const popW=148, popH=235;
+  const popW = 148, popH = 235;
   let left = rect.left, top = rect.bottom + 6;
-if (left + popW > window.innerWidth - 8) left = window.innerWidth - popW - 8;
-if (left < 8) left = 8;
-if (top + popH > window.innerHeight - 8) top = rect.top - popH - 6;
-if (top < 60) top = 60;
-  pop.style.left = left+"px";
-  pop.style.top  = top+"px";
+  if (left + popW > window.innerWidth - 8)  left = window.innerWidth - popW - 8;
+  if (left < 8) left = 8;
+  if (top + popH > window.innerHeight - 8)  top = rect.top - popH - 6;
+  if (top < 60) top = 60;
+  pop.style.left = left + "px";
+  pop.style.top  = top  + "px";
 };
 
 window.applyStatus = async function(newStatus) {
@@ -1399,7 +1346,6 @@ window.applyStatus = async function(newStatus) {
   if (!studentId||!dateStr||!classId) return;
   document.getElementById("popupSaving").style.display = "block";
 
-  // snapshot before
   const oldRec    = attMap[dateStr]?.[studentId];
   const oldStatus = oldRec?.status || null;
   const clsName   = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
@@ -1418,11 +1364,9 @@ window.applyStatus = async function(newStatus) {
       sessionStorage.removeItem("students_" + classId);
     }
 
-    // ใช้ docId เดิมจาก Firestore ถ้ามี ป้องกัน double-doc เมื่อ format ไม่ตรง
     const existingDocId = attMap[dateStr]?.[studentId]?.docId;
     const docId = existingDocId || `${classId}_${subjectId||"none"}_${dateStr}_${studentId}`;
     if (newStatus === null || nowGhost) {
-      // ลบทั้ง existingDocId และ format ปกติ (กรณี format ต่างกัน)
       const delOps = [deleteDoc(doc(db, "attendance", docId)).catch(()=>{})];
       const altDocId = `${classId}_${subjectId||"none"}_${dateStr}_${studentId}`;
       if (existingDocId && existingDocId !== altDocId) {
@@ -1447,18 +1391,11 @@ window.applyStatus = async function(newStatus) {
     window.logAction && window.logAction("attendance",
       `แก้ไขสถานะเช็คชื่อ "${studentName}" จาก ${statusLabel[oldStatus]||oldStatus||"(ว่าง)"} → ${statusLabel[newStatus]||newStatus||"(ลบ)"}`,
       {
-        action:      "editAttendance",
-        studentId,
-        studentName,
-        date:        dateStr,
-        before:      oldStatus,
-        after:       newStatus,
-        beforeLabel: statusLabel[oldStatus] || oldStatus || "(ว่าง)",
-        afterLabel:  statusLabel[newStatus] || newStatus || "(ลบ)",
-        classId,
-        className:   clsName,
-        subjectId:   subjectId || "",
-        subjectName: subName,
+        action:"editAttendance", studentId, studentName,
+        date:dateStr, before:oldStatus, after:newStatus,
+        beforeLabel:statusLabel[oldStatus]||oldStatus||"(ว่าง)",
+        afterLabel:statusLabel[newStatus]||newStatus||"(ลบ)",
+        classId, className:clsName, subjectId:subjectId||"", subjectName:subName,
       }
     );
 
@@ -1490,10 +1427,7 @@ document.addEventListener("keydown", e => {
   }
 });
 
-
-// ──────────────────────────────────────────────────────────────
-// LOG FILTER CHANGE (debounced)
-// ──────────────────────────────────────────────────────────────
+// ─── Log Filter Change ────────────────────────────────────────
 let _sumFilterLogTimer = null;
 function logSummaryFilterChange() {
   clearTimeout(_sumFilterLogTimer);
@@ -1508,15 +1442,9 @@ function logSummaryFilterChange() {
     window.logAction && window.logAction("attendance",
       `เปลี่ยน filter สรุปเช็คชื่อ — ${clsName}${subName?" / "+subName:""} เดือน ${THAI_MONTHS[mon]} ${year+543}`,
       {
-        action:      "changeFilter",
-        page:        "summary",
-        month,
-        year,
-        monthName:   THAI_MONTHS[mon],
-        classId,
-        className:   clsName,
-        subjectId:   subjectId || "",
-        subjectName: subName,
+        action:"changeFilter", page:"summary", month, year,
+        monthName:THAI_MONTHS[mon], classId, className:clsName,
+        subjectId:subjectId||"", subjectName:subName,
       }
     );
   }, 1500);
@@ -1528,9 +1456,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// ──────────────────────────────────────────────────────────────
-// COLOR SYSTEM
-// ──────────────────────────────────────────────────────────────
+// ─── Color System ─────────────────────────────────────────────
 const DAY_DEFS = [
   { key:"sun", label:"อา", defH:"#fde0e0", defT:"#b91c1c" },
   { key:"mon", label:"จ",  defH:"#fffde7", defT:"#b45309" },
@@ -1553,10 +1479,6 @@ function blendToWhite(hex, intensity) {
   const {r,g,b} = hexToRgb(hex);
   const f = intensity/100;
   return rgbToHex(255+(r-255)*f, 255+(g-255)*f, 255+(b-255)*f);
-}
-function textColorFor(bgHex) {
-  const {r,g,b} = hexToRgb(bgHex);
-  return (r*299+g*587+b*114)/1000 > 150 ? "#1a1a2e" : "#ffffff";
 }
 
 let colorSettings = null;
@@ -1747,18 +1669,11 @@ window.saveColorPanel = async function() {
   try {
     await setDoc(doc(db, "settings", "tableColors"), { ...colorSettings, savedAt: new Date().toISOString() });
     showToast("บันทึกลง Database แล้ว ✓","success");
-    window.logAction && window.logAction("attendance",
-      "บันทึกตั้งค่าสีตาราง",
-      { action: "saveColorSettings", savedTo: "firestore", settingsKeys: Object.keys(colorSettings) }
-    );
+    window.logAction && window.logAction("attendance","บันทึกตั้งค่าสีตาราง",
+      { action:"saveColorSettings", savedTo:"firestore", settingsKeys:Object.keys(colorSettings) });
   } catch(err) {
     console.error("Save color to Firestore failed:", err);
     showToast("บันทึก localStorage แล้ว (Firestore ขัดข้อง)","success");
-    window.logAction && window.logAction("attendance",
-      "บันทึกตั้งค่าสีตาราง (localStorage)",
-      { action: "saveColorSettings", savedTo: "localStorage", firestoreError: err.message },
-      "warning"
-    );
   } finally {
     if (btn) { btn.textContent = "บันทึก ✓"; btn.disabled = false; }
   }
@@ -1772,22 +1687,12 @@ window.resetColorPanel = async function() {
   try {
     await setDoc(doc(db, "settings", "tableColors"), { ...colorSettings, savedAt: new Date().toISOString() });
     showToast("รีเซ็ตสีและบันทึก Database แล้ว","success");
-    window.logAction && window.logAction("attendance",
-      "รีเซ็ตสีตารางเป็นค่าเริ่มต้น",
-      { action: "resetColorSettings", savedTo: "firestore" }
-    );
   } catch {
     showToast("รีเซ็ตสีเรียบร้อย (localStorage)","success");
-    window.logAction && window.logAction("attendance",
-      "รีเซ็ตสีตารางเป็นค่าเริ่มต้น (localStorage)",
-      { action: "resetColorSettings", savedTo: "localStorage" }
-    );
   }
 };
 
-// ──────────────────────────────────────────────────────────────
-// FOCUS CELL SYSTEM
-// ──────────────────────────────────────────────────────────────
+// ─── Focus Cell System ────────────────────────────────────────
 let focusModeActive = false;
 let focusRow = -1, focusCol = -1;
 
