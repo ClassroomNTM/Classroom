@@ -37,7 +37,9 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min
 .topic-item .t-name{font-size:13px;}
 .topic-item .t-max{font-size:11px;color:var(--muted);margin-top:1px;}
 .topic-item.active .t-max{color:rgba(15,52,96,.7);}
-.topic-add{padding:8px 10px;margin:4px 8px 8px;}
+/* summary nav item */
+.topic-item.summary-item{background:var(--bg);border:1px dashed var(--border);color:var(--text);}
+.topic-item.summary-item.active{background:#fef9ec;color:#92400e;border-color:#fde68a;}
 .content-area{min-width:0;}
 .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
 .page-title{font-size:20px;font-weight:600;}
@@ -95,6 +97,32 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);bac
 .empty-state{text-align:center;padding:40px 20px;color:var(--muted);}
 .empty-state svg{width:40px;height:40px;stroke:var(--muted);fill:none;stroke-width:1.5;margin-bottom:12px;stroke-linecap:round;stroke-linejoin:round;}
 .readonly-banner{background:#fffbeb;border:1px solid #fde68a;color:#92400e;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:16px;display:none;}
+
+/* ── Summary styles ── */
+.summary-section-title{font-size:14px;font-weight:600;margin:20px 0 10px;display:flex;align-items:center;gap:8px;}
+.summary-section-title svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.summary-overview{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:20px;}
+.summary-metric{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
+.summary-metric .sm-topic{font-size:11px;color:var(--muted);margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.summary-metric .sm-row{display:flex;justify-content:space-between;align-items:baseline;gap:6px;font-size:12px;margin-top:2px;}
+.summary-metric .sm-row .label{color:var(--muted);}
+.summary-metric .sm-row .val{font-weight:600;}
+.summary-metric .sm-avg{font-size:22px;font-weight:700;color:var(--blue);line-height:1;margin-bottom:4px;}
+/* summary table */
+.summary-tbl th{white-space:nowrap;}
+.summary-tbl td{white-space:nowrap;}
+.summary-tbl .total-col{font-weight:700;background:#f0f4ff;}
+.summary-tbl tr:last-child td{border-bottom:none;}
+.summary-tbl .stat-row td{background:#f9fafb;font-weight:600;font-size:12px;color:var(--muted);}
+.summary-tbl .stat-row td.val{color:var(--text);}
+.score-cell{text-align:center;}
+.score-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:middle;}
+.rank-badge{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:11px;font-weight:700;}
+.rank-1{background:#fef9c3;color:#854d0e;}
+.rank-2{background:#f1f5f9;color:#475569;}
+.rank-3{background:#fff7ed;color:#9a3412;}
+.loading-spinner{display:flex;align-items:center;justify-content:center;padding:40px;gap:10px;color:var(--muted);font-size:13px;}
+
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
 
 /* ── HAMBURGER ── */
@@ -105,12 +133,10 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);bac
 .hamburger.open span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px);}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:150;}
 .sidebar-overlay.open{display:block;}
-/* sidebar subject section */
 .nav-subject-section{padding:8px 10px 4px;}
 .nav-subject-label{font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-bottom:6px;padding:0 2px;}
 .nav-subject-select{width:100%;height:34px;border:1px solid var(--border);border-radius:8px;padding:0 10px;font-family:'Sarabun',sans-serif;font-size:12px;color:var(--text);background:white;outline:none;}
 .nav-subject-select:focus{border-color:var(--blue);}
-/* mobile */
 @media(max-width:768px){
   :root{--sidebar-w:220px;}
   .sidebar{transform:translateX(-100%);z-index:160;transition:transform .25s ease;}
@@ -120,13 +146,14 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);bac
   .brand-name-hide{display:none;}
   .topbar-username{display:none;}
   .page-title{font-size:17px!important;}
+  .main{grid-template-columns:1fr!important;}
+  .topics-panel{position:static;}
 }
 @media(max-width:480px){
   .topbar{padding:0 10px!important;}
   .btn-logout{display:none;}
   .role-badge{display:none;}
 }
-
 </style>
 </head>
 <body>
@@ -147,7 +174,7 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);bac
   </div>
 </header>
 
-<nav class="sidebar">
+<nav class="sidebar" id="sidebar">
   <div class="sidebar-label">เมนูหลัก</div>
   <a href="dashboard.html" class="nav-item"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
   <a href="attendance.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>เช็คชื่อ</a>
@@ -183,11 +210,13 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);bac
   <!-- Main content -->
   <div class="content-area">
     <div class="page-header">
-      <div class="page-title">คะแนนนักเรียน</div>
-      <button class="btn btn-primary" id="saveScoreBtn" onclick="saveScores()" style="display:none;">
-        <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-        บันทึกคะแนน
-      </button>
+      <div class="page-title" id="pageTitle">คะแนนนักเรียน</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-primary" id="saveScoreBtn" onclick="saveScores()" style="display:none;">
+          <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          บันทึกคะแนน
+        </button>
+      </div>
     </div>
 
     <div class="readonly-banner" id="readonlyBanner">
@@ -247,7 +276,7 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);bac
 import { initAuth, doLogout, db } from "./auth-guard.js";
 import {
   collection, doc, getDocs, setDoc, deleteDoc, addDoc,
-  query, where, orderBy, serverTimestamp
+  query, where
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 window.__db = db;
@@ -255,29 +284,24 @@ window.doLogout = doLogout;
 
 let userRole = "", currentClassId = "", currentSubjectId = "", currentTopicId = "", currentMaxScore = 100;
 let students = [], scores = {}, topics = [];
+const VIEW_TOPIC = "topic", VIEW_SUMMARY = "summary";
+let currentView = VIEW_TOPIC;
 
-// ─── cache helpers ────────────────────────────────────────────
+// ─── cache helpers ─────────────────────────────────
 const CACHE_TTL = 30 * 60 * 1000;
-function cacheSet(key, data) {
-  sessionStorage.setItem(key, JSON.stringify({ ts: Date.now(), data }));
-}
+function cacheSet(key, data) { sessionStorage.setItem(key, JSON.stringify({ ts: Date.now(), data })); }
 function cacheGet(key) {
   try {
-    const raw = sessionStorage.getItem(key);
-    if (!raw) return null;
+    const raw = sessionStorage.getItem(key); if (!raw) return null;
     const obj = JSON.parse(raw);
     if (Date.now() - obj.ts > CACHE_TTL) { sessionStorage.removeItem(key); return null; }
     return obj.data;
   } catch { return null; }
 }
-function studentsCacheSet(classId, data) {
-  sessionStorage.setItem("students_" + classId, JSON.stringify(data));
-}
+function studentsCacheSet(classId, data) { sessionStorage.setItem("students_" + classId, JSON.stringify(data)); }
 function studentsCacheGet(classId) {
-  try {
-    const raw = sessionStorage.getItem("students_" + classId);
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
+  try { const raw = sessionStorage.getItem("students_" + classId); return raw ? JSON.parse(raw) : null; }
+  catch { return null; }
 }
 
 initAuth({ requireAdmin: true, onReady: async ({ role }) => {
@@ -287,34 +311,21 @@ initAuth({ requireAdmin: true, onReady: async ({ role }) => {
   document.getElementById("saveScoreBtn").style.display = "inline-flex";
   await loadSubjects();
   await loadClasses();
-  // trigger หลัง loadClasses() เพื่อให้ classSelect มีค่าจริงแล้ว
   const classEl = document.getElementById("classSelect");
-  if (classEl.value) {
-    await window.onClassChange();
-  }
+  if (classEl.value) await window.onClassChange();
 }});
 
 async function loadSubjects() {
   let subjects = cacheGet("subjects");
   if (!subjects) {
     const snap = await getDocs(collection(db, "subjects"));
-    subjects = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-      .sort((a, b) => (a.name||"").localeCompare(b.name||"", "th"));
+    subjects = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.name||"").localeCompare(b.name||"", "th"));
     cacheSet("subjects", subjects);
   }
   const sel = document.getElementById("subjectSelect");
-  subjects.forEach(s => {
-    const opt = document.createElement("option");
-    opt.value = s.id; opt.textContent = s.name;
-    sel.appendChild(opt);
-  });
-  // sidebar nav
+  subjects.forEach(s => { const o = document.createElement("option"); o.value = s.id; o.textContent = s.name; sel.appendChild(o); });
   const navSel = document.getElementById("navSubjectSelect");
-  if (navSel) subjects.forEach(s => {
-    const opt = document.createElement("option");
-    opt.value = s.id; opt.textContent = s.name;
-    navSel.appendChild(opt);
-  });
+  if (navSel) subjects.forEach(s => { const o = document.createElement("option"); o.value = s.id; o.textContent = s.name; navSel.appendChild(o); });
   const defId = subjects[0]?.id || "";
   sel.value = defId;
   if (navSel) navSel.value = defId;
@@ -324,60 +335,47 @@ async function loadClasses() {
   let classes = cacheGet("classes");
   if (!classes) {
     const snap = await getDocs(collection(db, "classes"));
-    classes = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-      .sort((a, b) => (a.name||"").localeCompare(b.name||"", "th"));
+    classes = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.name||"").localeCompare(b.name||"", "th"));
     cacheSet("classes", classes);
   }
   const sel = document.getElementById("classSelect");
-  classes.forEach(c => {
-    const opt = document.createElement("option");
-    opt.value = c.id; opt.textContent = c.name;
-    sel.appendChild(opt);
-  });
+  classes.forEach(c => { const o = document.createElement("option"); o.value = c.id; o.textContent = c.name; sel.appendChild(o); });
   if (classes.length > 0) sel.value = classes[0].id;
 }
 
 window.onClassChange = async function() {
-  currentClassId  = document.getElementById("classSelect").value;
+  currentClassId   = document.getElementById("classSelect").value;
   currentSubjectId = document.getElementById("subjectSelect").value;
   if (!currentClassId) return;
 
   let cached = studentsCacheGet(currentClassId);
   if (!cached) {
-    // ดึง className จาก classes cache
-    let allClasses = cacheGet("classes") || [];
-    const cls = allClasses.find(c => c.id === currentClassId);
-    const className = cls?.name || "";
-
-    // Query ด้วย document ID
     let sSnap = await getDocs(query(collection(db, "students"), where("classId", "==", currentClassId)));
-    console.log("query by ID:", currentClassId, "→", sSnap.size, "คน");
-
-    // ถ้าไม่เจอ ลอง query ด้วย className
-    if (sSnap.empty && className) {
-      sSnap = await getDocs(query(collection(db, "students"), where("classId", "==", className)));
-      console.log("query by name:", className, "→", sSnap.size, "คน");
+    if (sSnap.empty) {
+      const allClasses = cacheGet("classes") || [];
+      const cls = allClasses.find(c => c.id === currentClassId);
+      const className = cls?.name || "";
+      if (className) sSnap = await getDocs(query(collection(db, "students"), where("classId", "==", className)));
     }
-
-    cached = sSnap.docs.map(d => ({ id: d.id, ...d.data() }))
-      .sort((a,b) => (a.number||0)-(b.number||0));
+    cached = sSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (a.number||0)-(b.number||0));
     studentsCacheSet(currentClassId, cached);
   }
   students = cached;
-  console.log("students loaded:", students.length);
+  currentView = VIEW_TOPIC;
   await loadTopics();
 };
 
-// sidebar subjects โหลดพร้อม loadSubjects() แล้ว ไม่ต้อง fetch ซ้ำ
-
 async function loadTopics() {
-  const topicFilters = [where("classId","==",currentClassId)];
-  if (currentSubjectId) topicFilters.push(where("subjectId","==",currentSubjectId));
-  const snap = await getDocs(query(collection(db,"scoreTopics"), ...topicFilters));
+  const filters = [where("classId","==",currentClassId)];
+  if (currentSubjectId) filters.push(where("subjectId","==",currentSubjectId));
+  const snap = await getDocs(query(collection(db,"scoreTopics"), ...filters));
   topics = snap.docs.map(d => ({id: d.id, ...d.data()}));
   renderTopicsList();
-  if (topics.length > 0) selectTopic(topics[0].id);
-  else {
+  if (currentView === VIEW_SUMMARY) {
+    await showSummary();
+  } else if (topics.length > 0) {
+    selectTopic(topics[0].id);
+  } else {
     document.getElementById("scoreArea").innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg><p>ยังไม่มีหัวข้อคะแนน กดปุ่ม "+ เพิ่ม" เพื่อสร้าง</p></div>`;
     document.getElementById("metricsRow").style.display = "none";
   }
@@ -389,19 +387,36 @@ function renderTopicsList() {
     el.innerHTML = `<div style="padding:12px 10px;font-size:12px;color:var(--muted);">ยังไม่มีหัวข้อ</div>`;
     return;
   }
-  el.innerHTML = topics.map(t => `
-    <div class="topic-item ${t.id === currentTopicId ? 'active' : ''}" onclick="selectTopic('${t.id}')">
+  const topicItems = topics.map(t => `
+    <div class="topic-item ${t.id === currentTopicId && currentView===VIEW_TOPIC ? 'active' : ''}" onclick="selectTopic('${t.id}')">
       <div class="t-name">${t.title}</div>
       <div class="t-max">เต็ม ${t.maxScore} คะแนน</div>
     </div>`).join("");
+
+  // Summary item at bottom
+  const summaryItem = `
+    <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
+      <div class="topic-item summary-item ${currentView===VIEW_SUMMARY ? 'active' : ''}" onclick="window.openSummary()">
+        <div class="t-name" style="display:flex;align-items:center;gap:6px;">
+          <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+          สรุปคะแนนรวม
+        </div>
+        <div class="t-max">${topics.length} หัวข้อ · ${students.length} คน</div>
+      </div>
+    </div>`;
+
+  el.innerHTML = topicItems + summaryItem;
 }
 
 window.selectTopic = async function(topicId) {
+  currentView = VIEW_TOPIC;
   currentTopicId = topicId;
   const topic = topics.find(t => t.id === topicId);
   if (!topic) return;
   currentMaxScore = topic.maxScore || 100;
   renderTopicsList();
+  document.getElementById("saveScoreBtn").style.display = userRole === "admin" ? "inline-flex" : "none";
+  document.getElementById("pageTitle").textContent = "คะแนนนักเรียน";
   // load scores
   const snap = await getDocs(query(collection(db,"scores"), where("topicId","==",topicId), where("classId","==",currentClassId)));
   scores = {};
@@ -411,6 +426,157 @@ window.selectTopic = async function(topicId) {
   document.getElementById("metricsRow").style.display = "grid";
 };
 
+// ─── SUMMARY ──────────────────────────────────────
+window.openSummary = async function() {
+  currentView = VIEW_SUMMARY;
+  currentTopicId = "";
+  renderTopicsList();
+  document.getElementById("saveScoreBtn").style.display = "none";
+  document.getElementById("pageTitle").textContent = "สรุปคะแนนรวม";
+  document.getElementById("metricsRow").style.display = "none";
+  document.getElementById("scoreArea").innerHTML = `<div class="loading-spinner"><svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:var(--muted);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> กำลังโหลดข้อมูล...</div>`;
+  await showSummary();
+};
+
+async function showSummary() {
+  if (!topics.length) {
+    document.getElementById("scoreArea").innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg><p>ยังไม่มีหัวข้อคะแนน</p></div>`;
+    return;
+  }
+
+  // โหลด scores ทุก topic พร้อมกัน
+  const allScoresByTopic = {}; // topicId -> { studentId: score }
+  await Promise.all(topics.map(async t => {
+    const snap = await getDocs(query(collection(db,"scores"), where("topicId","==",t.id), where("classId","==",currentClassId)));
+    const map = {};
+    snap.docs.forEach(d => { const x = d.data(); map[x.studentId] = x.score; });
+    allScoresByTopic[t.id] = map;
+  }));
+
+  // คำนวณ per-topic stats
+  const topicStats = topics.map(t => {
+    const vals = students.map(s => allScoresByTopic[t.id]?.[s.id]).filter(v => v !== undefined && v !== null);
+    const avg = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
+    const max = vals.length ? Math.max(...vals) : null;
+    const min = vals.length ? Math.min(...vals) : null;
+    return { ...t, avg, max, min, count: vals.length };
+  });
+
+  // คำนวณ per-student totals
+  const totalMax = topics.reduce((s,t) => s + (t.maxScore||0), 0);
+  const studentRows = students.map(s => {
+    const perTopic = topics.map(t => {
+      const v = allScoresByTopic[t.id]?.[s.id];
+      return v !== undefined && v !== null ? v : null;
+    });
+    const filled = perTopic.filter(v => v !== null);
+    const total = filled.length ? filled.reduce((a,b)=>a+b,0) : null;
+    return { ...s, perTopic, total };
+  });
+
+  // เรียงลำดับเพื่อหา rank
+  const ranked = [...studentRows].filter(s => s.total !== null).sort((a,b) => b.total - a.total);
+  const rankMap = {};
+  ranked.forEach((s, i) => { rankMap[s.id] = i + 1; });
+
+  renderSummary(topicStats, studentRows, rankMap, totalMax);
+}
+
+function renderSummary(topicStats, studentRows, rankMap, totalMax) {
+  // ── ส่วนที่ 1: ภาพรวมแต่ละหัวข้อ ──
+  const overviewCards = topicStats.map(t => {
+    const avgPct = t.avg !== null ? Math.round((t.avg/t.maxScore)*100) : null;
+    const color = avgPct !== null ? (avgPct>=70?"#1D9E75":avgPct>=50?"#EF9F27":"#E24B4A") : "#9ca3af";
+    return `<div class="summary-metric">
+      <div class="sm-topic" title="${t.title}">${t.title}</div>
+      <div class="sm-avg" style="color:${color}">${t.avg !== null ? t.avg.toFixed(1) : "—"}</div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:6px;">เฉลี่ย / ${t.maxScore}</div>
+      <div class="sm-row"><span class="label">สูงสุด</span><span class="val" style="color:#1D9E75">${t.max ?? "—"}</span></div>
+      <div class="sm-row"><span class="label">ต่ำสุด</span><span class="val" style="color:#E24B4A">${t.min ?? "—"}</span></div>
+      <div class="sm-row"><span class="label">ให้คะแนนแล้ว</span><span class="val">${t.count}/${students.length}</span></div>
+    </div>`;
+  }).join("");
+
+  // ── ส่วนที่ 2: ตารางรายนักเรียน ──
+  const topicHeaders = topics.map(t =>
+    `<th class="score-cell" title="${t.title}">${t.title}<br><span style="font-weight:400;font-size:9px;">(/${t.maxScore})</span></th>`
+  ).join("");
+
+  const studentTbodyRows = studentRows.map(s => {
+    const rank = rankMap[s.id];
+    const rankHtml = rank <= 3
+      ? `<span class="rank-badge rank-${rank}">${rank}</span>`
+      : `<span style="font-size:12px;color:var(--muted);">${rank ?? "—"}</span>`;
+
+    const scoreCells = s.perTopic.map((v, i) => {
+      if (v === null) return `<td class="score-cell" style="color:#d1d5db;">—</td>`;
+      const pct = (v / topics[i].maxScore) * 100;
+      const color = pct>=70?"#1D9E75":pct>=50?"#EF9F27":"#E24B4A";
+      return `<td class="score-cell"><span style="color:${color};font-weight:500;">${v}</span></td>`;
+    }).join("");
+
+    const totalPct = s.total !== null ? Math.round((s.total/totalMax)*100) : null;
+    const totalColor = totalPct !== null ? (totalPct>=70?"#1D9E75":totalPct>=50?"#EF9F27":"#E24B4A") : "#9ca3af";
+
+    return `<tr>
+      <td style="color:var(--muted);font-size:12px;">${s.number||"—"}</td>
+      <td>${s.name||"—"}</td>
+      ${scoreCells}
+      <td class="score-cell total-col">
+        <span style="color:${totalColor};font-weight:700;">${s.total ?? "—"}</span>
+        <span style="font-size:10px;color:var(--muted);"> /${totalMax}</span>
+      </td>
+      <td class="score-cell">${s.total !== null ? totalPct+"%" : "—"}</td>
+      <td class="score-cell">${s.total !== null ? rankHtml : "—"}</td>
+    </tr>`;
+  }).join("");
+
+  // แถวสถิติท้าย
+  const statCells = topics.map(t => {
+    const avg = topicStats.find(x=>x.id===t.id)?.avg;
+    return `<td class="score-cell val">${avg !== null && avg !== undefined ? avg.toFixed(1) : "—"}</td>`;
+  }).join("");
+  const overallAvg = studentRows.filter(s=>s.total!==null).map(s=>s.total);
+  const classAvg = overallAvg.length ? (overallAvg.reduce((a,b)=>a+b,0)/overallAvg.length).toFixed(1) : "—";
+
+  const area = document.getElementById("scoreArea");
+  area.innerHTML = `
+    <div class="summary-section-title">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      ภาพรวมแต่ละหัวข้อ
+    </div>
+    <div class="summary-overview">${overviewCards}</div>
+
+    <div class="summary-section-title" style="margin-top:24px;">
+      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      ตารางคะแนนรายนักเรียน
+    </div>
+    <div class="card">
+      <div class="tbl-wrap">
+        <table class="summary-tbl">
+          <thead><tr>
+            <th style="width:44px;">เลขที่</th>
+            <th>ชื่อ-สกุล</th>
+            ${topicHeaders}
+            <th class="score-cell total-col">รวม</th>
+            <th class="score-cell">%</th>
+            <th class="score-cell">อันดับ</th>
+          </tr></thead>
+          <tbody>
+            ${studentTbodyRows}
+            <tr class="stat-row">
+              <td colspan="2" style="font-size:11px;">เฉลี่ยทั้งห้อง</td>
+              ${statCells}
+              <td class="score-cell val">${classAvg}</td>
+              <td colspan="2"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+// ─── SCORE TABLE ──────────────────────────────────
 function getGrade(score, max) {
   const pct = (score / max) * 100;
   if (pct >= 95) return {label:"A+", cls:"g-aplus"};
@@ -420,7 +586,6 @@ function getGrade(score, max) {
   if (pct >= 50) return {label:"D",  cls:"g-d"};
   return {label:"F", cls:"g-f"};
 }
-
 function scoreColor(score, max) {
   const pct = (score / max) * 100;
   if (pct >= 70) return "#1D9E75";
@@ -435,17 +600,17 @@ function renderScoreTable(topic) {
     area.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><p>ยังไม่มีนักเรียนในชั้นนี้</p></div>`;
     return;
   }
-  const topicActions = isAdmin
-    ? `<div style="display:flex;gap:8px;margin-bottom:14px;">
-        <button class="btn btn-sm" onclick="openEditTopic('${topic.id}')">
-          <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          แก้ไขหัวข้อ
-        </button>
-        <button class="btn btn-sm btn-danger" onclick="deleteTopic('${topic.id}')">
-          <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
-          ลบหัวข้อ
-        </button>
-      </div>` : "";
+  const topicActions = isAdmin ? `
+    <div style="display:flex;gap:8px;margin-bottom:14px;">
+      <button class="btn btn-sm" onclick="openEditTopic('${topic.id}')">
+        <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        แก้ไขหัวข้อ
+      </button>
+      <button class="btn btn-sm btn-danger" onclick="deleteTopic('${topic.id}')">
+        <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        ลบหัวข้อ
+      </button>
+    </div>` : "";
 
   const rows = students.map(s => {
     const sc = scores[s.id];
@@ -457,12 +622,10 @@ function renderScoreTable(topic) {
       return `<tr>
         <td style="color:var(--muted);font-size:12px;">${s.number||"—"}</td>
         <td>${s.name}</td>
-        <td>
-          <div class="score-bar-wrap">
-            <span style="font-weight:600;color:${color};min-width:36px;">${hasScore ? sc : '—'}</span>
-            <div class="score-bar"><div class="score-bar-fill" style="width:${pct}%;background:${color};"></div></div>
-          </div>
-        </td>
+        <td><div class="score-bar-wrap">
+          <span style="font-weight:600;color:${color};min-width:36px;">${hasScore ? sc : '—'}</span>
+          <div class="score-bar"><div class="score-bar-fill" style="width:${pct}%;background:${color};"></div></div>
+        </div></td>
         <td>${g ? `<span class="grade-badge ${g.cls}">${g.label}</span>` : '<span class="grade-badge g-none">—</span>'}</td>
       </tr>`;
     }
@@ -479,21 +642,14 @@ function renderScoreTable(topic) {
     </tr>`;
   }).join("");
 
-  area.innerHTML = `
-    ${topicActions}
-    <div class="card">
-      <div class="tbl-wrap">
-        <table>
-          <thead><tr>
-            <th style="width:48px;">เลขที่</th>
-            <th>ชื่อ-สกุล</th>
-            <th>คะแนน / ${topic.maxScore}</th>
-            <th>เกรด</th>
-          </tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>
-    </div>`;
+  area.innerHTML = `${topicActions}
+    <div class="card"><div class="tbl-wrap"><table>
+      <thead><tr>
+        <th style="width:48px;">เลขที่</th><th>ชื่อ-สกุล</th>
+        <th>คะแนน / ${topic.maxScore}</th><th>เกรด</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div></div>`;
 }
 
 window.previewGrade = function(sid, max) {
@@ -502,8 +658,7 @@ window.previewGrade = function(sid, max) {
   if (!el) return;
   if (isNaN(val) || val < 0) { el.className="grade-badge g-none"; el.textContent="—"; return; }
   const g = getGrade(Math.min(val,max), max);
-  el.className = "grade-badge " + g.cls;
-  el.textContent = g.label;
+  el.className = "grade-badge " + g.cls; el.textContent = g.label;
 };
 
 window.saveScores = async function() {
@@ -545,19 +700,15 @@ window.openAddTopic = function() {
   document.getElementById("editTopicId").value = "";
   document.getElementById("topicModal").classList.add("open");
 };
-
 window.openEditTopic = function(id) {
-  const t = topics.find(x => x.id === id);
-  if (!t) return;
+  const t = topics.find(x => x.id === id); if (!t) return;
   document.getElementById("topicModalTitle").textContent = "แก้ไขหัวข้อ";
   document.getElementById("topicTitle").value = t.title;
   document.getElementById("topicMax").value = t.maxScore;
   document.getElementById("editTopicId").value = id;
   document.getElementById("topicModal").classList.add("open");
 };
-
 window.closeTopicModal = function() { document.getElementById("topicModal").classList.remove("open"); };
-
 window.saveTopic = async function() {
   const title = document.getElementById("topicTitle").value.trim();
   const max   = parseInt(document.getElementById("topicMax").value) || 100;
@@ -569,21 +720,16 @@ window.saveTopic = async function() {
     } else {
       await addDoc(collection(db,"scoreTopics"), { title, maxScore: max, classId: currentClassId, subjectId: currentSubjectId||"", createdAt: new Date().toISOString() });
     }
-    closeTopicModal();
-    showToast("บันทึกหัวข้อเรียบร้อย ✓","success");
-    await loadTopics();
+    closeTopicModal(); showToast("บันทึกหัวข้อเรียบร้อย ✓","success"); await loadTopics();
   } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
 };
-
 window.deleteTopic = async function(id) {
   if (!confirm("ยืนยันลบหัวข้อนี้? คะแนนทั้งหมดในหัวข้อนี้จะถูกลบด้วย")) return;
   try {
     await deleteDoc(doc(db,"scoreTopics",id));
-    // delete all scores in this topic
     const snap = await getDocs(query(collection(db,"scores"), where("topicId","==",id)));
     await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
-    showToast("ลบหัวข้อเรียบร้อย","success");
-    await loadTopics();
+    showToast("ลบหัวข้อเรียบร้อย","success"); await loadTopics();
   } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
 };
 
@@ -593,42 +739,26 @@ function showToast(msg, type) {
   setTimeout(() => { t.className = ""; }, 3000);
 }
 
-// ── Mobile sidebar toggle ──
 window._sidebarToggle = function() {
-  const s = document.getElementById('sidebar');
-  const o = document.getElementById('sidebarOverlay');
-  const h = document.getElementById('hamburger');
+  const s = document.getElementById('sidebar'), o = document.getElementById('sidebarOverlay'), h = document.getElementById('hamburger');
   if (!s) return;
   const open = s.classList.toggle('mobile-open');
   if (o) o.classList.toggle('open', open);
   if (h) h.classList.toggle('open', open);
 };
 window._closeSidebar = function() {
-  const s = document.getElementById('sidebar');
-  const o = document.getElementById('sidebarOverlay');
-  const h = document.getElementById('hamburger');
+  const s = document.getElementById('sidebar'), o = document.getElementById('sidebarOverlay'), h = document.getElementById('hamburger');
   if (s) s.classList.remove('mobile-open');
   if (o) o.classList.remove('open');
   if (h) h.classList.remove('open');
 };
-// ── Subject selector sync ──
-window._syncSidebarSubjectTo = function(val) {
-  const el = document.getElementById('navSubjectSelect');
-  if (el) el.value = val;
-};
+window._syncSidebarSubjectTo = function(val) { const el = document.getElementById('navSubjectSelect'); if (el) el.value = val; };
 window._onNavSubjectChange = function() {
-  const el = document.getElementById('navSubjectSelect');
-  if (!el) return;
-  // find page's own subject select and sync
+  const el = document.getElementById('navSubjectSelect'); if (!el) return;
   ['subjectSelect','subjectSelectPanel','subjectSelectFilter'].forEach(id => {
-    const s = document.getElementById(id);
-    if (s) { s.value = el.value; s.dispatchEvent(new Event('change')); }
+    const s = document.getElementById(id); if (s) { s.value = el.value; s.dispatchEvent(new Event('change')); }
   });
 };
-
-
-
-
 </script>
 </body>
 </html>
