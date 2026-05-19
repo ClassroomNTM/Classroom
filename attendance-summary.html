@@ -66,6 +66,8 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min
 .flabel{font-size:11px;font-weight:500;color:var(--muted);}
 select,input[type="month"]{height:38px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-family:'Sarabun',sans-serif;font-size:13px;color:var(--text);background:white;outline:none;}
 select:focus,input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);}
+.default-bar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.btn-sm{padding:5px 10px;font-size:12px;}
 
 /* ── METRICS ── */
 .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px;}
@@ -356,6 +358,21 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
     </div>
   </div>
 
+  <div class="default-bar" id="defaultBar" style="display:none;">
+    <button class="btn btn-sm" id="setDefaultBtn" onclick="setDefaultClass()" title="ตั้งห้องนี้เป็นค่าเริ่มต้น">
+      <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      ตั้งเป็นค่าเริ่มต้น
+    </button>
+    <button class="btn btn-sm" id="clearDefaultBtn" onclick="clearDefaultClass()" style="display:none;" title="ล้างค่าเริ่มต้น">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      ล้างค่าเริ่มต้น
+    </button>
+    <span id="defaultIndicator" style="font-size:11px;color:var(--muted);display:none;align-items:center;gap:3px;">
+      <svg viewBox="0 0 24 24" style="width:11px;height:11px;stroke:#1D9E75;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;"><polyline points="20 6 9 17 4 12"/></svg>
+      ค่าเริ่มต้น
+    </span>
+  </div>
+
   <div class="filters">
     <div class="fgroup">
       <div class="flabel">วิชา</div>
@@ -365,7 +382,7 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
     </div>
     <div class="fgroup">
       <div class="flabel">ชั้นเรียน</div>
-      <select id="classSelect" onchange="loadData()">
+      <select id="classSelect" onchange="updateDefaultUI();loadData()">
         <option value="">— เลือกชั้น —</option>
       </select>
     </div>
@@ -572,6 +589,8 @@ const THAI_MONTHS     = ["","มกราคม","กุมภาพันธ์
 const THAI_DAYS_SHORT = ["อา","จ","อ","พ","พฤ","ศ","ส"];
 
 let userRole    = "user";
+let currentUserId = "";
+let savedDefaultClassId = "";
 let allStudents = [];
 window.__allStudents = allStudents;
 let attMap      = {};
@@ -613,8 +632,9 @@ function studentsCacheGet(classId) {
 }
 
 // ─── Auth ────────────────────────────────────────────────────
-initAuth({ requireAdmin: true, onReady: async ({ role }) => {
+initAuth({ requireAdmin: true, onReady: async ({ role, user }) => {
   userRole = role;
+  currentUserId = user?.uid || "";
   document.getElementById("adminNavItem").style.display    = "flex";
   document.getElementById("deleteMonthBtn").style.display  = "inline-flex";
   document.getElementById("deleteDayBtn").style.display    = "inline-flex";
@@ -622,7 +642,26 @@ initAuth({ requireAdmin: true, onReady: async ({ role }) => {
   document.getElementById("focusToggleBtn").style.display  = "inline-flex";
   await initColorSystem();
   await loadSubjects();
+
+  // โหลด default class จาก Firestore
+  if (currentUserId) {
+    try {
+      const prefSnap = await getDoc(doc(db, "userPrefs", currentUserId));
+      if (prefSnap.exists()) {
+        savedDefaultClassId = prefSnap.data().defaultClassId_summary || "";
+      }
+    } catch(e) { console.warn("load pref summary:", e); }
+  }
+
   await loadClasses();
+
+  // apply ค่าเริ่มต้น
+  const sel = document.getElementById("classSelect");
+  if (savedDefaultClassId && [...sel.options].some(o => o.value === savedDefaultClassId)) {
+    sel.value = savedDefaultClassId;
+  }
+  document.getElementById("defaultBar").style.display = "flex";
+  updateDefaultUI();
   loadData();
   window.toggleFocusMode();
 }});
@@ -687,6 +726,54 @@ async function loadClasses() {
   });
   if (classes.length > 0) sel.value = classes[0].id;
 }
+
+// ─── Default Class ────────────────────────────────────────────
+window.setDefaultClass = async function() {
+  const classId = document.getElementById("classSelect").value;
+  if (!classId) { showToast("กรุณาเลือกห้องเรียนก่อน","error"); return; }
+  if (!currentUserId) { showToast("ไม่พบข้อมูลผู้ใช้","error"); return; }
+  try {
+    await setDoc(doc(db,"userPrefs",currentUserId), {
+      uid: currentUserId,
+      defaultClassId_summary: classId,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    savedDefaultClassId = classId;
+    showToast("ตั้งค่าเริ่มต้นเรียบร้อย ✓","success");
+    updateDefaultUI();
+  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
+};
+
+window.clearDefaultClass = async function() {
+  if (!currentUserId) return;
+  try {
+    await setDoc(doc(db,"userPrefs",currentUserId), {
+      defaultClassId_summary: "",
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    savedDefaultClassId = "";
+    showToast("ล้างค่าเริ่มต้นแล้ว","success");
+    updateDefaultUI();
+  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
+};
+
+function updateDefaultUI() {
+  const currentClassId = document.getElementById("classSelect").value;
+  const isDefault = savedDefaultClassId && savedDefaultClassId === currentClassId;
+  document.getElementById("clearDefaultBtn").style.display  = savedDefaultClassId ? "inline-flex" : "none";
+  document.getElementById("defaultIndicator").style.display = isDefault ? "inline-flex" : "none";
+  const setBtn = document.getElementById("setDefaultBtn");
+  if (isDefault) {
+    setBtn.style.background  = "#f0fdf4";
+    setBtn.style.color       = "#166534";
+    setBtn.style.borderColor = "#bbf7d0";
+  } else {
+    setBtn.style.background  = "";
+    setBtn.style.color       = "";
+    setBtn.style.borderColor = "";
+  }
+}
+window.updateDefaultUI = updateDefaultUI;
 
 // ─── Load Attendance ─────────────────────────────────────────
 window.loadData = loadData;
