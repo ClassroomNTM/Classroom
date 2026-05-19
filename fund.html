@@ -24,7 +24,6 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min
 .role-admin{background:#fef2f2;color:#b91c1c;}.role-user{background:#f0fdf4;color:#166534;}
 .btn-logout{padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:transparent;font-family:'Sarabun',sans-serif;font-size:13px;color:var(--muted);cursor:pointer;}
 .btn-logout:hover{background:var(--bg);}
-/* hamburger */
 .hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:6px;border:none;background:transparent;margin-right:4px;}
 .hamburger span{display:block;width:22px;height:2px;background:var(--text);border-radius:2px;transition:.25s;}
 .hamburger.open span:nth-child(1){transform:rotate(45deg) translate(5px,5px);}
@@ -32,7 +31,6 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min
 .hamburger.open span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px);}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:150;}
 .sidebar-overlay.open{display:block;}
-/* sidebar */
 .sidebar{position:fixed;top:var(--topbar-h);left:0;bottom:0;width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);padding:16px 10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;}
 .sidebar-label{font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--muted);padding:8px 10px 4px;text-transform:uppercase;}
 .nav-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;font-size:13px;color:var(--muted);text-decoration:none;transition:all .15s;}
@@ -40,9 +38,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min
 .nav-item:hover{background:var(--bg);color:var(--text);}
 .nav-item.active{background:var(--blue-lt);color:var(--blue);font-weight:500;}
 .nav-sep{height:1px;background:var(--border);margin:8px 0;}
-/* main */
 .main{margin-left:var(--sidebar-w);margin-top:var(--topbar-h);padding:24px;display:grid;grid-template-columns:240px 1fr;gap:20px;align-items:start;}
-/* rounds panel */
 .rounds-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;position:sticky;top:calc(var(--topbar-h) + 24px);}
 .rounds-head{padding:14px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between;}
 .rounds-list{padding:8px;}
@@ -52,11 +48,9 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min
 .round-item .r-name{font-size:13px;}
 .round-item .r-meta{font-size:11px;color:var(--muted);margin-top:1px;display:flex;gap:6px;flex-wrap:wrap;}
 .round-item.active .r-meta{color:rgba(15,52,96,.7);}
-/* content */
 .content-area{min-width:0;}
 .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
 .page-title{font-size:20px;font-weight:600;}
-/* buttons */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid var(--border);border-radius:8px;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:500;cursor:pointer;background:var(--surface);color:var(--text);transition:all .15s;}
 .btn:hover{background:var(--bg);}
 .btn:active{transform:scale(.97);}
@@ -68,7 +62,6 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min
 .btn-success{background:#f0fdf4;color:#166534;border-color:#bbf7d0;}
 .btn-success:hover{background:#dcfce7;}
 .btn-sm{padding:5px 10px;font-size:12px;}
-/* filters */
 .filters{display:flex;gap:12px;margin-bottom:0;flex-wrap:wrap;align-items:flex-end;}
 .fgroup{display:flex;flex-direction:column;gap:4px;}
 .flabel{font-size:11px;font-weight:500;color:var(--muted);}
@@ -78,7 +71,6 @@ select,input[type="text"],input[type="number"],input[type="date"]{
 select:focus,input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);}
 textarea{border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:'Sarabun',sans-serif;font-size:13px;color:var(--text);background:white;outline:none;resize:vertical;width:100%;}
 textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);}
-/* metrics */
 .metrics-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
 .metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;}
 .m-label{font-size:11px;color:var(--muted);margin-bottom:4px;display:flex;align-items:center;gap:5px;}
@@ -86,12 +78,10 @@ textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);
 .m-val{font-size:26px;font-weight:600;line-height:1;}
 .m-sub{font-size:11px;color:var(--muted);margin-top:3px;}
 .m-val-green{color:#166534;}.m-val-red{color:#b91c1c;}.m-val-blue{color:#1e40af;}
-/* progress */
 .prog-wrap{margin-bottom:20px;}
 .prog-label{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px;}
 .prog-bg{height:7px;background:#f3f4f6;border-radius:99px;overflow:hidden;}
 .prog-fill{height:7px;background:var(--blue);border-radius:99px;transition:width .4s ease;}
-/* card / table */
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
 .card-head{padding:12px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:8px;}
 .tbl-wrap{overflow-x:auto;}
@@ -103,14 +93,11 @@ tr:hover td{background:#fafafa;}
 .stu-cell{display:flex;align-items:center;gap:8px;}
 .stu-av{width:30px;height:30px;border-radius:50%;background:var(--blue-lt);color:var(--blue);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;}
 .stu-name{font-size:13px;font-weight:500;}
-/* chip */
 .chip{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:500;}
 .chip-green{background:#f0fdf4;color:#166534;}
 .chip-red{background:#fef2f2;color:#b91c1c;}
 .chip-gray{background:#f9fafb;color:#6b7280;border:1px solid #e5e7eb;}
-/* default class bar */
 .default-bar{display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
-/* modal */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:200;align-items:center;justify-content:center;}
 .modal-overlay.open{display:flex;}
 .modal{background:white;border-radius:16px;padding:24px 28px;width:460px;max-width:95vw;animation:fadeUp .25s ease;}
@@ -119,21 +106,17 @@ tr:hover td{background:#fafafa;}
 .form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
 .form-label{font-size:12px;font-weight:500;color:var(--text);}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-/* expense section */
 .expense-section{margin-top:20px;}
 .expense-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
 .expense-title{font-size:14px;font-weight:600;}
-/* empty */
 .empty-state{padding:40px;text-align:center;color:var(--muted);}
 .empty-state svg{width:40px;height:40px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;margin:0 auto 10px;display:block;opacity:.4;}
 .empty-state p{font-size:13px;}
-/* toast */
 #toast{position:fixed;bottom:24px;right:24px;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;}
 #toast.show{opacity:1;transform:translateY(0);}
 #toast.success{background:#052e16;color:#86efac;}
 #toast.error{background:#450a0a;color:#fca5a5;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
-/* mobile */
 @media(max-width:768px){
   :root{--sidebar-w:220px;}
   .sidebar{transform:translateX(-100%);z-index:160;transition:transform .25s ease;}
@@ -207,7 +190,6 @@ tr:hover td{background:#fafafa;}
 </nav>
 
 <main class="main">
-  <!-- Rounds panel (left) -->
   <div class="rounds-panel">
     <div class="rounds-head">
       รอบการเก็บเงิน
@@ -218,13 +200,11 @@ tr:hover td{background:#fafafa;}
     </div>
   </div>
 
-  <!-- Content (right) -->
   <div class="content-area">
     <div class="page-header">
       <div class="page-title">เงินเก็บห้อง</div>
     </div>
 
-    <!-- ── ตัวเลือกห้อง + ปุ่ม default ── -->
     <div class="default-bar">
       <div class="fgroup">
         <div class="flabel">ห้องเรียน</div>
@@ -232,7 +212,6 @@ tr:hover td{background:#fafafa;}
           <option value="">— เลือกห้อง —</option>
         </select>
       </div>
-      <!-- ปุ่มตั้งค่าเริ่มต้น -->
       <div class="fgroup" style="justify-content:flex-end;">
         <div class="flabel" style="visibility:hidden;">_</div>
         <div style="display:flex;gap:6px;align-items:center;">
@@ -261,7 +240,7 @@ tr:hover td{background:#fafafa;}
   </div>
 </main>
 
-<!-- ─── Modal: เพิ่ม/แก้ไขรอบการเก็บเงิน ─── -->
+<!-- Modal: เพิ่ม/แก้ไขรอบ -->
 <div class="modal-overlay" id="roundModal">
   <div class="modal">
     <div class="modal-title" id="roundModalTitle">เพิ่มรอบการเก็บเงิน</div>
@@ -295,7 +274,7 @@ tr:hover td{background:#fafafa;}
   </div>
 </div>
 
-<!-- ─── Modal: บันทึกการจ่ายเงิน ─── -->
+<!-- Modal: บันทึกการจ่ายเงิน -->
 <div class="modal-overlay" id="payModal">
   <div class="modal">
     <div class="modal-title">บันทึกการจ่ายเงิน</div>
@@ -322,7 +301,7 @@ tr:hover td{background:#fafafa;}
   </div>
 </div>
 
-<!-- ─── Modal: รายจ่าย ─── -->
+<!-- Modal: รายจ่าย -->
 <div class="modal-overlay" id="expenseModal">
   <div class="modal">
     <div class="modal-title" id="expenseModalTitle">เพิ่มรายจ่าย</div>
@@ -357,7 +336,7 @@ tr:hover td{background:#fafafa;}
 <script type="module">
 import { initAuth, doLogout, db } from "./auth-guard.js";
 import {
-  collection, doc, getDocs, setDoc, addDoc, deleteDoc, updateDoc,
+  collection, doc, getDocs, getDoc, setDoc, addDoc, deleteDoc, updateDoc,
   query, where, serverTimestamp, Timestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -373,7 +352,6 @@ let expenses = [];
 let rounds   = [];
 let savedDefaultClassId = "";
 
-// ── Cache ──────────────────────────────────────────────────────
 const CACHE_TTL = 30 * 60 * 1000;
 function cacheSet(k,v){ sessionStorage.setItem(k,JSON.stringify({ts:Date.now(),data:v})); }
 function cacheGet(k){
@@ -384,8 +362,6 @@ function cacheGet(k){
 function stuCacheSet(cid,v){ sessionStorage.setItem("stu_"+cid,JSON.stringify(v)); }
 function stuCacheGet(cid){ try{ const r=sessionStorage.getItem("stu_"+cid); return r?JSON.parse(r):null; }catch{return null;} }
 
-// ── Init ───────────────────────────────────────────────────────
-// แก้เป็น
 initAuth({ requireAdmin: true, onReady: async ({ role, user }) => {
   userRole = role;
   currentUserId = user?.uid || "";
@@ -395,9 +371,9 @@ initAuth({ requireAdmin: true, onReady: async ({ role, user }) => {
   // โหลด default class จาก Firestore
   if (currentUserId) {
     try {
-      const prefSnap = await getDocs(query(collection(db,"userPrefs"), where("uid","==",currentUserId)));
-      if (!prefSnap.empty) {
-        savedDefaultClassId = prefSnap.docs[0].data().defaultClassId_fund || "";
+      const prefSnap = await getDoc(doc(db, "userPrefs", currentUserId));
+      if (prefSnap.exists()) {
+        savedDefaultClassId = prefSnap.data().defaultClassId_fund || "";
       }
     } catch(e) { console.warn("load pref fund:", e); }
   }
@@ -413,7 +389,6 @@ initAuth({ requireAdmin: true, onReady: async ({ role, user }) => {
   updateDefaultUI();
 }});
 
-// ── Default class ──────────────────────────────────────────────
 window.setDefaultClass = async function() {
   if (!currentClassId) { showToast("กรุณาเลือกห้องเรียนก่อน","error"); return; }
   if (!currentUserId)  { showToast("ไม่พบข้อมูลผู้ใช้","error"); return; }
@@ -458,7 +433,6 @@ function updateDefaultUI() {
   }
 }
 
-// ── Load classes ───────────────────────────────────────────────
 async function loadClasses(){
   let classes = cacheGet("classes");
   if(!classes){
@@ -486,7 +460,6 @@ function populateRoundClassSelect(selectedId){
   });
 }
 
-// ── onClassChange ──────────────────────────────────────────────
 window.onClassChange = async function(){
   currentClassId = document.getElementById("classSelect").value;
   currentRoundId = "";
@@ -505,7 +478,6 @@ window.onClassChange = async function(){
   await loadRounds();
 };
 
-// ── Rounds ─────────────────────────────────────────────────────
 async function loadRounds(){
   const snap = await getDocs(query(collection(db,"fundRounds"), where("classId","==",currentClassId)));
   rounds = snap.docs.map(d=>({id:d.id,...d.data()}))
@@ -545,14 +517,12 @@ window.selectRound = async function(roundId){
   renderAll();
 };
 
-// ── Payments ───────────────────────────────────────────────────
 async function loadPayments(){
   const snap = await getDocs(query(collection(db,"fundPayments"), where("roundId","==",currentRoundId)));
   payments = {};
   snap.docs.forEach(d=>{ const x=d.data(); payments[x.studentId]=x; });
 }
 
-// ── Expenses ───────────────────────────────────────────────────
 async function loadExpenses(){
   const snap = await getDocs(query(collection(db,"fundExpenses"), where("roundId","==",currentRoundId)));
   expenses = snap.docs.map(d=>({id:d.id,...d.data()}))
@@ -563,7 +533,6 @@ async function loadExpenses(){
     });
 }
 
-// ── Render ─────────────────────────────────────────────────────
 function renderAll(){
   const round = rounds.find(r=>r.id===currentRoundId);
   if(!round) return;
@@ -733,7 +702,6 @@ function renderExpenseRows(){
   }).join("");
 }
 
-// ── Round CRUD ─────────────────────────────────────────────────
 window.openAddRound = function(){
   document.getElementById("roundModalTitle").textContent = "เพิ่มรอบการเก็บเงิน";
   document.getElementById("roundName").value = "";
@@ -804,7 +772,6 @@ window.deleteRound = async function(id){
   }catch(e){ showToast("เกิดข้อผิดพลาด","error"); console.error(e); }
 };
 
-// ── Payment CRUD ───────────────────────────────────────────────
 window.openPayModal = function(studentId, studentName, defaultAmount){
   document.getElementById("payStudentName").textContent = `นักเรียน: ${studentName}`;
   document.getElementById("payDate").value = new Date().toISOString().split("T")[0];
@@ -842,7 +809,6 @@ window.cancelPay = async function(studentId){
   }catch(e){ showToast("เกิดข้อผิดพลาด","error"); console.error(e); }
 };
 
-// ── Expense CRUD ───────────────────────────────────────────────
 window.openAddExpense = function(){
   document.getElementById("expenseModalTitle").textContent = "เพิ่มรายจ่าย";
   document.getElementById("expenseName").value = "";
@@ -899,7 +865,6 @@ window.deleteExpense = async function(id){
   }catch(e){ showToast("เกิดข้อผิดพลาด","error"); console.error(e); }
 };
 
-// ── Sidebar mobile ─────────────────────────────────────────────
 window._toggleSidebar = function(){
   const s=document.getElementById("sidebar");
   const o=document.getElementById("sidebarOverlay");
@@ -914,7 +879,6 @@ window._closeSidebar = function(){
   document.getElementById("hamburgerBtn").classList.remove("open");
 };
 
-// ── Helpers ────────────────────────────────────────────────────
 function esc(str){ const d=document.createElement("div"); d.textContent=str||""; return d.innerHTML; }
 function num(n){ return (Number(n)||0).toLocaleString("th-TH"); }
 function fmtDate(d){
