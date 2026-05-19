@@ -626,9 +626,10 @@ async function loadSubjects() {
       sel.appendChild(opt);
     });
   });
-  const defId = subjects[0]?.id || "";
-  document.getElementById("subjectSelect").value        = defId;
-  document.getElementById("sidebarSubjectSelect").value = defId;
+  // build subjectMap id→name สำหรับ tooltip
+  window.__subjectMap = Object.fromEntries(subjects.map(s => [s.id, s.name]));
+  document.getElementById("subjectSelect").value        = "";
+  document.getElementById("sidebarSubjectSelect").value = "";
 }
 
 // ─── loadClasses: cache-first ────────────────────────────────
@@ -848,8 +849,12 @@ function renderGrid(year, mon, daysInMonth) {
         if (l) dayLate[dateStr]=(dayLate[dateStr]||0)+1;
         if (a) dayAbsent[dateStr]=(dayAbsent[dateStr]||0)+1;
         // multi: ไม่ให้กดแก้ไข (เพราะไม่รู้วิชาไหน)
-        const tooltip = recs.map(r=>r.subjectId||"?").join(", ");
-        cells += `<td class="cell ${cls}" ${colIdxAttr} title="${recs.length} วิชา: ${tooltip}" style="padding:2px 1px;">${multiStatusDot(recs)}</td>`;
+        const _subMap = window.__subjectMap || {};
+        const _stLabel = { present:"มาเรียน", late:"สาย", absent:"ขาด", ghost:"ไม่มีตัวตน" };
+        const tooltip = recs.length === 0
+          ? "ไม่มีข้อมูล"
+          : recs.map(r => (_subMap[r.subjectId] || r.subjectId || "ไม่ระบุวิชา") + " → " + (_stLabel[r.status] || r.status || "—")).join("\n");
+        cells += `<td class="cell ${cls}" ${colIdxAttr} title="${tooltip}" style="padding:2px 1px;cursor:help;">${multiStatusDot(recs)}</td>`;
       } else {
         const status = (rawRec?.status === "ghost" && !isGhost) ? undefined : rawRec?.status;
         if (status==="present") { sP++; dayPresent[dateStr]=(dayPresent[dateStr]||0)+1; }
