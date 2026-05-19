@@ -233,6 +233,23 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);bac
           <option value="">— เลือกชั้น —</option>
         </select>
       </div>
+      <div class="fgroup" style="justify-content:flex-end;">
+        <div class="flabel" style="visibility:hidden;">_</div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button class="btn btn-sm" id="setDefaultBtn" onclick="setDefaultClass()" title="บันทึกห้องนี้เป็นค่าเริ่มต้น">
+            <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            ตั้งเป็นค่าเริ่มต้น
+          </button>
+          <button class="btn btn-sm" id="clearDefaultBtn" onclick="clearDefaultClass()" style="display:none;" title="ล้างค่าเริ่มต้น">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            ล้างค่าเริ่มต้น
+          </button>
+          <span id="defaultIndicator" style="font-size:11px;color:var(--muted);display:none;">
+            <svg viewBox="0 0 24 24" style="width:11px;height:11px;stroke:#1D9E75;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;vertical-align:middle;"><polyline points="20 6 9 17 4 12"/></svg>
+            ค่าเริ่มต้น
+          </span>
+        </div>
+      </div>
     </div>
 
     <div class="metrics-row" id="metricsRow" style="display:none;">
@@ -286,6 +303,8 @@ let userRole = "", currentClassId = "", currentSubjectId = "", currentTopicId = 
 let students = [], scores = {}, topics = [];
 const VIEW_TOPIC = "topic", VIEW_SUMMARY = "summary";
 let currentView = VIEW_TOPIC;
+let currentUserId = "";
+let savedDefaultClassId = "", savedDefaultSubjectId = "";
 
 // ─── cache helpers ─────────────────────────────────
 const CACHE_TTL = 30 * 60 * 1000;
@@ -304,16 +323,80 @@ function studentsCacheGet(classId) {
   catch { return null; }
 }
 
-initAuth({ requireAdmin: true, onReady: async ({ role }) => {
+initAuth({ requireAdmin: true, onReady: async ({ role, uid }) => {
   userRole = role;
+  currentUserId = uid || "";
   document.getElementById("adminNavItem").style.display = "flex";
   document.getElementById("addTopicBtn").style.display = "inline-flex";
   document.getElementById("saveScoreBtn").style.display = "inline-flex";
+
+  // โหลดค่าเริ่มต้นจาก Firestore
+  if (currentUserId) {
+    try {
+      const prefSnap = await getDocs(query(collection(db, "userPrefs"), where("uid", "==", currentUserId)));
+      if (!prefSnap.empty) {
+        const pref = prefSnap.docs[0].data();
+        savedDefaultClassId   = pref.defaultClassId   || "";
+        savedDefaultSubjectId = pref.defaultSubjectId || "";
+      }
+    } catch(e) { console.warn("load pref:", e); }
+  }
+
   await loadSubjects();
   await loadClasses();
-  const classEl = document.getElementById("classSelect");
+
+  // apply ค่าเริ่มต้น ถ้ามี
+  const classEl   = document.getElementById("classSelect");
+  const subjectEl = document.getElementById("subjectSelect");
+  if (savedDefaultClassId && [...classEl.options].some(o => o.value === savedDefaultClassId)) {
+    classEl.value = savedDefaultClassId;
+    if (savedDefaultSubjectId) subjectEl.value = savedDefaultSubjectId;
+  }
   if (classEl.value) await window.onClassChange();
+  updateDefaultUI();
 }});
+
+// ─── Default class helpers ──────────────────────────────
+window.setDefaultClass = async function() {
+  if (!currentClassId) { showToast("กรุณาเลือกชั้นเรียนก่อน","error"); return; }
+  if (!currentUserId)  { showToast("ไม่พบข้อมูลผู้ใช้","error"); return; }
+  try {
+    await setDoc(doc(db, "userPrefs", currentUserId), {
+      uid: currentUserId,
+      defaultClassId:   currentClassId,
+      defaultSubjectId: currentSubjectId || "",
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    savedDefaultClassId   = currentClassId;
+    savedDefaultSubjectId = currentSubjectId || "";
+    showToast("ตั้งค่าเริ่มต้นเรียบร้อย ✓","success");
+    updateDefaultUI();
+  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
+};
+
+window.clearDefaultClass = async function() {
+  if (!currentUserId) return;
+  try {
+    await setDoc(doc(db, "userPrefs", currentUserId), {
+      defaultClassId: "", defaultSubjectId: "", updatedAt: new Date().toISOString()
+    }, { merge: true });
+    savedDefaultClassId = ""; savedDefaultSubjectId = "";
+    showToast("ล้างค่าเริ่มต้นแล้ว","success");
+    updateDefaultUI();
+  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
+};
+
+function updateDefaultUI() {
+  const isDefault = savedDefaultClassId && savedDefaultClassId === currentClassId;
+  document.getElementById("clearDefaultBtn").style.display  = savedDefaultClassId ? "inline-flex" : "none";
+  document.getElementById("defaultIndicator").style.display = isDefault ? "inline-flex" : "none";
+  const setBtn = document.getElementById("setDefaultBtn");
+  if (isDefault) {
+    setBtn.style.background = "#f0fdf4"; setBtn.style.color = "#166534"; setBtn.style.borderColor = "#bbf7d0";
+  } else {
+    setBtn.style.background = ""; setBtn.style.color = ""; setBtn.style.borderColor = "";
+  }
+}
 
 async function loadSubjects() {
   let subjects = cacheGet("subjects");
@@ -326,7 +409,7 @@ async function loadSubjects() {
   subjects.forEach(s => { const o = document.createElement("option"); o.value = s.id; o.textContent = s.name; sel.appendChild(o); });
   const navSel = document.getElementById("navSubjectSelect");
   if (navSel) subjects.forEach(s => { const o = document.createElement("option"); o.value = s.id; o.textContent = s.name; navSel.appendChild(o); });
-  const defId = subjects[0]?.id || "";
+  const defId = savedDefaultSubjectId || subjects[0]?.id || "";
   sel.value = defId;
   if (navSel) navSel.value = defId;
 }
@@ -362,6 +445,7 @@ window.onClassChange = async function() {
   }
   students = cached;
   currentView = VIEW_TOPIC;
+  updateDefaultUI();
   await loadTopics();
 };
 
