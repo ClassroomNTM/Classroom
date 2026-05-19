@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>เข้าสู่ระบบ — ระบบจัดการนักเรียน</title>
+<title>เข้าสู่ระบบ — ระบบเช็คชื่อนักเรียน</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -300,7 +300,7 @@
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       const role = await loadAndCacheUser(user);
-      window.location.href = role === "admin" ? "dashboard.html" : "submit.html";
+      window.location.href = role === "admin" ? "attendance-summary.html" : "submit.html";
     }
   });
 
@@ -353,7 +353,7 @@
     try {
       const cred = await signInWithEmailAndPassword(auth, email, password);
       const role = await loadAndCacheUser(cred.user);
-      window.location.href = role === "admin" ? "dashboard.html" : "submit.html";
+      window.location.href = role === "admin" ? "attendance-summary.html" : "submit.html";
     } catch (err) {
       let msg = "อีเมลหรือรหัสผ่านไม่ถูกต้อง";
       if (err.code === "auth/too-many-requests") msg = "ลองใหม่ภายหลัง (พยายามเข้าสู่ระบบบ่อยเกินไป)";
@@ -377,7 +377,7 @@
     try {
       const result = await signInWithPopup(auth, provider);
       const role = await loadAndCacheUser(result.user);
-      window.location.href = role === "admin" ? "dashboard.html" : "submit.html";
+      window.location.href = role === "admin" ? "attendance-summary.html" : "submit.html";
     } catch (err) {
       if (err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request") {
         // ผู้ใช้ปิด popup เอง — ไม่ต้องแสดง error
