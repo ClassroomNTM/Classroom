@@ -385,9 +385,10 @@ function stuCacheSet(cid,v){ sessionStorage.setItem("stu_"+cid,JSON.stringify(v)
 function stuCacheGet(cid){ try{ const r=sessionStorage.getItem("stu_"+cid); return r?JSON.parse(r):null; }catch{return null;} }
 
 // ── Init ───────────────────────────────────────────────────────
-initAuth({ requireAdmin: true, onReady: async ({ role, uid }) => {
+// แก้เป็น
+initAuth({ requireAdmin: true, onReady: async ({ role, user }) => {
   userRole = role;
-  currentUserId = uid || "";
+  currentUserId = user?.uid || "";
   document.getElementById("adminNavItem").style.display = "flex";
   document.getElementById("addRoundBtn").style.display = "inline-flex";
 
