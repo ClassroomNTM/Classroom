@@ -323,9 +323,10 @@ function studentsCacheGet(classId) {
   catch { return null; }
 }
 
-initAuth({ requireAdmin: true, onReady: async ({ role, uid }) => {
+// แก้เป็น
+initAuth({ requireAdmin: true, onReady: async ({ role, user }) => {
   userRole = role;
-  currentUserId = uid || "";
+  currentUserId = user?.uid || "";
   document.getElementById("adminNavItem").style.display = "flex";
   document.getElementById("addTopicBtn").style.display = "inline-flex";
   document.getElementById("saveScoreBtn").style.display = "inline-flex";
