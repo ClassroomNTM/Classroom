@@ -224,6 +224,9 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
 .del-modal h3{font-size:16px;font-weight:600;margin-bottom:8px;color:#b91c1c;}
 .del-modal p{font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6;}
 .del-modal strong{color:var(--text);}
+/* ── DELETE DAY ── */
+.del-day-input{width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-family:'Sarabun',sans-serif;font-size:13px;outline:none;margin-bottom:14px;transition:border-color .2s;}
+.del-day-input:focus{border-color:#b91c1c;box-shadow:0 0 0 3px rgba(185,28,28,.08);}
 .del-confirm-input{width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-family:'Sarabun',sans-serif;font-size:13px;outline:none;margin-bottom:14px;transition:border-color .2s;}
 .del-confirm-input:focus{border-color:#b91c1c;box-shadow:0 0 0 3px rgba(185,28,28,.08);}
 .del-footer{display:flex;gap:8px;justify-content:flex-end;}
@@ -318,6 +321,10 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
       <button class="btn btn-danger" id="deleteMonthBtn" onclick="openDeleteModal()" style="display:none;">
         <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
         ลบข้อมูลทั้งเดือน
+      </button>
+      <button class="btn btn-danger" id="deleteDayBtn" onclick="openDeleteDayModal()" style="display:none;">
+        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        ลบข้อมูลบางวัน
       </button>
       <button class="btn" id="exportBtn" onclick="exportCSV()">
         <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -493,6 +500,25 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
   </div>
 </div>
 
+<!-- Delete Day Modal -->
+<div class="del-overlay" id="delDayOverlay">
+  <div class="del-modal">
+    <h3>⚠ ลบข้อมูลการเช็คชื่อบางวัน</h3>
+    <p>เลือกวันที่ต้องการลบใน<br><strong id="delDayClassLabel">—</strong></p>
+    <div style="margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:500;color:var(--muted);margin-bottom:4px;">เลือกวันที่</div>
+      <input type="date" id="delDayDateInput" class="del-day-input" style="margin-bottom:8px;">
+      <div id="delDayInfo" style="font-size:12px;color:var(--muted);min-height:18px;"></div>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">พิมพ์ <strong style="color:#b91c1c;">ยืนยันลบ</strong> เพื่อยืนยัน</p>
+    <input type="text" class="del-confirm-input" id="delDayConfirmInput" placeholder="พิมพ์ ยืนยันลบ ที่นี่" oninput="checkDelDayConfirm()">
+    <div class="del-footer">
+      <button class="btn" onclick="closeDeleteDayModal()">ยกเลิก</button>
+      <button class="btn btn-danger" id="delDayConfirmBtn" onclick="doDeleteDay()" disabled>ลบข้อมูล</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import { initAuth, doLogout, db } from "./auth-guard.js";
 import { collection, getDocs, doc, getDoc, setDoc, deleteDoc, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -551,6 +577,7 @@ initAuth({ requireAdmin: true, onReady: async ({ role }) => {
   userRole = role;
   document.getElementById("adminNavItem").style.display    = "flex";
   document.getElementById("deleteMonthBtn").style.display  = "inline-flex";
+  document.getElementById("deleteDayBtn").style.display    = "inline-flex";
   document.getElementById("colorPanelBtn").style.display   = "inline-flex";
   document.getElementById("focusToggleBtn").style.display  = "inline-flex";
   await initColorSystem();
@@ -676,14 +703,22 @@ async function _loadDataAsync() {
     const attSnap = await getDocs(attQuery);
 
     attMap = {};
+    // subjectId="" = โหมดทั้งหมด → เก็บ array เพื่อแสดงหลายวิชาต่อช่อง
+    const multiMode = !subjectId;
     attSnap.docs.forEach(d => {
       const r = d.data();
       if (!attMap[r.date]) attMap[r.date] = {};
-      const existing = attMap[r.date][r.studentId];
-      if (!existing || r.savedAt >= (existing.savedAt||"")) {
-        attMap[r.date][r.studentId] = { status: r.status, note: r.note||"", savedAt: r.savedAt||"", docId: d.id };
+      if (multiMode) {
+        if (!attMap[r.date][r.studentId]) attMap[r.date][r.studentId] = [];
+        attMap[r.date][r.studentId].push({ status: r.status, note: r.note||"", savedAt: r.savedAt||"", docId: d.id, subjectId: r.subjectId||"" });
+      } else {
+        const existing = attMap[r.date][r.studentId];
+        if (!existing || r.savedAt >= (existing.savedAt||"")) {
+          attMap[r.date][r.studentId] = { status: r.status, note: r.note||"", savedAt: r.savedAt||"", docId: d.id };
+        }
       }
     });
+    window.__multiMode = multiMode;
 
     renderGrid(year, mon, daysInMonth);
 
@@ -730,6 +765,18 @@ function statusDot(status) {
   if (status==="absent")  return `<span class="dot dot-absent">ข</span>`;
   if (status==="ghost")   return `<span class="dot dot-ghost">—</span>`;
   return `<span class="dot dot-empty">·</span>`;
+}
+
+// แสดง multi-subject dots (array of records) พร้อม tooltip
+function multiStatusDot(records) {
+  if (!records || records.length === 0) return `<span class="dot dot-empty">·</span>`;
+  return records.map(r => statusDot(r.status)).join('<span style="font-size:8px;color:#d1d5db;margin:0 1px;">|</span>');
+}
+
+// นับสถานะจาก array records (multiMode)
+function countFromRecords(records, status) {
+  if (!records || !Array.isArray(records)) return 0;
+  return records.filter(r => r.status === status).length;
 }
 
 function renderGrid(year, mon, daysInMonth) {
@@ -781,6 +828,7 @@ function renderGrid(year, mon, daysInMonth) {
     let sP=0, sL=0, sA=0;
     let cells = "";
 
+    const multiMode = window.__multiMode || false;
     days.forEach(({dateStr,isToday,dow,d}) => {
       const cls = [DOW_CLS[dow]||"", isToday?"col-today":""].filter(Boolean).join(" ");
       const colIdxAttr = `data-col-idx="${d}"`;
@@ -791,15 +839,27 @@ function renderGrid(year, mon, daysInMonth) {
         cells += `<td ${ghostAttr}><span class="dot dot-ghost">—</span></td>`;
         return;
       }
-      const rec    = attMap[dateStr]?.[s.id];
-      const status = (rec?.status === "ghost" && !isGhost) ? undefined : rec?.status;
-      if (status==="present") { sP++; dayPresent[dateStr]=(dayPresent[dateStr]||0)+1; }
-      if (status==="late")    { sL++; dayLate[dateStr]=(dayLate[dateStr]||0)+1; }
-      if (status==="absent")  { sA++; dayAbsent[dateStr]=(dayAbsent[dateStr]||0)+1; }
-      const editAttr = isAdmin
-        ? `data-sid="${s.id}" data-date="${dateStr}" data-name="${(s.prefix?s.prefix+" ":"")+s.name}" class="cell ${cls} editable" onclick="openPopup(this,event)" ${colIdxAttr}`
-        : `class="cell ${cls}" ${colIdxAttr}`;
-      cells += `<td ${editAttr}>${statusDot(status)}</td>`;
+      const rawRec = attMap[dateStr]?.[s.id];
+      if (multiMode) {
+        const recs = Array.isArray(rawRec) ? rawRec : (rawRec ? [rawRec] : []);
+        const p = countFromRecords(recs,"present"), l = countFromRecords(recs,"late"), a = countFromRecords(recs,"absent");
+        sP+=p; sL+=l; sA+=a;
+        if (p) dayPresent[dateStr]=(dayPresent[dateStr]||0)+1;
+        if (l) dayLate[dateStr]=(dayLate[dateStr]||0)+1;
+        if (a) dayAbsent[dateStr]=(dayAbsent[dateStr]||0)+1;
+        // multi: ไม่ให้กดแก้ไข (เพราะไม่รู้วิชาไหน)
+        const tooltip = recs.map(r=>r.subjectId||"?").join(", ");
+        cells += `<td class="cell ${cls}" ${colIdxAttr} title="${recs.length} วิชา: ${tooltip}" style="padding:2px 1px;">${multiStatusDot(recs)}</td>`;
+      } else {
+        const status = (rawRec?.status === "ghost" && !isGhost) ? undefined : rawRec?.status;
+        if (status==="present") { sP++; dayPresent[dateStr]=(dayPresent[dateStr]||0)+1; }
+        if (status==="late")    { sL++; dayLate[dateStr]=(dayLate[dateStr]||0)+1; }
+        if (status==="absent")  { sA++; dayAbsent[dateStr]=(dayAbsent[dateStr]||0)+1; }
+        const editAttr = isAdmin
+          ? `data-sid="${s.id}" data-date="${dateStr}" data-name="${(s.prefix?s.prefix+" ":"")+s.name}" class="cell ${cls} editable" onclick="openPopup(this,event)" ${colIdxAttr}`
+          : `class="cell ${cls}" ${colIdxAttr}`;
+        cells += `<td ${editAttr}>${statusDot(status)}</td>`;
+      }
     });
 
     totalPresent += sP; totalLate += sL; totalAbsent += sA;
@@ -965,6 +1025,95 @@ window.checkDelConfirm = function() {
   document.getElementById("delConfirmBtn").disabled =
     document.getElementById("delConfirmInput").value.trim() !== "ยืนยันลบ";
 };
+// ─── Delete Day ──────────────────────────────────────────────
+window.openDeleteDayModal = function() {
+  const classId = document.getElementById("classSelect").value;
+  const month   = document.getElementById("monthInput").value;
+  if (!classId||!month) { showToast("กรุณาเลือกชั้นเรียนและเดือนก่อน","error"); return; }
+  const clsName = document.getElementById("classSelect").selectedOptions[0]?.text||"";
+  const subName = document.getElementById("subjectSelect").selectedOptions[0]?.text||"";
+  document.getElementById("delDayClassLabel").textContent =
+    `${clsName}${subName?" — "+subName:""}`;
+  // default to first day of selected month
+  document.getElementById("delDayDateInput").value = month+"-01";
+  document.getElementById("delDayDateInput").min   = month+"-01";
+  const [yr,mn] = month.split("-").map(Number);
+  const lastDay = new Date(yr,mn,0).getDate();
+  document.getElementById("delDayDateInput").max   = `${month}-${String(lastDay).padStart(2,"0")}`;
+  document.getElementById("delDayConfirmInput").value = "";
+  document.getElementById("delDayConfirmBtn").disabled = true;
+  updateDelDayInfo();
+  document.getElementById("delDayOverlay").classList.add("open");
+};
+window.closeDeleteDayModal = function() {
+  document.getElementById("delDayOverlay").classList.remove("open");
+};
+window.checkDelDayConfirm = function() {
+  document.getElementById("delDayConfirmBtn").disabled =
+    document.getElementById("delDayConfirmInput").value.trim() !== "ยืนยันลบ";
+};
+function updateDelDayInfo() {
+  const dateVal = document.getElementById("delDayDateInput").value;
+  if (!dateVal) { document.getElementById("delDayInfo").textContent = ""; return; }
+  const count = Object.values(attMap[dateVal]||{}).reduce((n, rec) => {
+    if (Array.isArray(rec)) return n + rec.length;
+    return n + (rec ? 1 : 0);
+  }, 0);
+  document.getElementById("delDayInfo").textContent =
+    count > 0 ? `มีข้อมูล ${count} รายการในวันนี้` : "ไม่พบข้อมูลในวันที่เลือก";
+  document.getElementById("delDayConfirmInput").value = "";
+  document.getElementById("delDayConfirmBtn").disabled = true;
+}
+document.addEventListener("DOMContentLoaded", () => {
+  const di = document.getElementById("delDayDateInput");
+  if (di) di.addEventListener("change", updateDelDayInfo);
+});
+
+window.doDeleteDay = async function() {
+  const classId   = document.getElementById("classSelect").value;
+  const subjectId = document.getElementById("subjectSelect").value;
+  const dateVal   = document.getElementById("delDayDateInput").value;
+  if (!classId||!dateVal) { showToast("กรุณาเลือกชั้นเรียนและวันที่","error"); return; }
+
+  const btn = document.getElementById("delDayConfirmBtn");
+  btn.disabled=true; btn.textContent="กำลังลบ...";
+  try {
+    let delQuery;
+    if (subjectId) {
+      delQuery = query(collection(db,"attendance"),
+        where("classId","==",classId),
+        where("subjectId","==",subjectId),
+        where("date","==",dateVal));
+    } else {
+      delQuery = query(collection(db,"attendance"),
+        where("classId","==",classId),
+        where("date","==",dateVal));
+    }
+    const snap = await getDocs(delQuery);
+    const batch = writeBatch(db);
+    snap.docs.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+
+    // update local attMap
+    if (attMap[dateVal]) delete attMap[dateVal];
+
+    closeDeleteDayModal();
+    const [year,mon] = document.getElementById("monthInput").value.split("-").map(Number);
+    renderGrid(year, mon, new Date(year,mon,0).getDate());
+    showToast(`ลบข้อมูลวันที่ ${dateVal} เรียบร้อย (${snap.docs.length} รายการ)`,"success");
+
+    const clsNameDel = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
+    const subNameDel = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
+    window.logAction && window.logAction("attendance",
+      `ลบข้อมูลเช็คชื่อวันที่ ${dateVal} — ${clsNameDel}${subNameDel?" / "+subNameDel:""} (${snap.docs.length} รายการ)`,
+      { action:"deleteDay", date:dateVal, classId, className:clsNameDel, subjectId:subjectId||"", subjectName:subNameDel, deletedCount:snap.docs.length }
+    );
+  } catch(e) {
+    showToast("เกิดข้อผิดพลาด: "+e.message,"error");
+    btn.disabled=false; btn.textContent="ลบข้อมูล";
+  }
+};
+
 window.doDeleteMonth = async function() {
   const classId   = document.getElementById("classSelect").value;
   const subjectId = document.getElementById("subjectSelect").value;
