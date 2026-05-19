@@ -37,7 +37,6 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min
 .topic-item .t-name{font-size:13px;}
 .topic-item .t-max{font-size:11px;color:var(--muted);margin-top:1px;}
 .topic-item.active .t-max{color:rgba(15,52,96,.7);}
-/* summary nav item */
 .topic-item.summary-item{background:var(--bg);border:1px dashed var(--border);color:var(--text);}
 .topic-item.summary-item.active{background:#fef9ec;color:#92400e;border-color:#fde68a;}
 .content-area{min-width:0;}
@@ -97,8 +96,6 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);bac
 .empty-state{text-align:center;padding:40px 20px;color:var(--muted);}
 .empty-state svg{width:40px;height:40px;stroke:var(--muted);fill:none;stroke-width:1.5;margin-bottom:12px;stroke-linecap:round;stroke-linejoin:round;}
 .readonly-banner{background:#fffbeb;border:1px solid #fde68a;color:#92400e;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:16px;display:none;}
-
-/* ── Summary styles ── */
 .summary-section-title{font-size:14px;font-weight:600;margin:20px 0 10px;display:flex;align-items:center;gap:8px;}
 .summary-section-title svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
 .summary-overview{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:20px;}
@@ -108,7 +105,6 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);bac
 .summary-metric .sm-row .label{color:var(--muted);}
 .summary-metric .sm-row .val{font-weight:600;}
 .summary-metric .sm-avg{font-size:22px;font-weight:700;color:var(--blue);line-height:1;margin-bottom:4px;}
-/* summary table */
 .summary-tbl th{white-space:nowrap;}
 .summary-tbl td{white-space:nowrap;}
 .summary-tbl .total-col{font-weight:700;background:#f0f4ff;}
@@ -116,16 +112,12 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);bac
 .summary-tbl .stat-row td{background:#f9fafb;font-weight:600;font-size:12px;color:var(--muted);}
 .summary-tbl .stat-row td.val{color:var(--text);}
 .score-cell{text-align:center;}
-.score-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:middle;}
 .rank-badge{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:11px;font-weight:700;}
 .rank-1{background:#fef9c3;color:#854d0e;}
 .rank-2{background:#f1f5f9;color:#475569;}
 .rank-3{background:#fff7ed;color:#9a3412;}
 .loading-spinner{display:flex;align-items:center;justify-content:center;padding:40px;gap:10px;color:var(--muted);font-size:13px;}
-
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
-
-/* ── HAMBURGER ── */
 .hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:6px;border:none;background:transparent;margin-right:4px;}
 .hamburger span{display:block;width:22px;height:2px;background:var(--text);border-radius:2px;transition:.25s;}
 .hamburger.open span:nth-child(1){transform:rotate(45deg) translate(5px,5px);}
@@ -143,7 +135,6 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);bac
   .sidebar.mobile-open{transform:translateX(0);}
   .hamburger{display:flex;}
   .main,.main-content{margin-left:0!important;}
-  .brand-name-hide{display:none;}
   .topbar-username{display:none;}
   .page-title{font-size:17px!important;}
   .main{grid-template-columns:1fr!important;}
@@ -180,6 +171,7 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);bac
   <a href="attendance.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>เช็คชื่อ</a>
   <a href="attendance-summary.html" class="nav-item"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>สรุปเช็คชื่อ</a>
   <a href="score.html" class="nav-item active"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>คะแนน</a>
+  <a href="fund.html" class="nav-item"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>เงินเก็บห้อง</a>
   <a href="submit.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>ส่งงาน</a>
   <div class="nav-sep"></div>
   <div class="sidebar-label">จัดการ</div>
@@ -196,7 +188,6 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);bac
 </nav>
 
 <main class="main">
-  <!-- Topics sidebar -->
   <div class="topics-panel">
     <div class="topics-head">
       หัวข้อคะแนน
@@ -207,7 +198,6 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);bac
     </div>
   </div>
 
-  <!-- Main content -->
   <div class="content-area">
     <div class="page-header">
       <div class="page-title" id="pageTitle">คะแนนนักเรียน</div>
@@ -292,7 +282,7 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);bac
 <script type="module">
 import { initAuth, doLogout, db } from "./auth-guard.js";
 import {
-  collection, doc, getDocs, setDoc, deleteDoc, addDoc,
+  collection, doc, getDocs, getDoc, setDoc, deleteDoc, addDoc,
   query, where
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -306,7 +296,6 @@ let currentView = VIEW_TOPIC;
 let currentUserId = "";
 let savedDefaultClassId = "", savedDefaultSubjectId = "";
 
-// ─── cache helpers ─────────────────────────────────
 const CACHE_TTL = 30 * 60 * 1000;
 function cacheSet(key, data) { sessionStorage.setItem(key, JSON.stringify({ ts: Date.now(), data })); }
 function cacheGet(key) {
@@ -323,7 +312,6 @@ function studentsCacheGet(classId) {
   catch { return null; }
 }
 
-// แก้เป็น
 initAuth({ requireAdmin: true, onReady: async ({ role, user }) => {
   userRole = role;
   currentUserId = user?.uid || "";
@@ -334,11 +322,10 @@ initAuth({ requireAdmin: true, onReady: async ({ role, user }) => {
   // โหลดค่าเริ่มต้นจาก Firestore
   if (currentUserId) {
     try {
-      const prefSnap = await getDocs(query(collection(db, "userPrefs"), where("uid", "==", currentUserId)));
-      if (!prefSnap.empty) {
-        const pref = prefSnap.docs[0].data();
-        savedDefaultClassId   = pref.defaultClassId   || "";
-        savedDefaultSubjectId = pref.defaultSubjectId || "";
+      const prefSnap = await getDoc(doc(db, "userPrefs", currentUserId));
+      if (prefSnap.exists()) {
+        savedDefaultClassId   = prefSnap.data().defaultClassId   || "";
+        savedDefaultSubjectId = prefSnap.data().defaultSubjectId || "";
       }
     } catch(e) { console.warn("load pref:", e); }
   }
@@ -357,7 +344,6 @@ initAuth({ requireAdmin: true, onReady: async ({ role, user }) => {
   updateDefaultUI();
 }});
 
-// ─── Default class helpers ──────────────────────────────
 window.setDefaultClass = async function() {
   if (!currentClassId) { showToast("กรุณาเลือกชั้นเรียนก่อน","error"); return; }
   if (!currentUserId)  { showToast("ไม่พบข้อมูลผู้ใช้","error"); return; }
@@ -478,7 +464,6 @@ function renderTopicsList() {
       <div class="t-max">เต็ม ${t.maxScore} คะแนน</div>
     </div>`).join("");
 
-  // Summary item at bottom
   const summaryItem = `
     <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
       <div class="topic-item summary-item ${currentView===VIEW_SUMMARY ? 'active' : ''}" onclick="window.openSummary()">
@@ -502,7 +487,6 @@ window.selectTopic = async function(topicId) {
   renderTopicsList();
   document.getElementById("saveScoreBtn").style.display = userRole === "admin" ? "inline-flex" : "none";
   document.getElementById("pageTitle").textContent = "คะแนนนักเรียน";
-  // load scores
   const snap = await getDocs(query(collection(db,"scores"), where("topicId","==",topicId), where("classId","==",currentClassId)));
   scores = {};
   snap.docs.forEach(d => { const x = d.data(); scores[x.studentId] = x.score; });
@@ -511,7 +495,6 @@ window.selectTopic = async function(topicId) {
   document.getElementById("metricsRow").style.display = "grid";
 };
 
-// ─── SUMMARY ──────────────────────────────────────
 window.openSummary = async function() {
   currentView = VIEW_SUMMARY;
   currentTopicId = "";
@@ -528,9 +511,7 @@ async function showSummary() {
     document.getElementById("scoreArea").innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg><p>ยังไม่มีหัวข้อคะแนน</p></div>`;
     return;
   }
-
-  // โหลด scores ทุก topic พร้อมกัน
-  const allScoresByTopic = {}; // topicId -> { studentId: score }
+  const allScoresByTopic = {};
   await Promise.all(topics.map(async t => {
     const snap = await getDocs(query(collection(db,"scores"), where("topicId","==",t.id), where("classId","==",currentClassId)));
     const map = {};
@@ -538,7 +519,6 @@ async function showSummary() {
     allScoresByTopic[t.id] = map;
   }));
 
-  // คำนวณ per-topic stats
   const topicStats = topics.map(t => {
     const vals = students.map(s => allScoresByTopic[t.id]?.[s.id]).filter(v => v !== undefined && v !== null);
     const avg = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
@@ -547,7 +527,6 @@ async function showSummary() {
     return { ...t, avg, max, min, count: vals.length };
   });
 
-  // คำนวณ per-student totals
   const totalMax = topics.reduce((s,t) => s + (t.maxScore||0), 0);
   const studentRows = students.map(s => {
     const perTopic = topics.map(t => {
@@ -559,7 +538,6 @@ async function showSummary() {
     return { ...s, perTopic, total };
   });
 
-  // เรียงลำดับเพื่อหา rank
   const ranked = [...studentRows].filter(s => s.total !== null).sort((a,b) => b.total - a.total);
   const rankMap = {};
   ranked.forEach((s, i) => { rankMap[s.id] = i + 1; });
@@ -568,7 +546,6 @@ async function showSummary() {
 }
 
 function renderSummary(topicStats, studentRows, rankMap, totalMax) {
-  // ── ส่วนที่ 1: ภาพรวมแต่ละหัวข้อ ──
   const overviewCards = topicStats.map(t => {
     const avgPct = t.avg !== null ? Math.round((t.avg/t.maxScore)*100) : null;
     const color = avgPct !== null ? (avgPct>=70?"#1D9E75":avgPct>=50?"#EF9F27":"#E24B4A") : "#9ca3af";
@@ -582,7 +559,6 @@ function renderSummary(topicStats, studentRows, rankMap, totalMax) {
     </div>`;
   }).join("");
 
-  // ── ส่วนที่ 2: ตารางรายนักเรียน ──
   const topicHeaders = topics.map(t =>
     `<th class="score-cell" title="${t.title}">${t.title}<br><span style="font-weight:400;font-size:9px;">(/${t.maxScore})</span></th>`
   ).join("");
@@ -616,7 +592,6 @@ function renderSummary(topicStats, studentRows, rankMap, totalMax) {
     </tr>`;
   }).join("");
 
-  // แถวสถิติท้าย
   const statCells = topics.map(t => {
     const avg = topicStats.find(x=>x.id===t.id)?.avg;
     return `<td class="score-cell val">${avg !== null && avg !== undefined ? avg.toFixed(1) : "—"}</td>`;
@@ -631,7 +606,6 @@ function renderSummary(topicStats, studentRows, rankMap, totalMax) {
       ภาพรวมแต่ละหัวข้อ
     </div>
     <div class="summary-overview">${overviewCards}</div>
-
     <div class="summary-section-title" style="margin-top:24px;">
       <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
       ตารางคะแนนรายนักเรียน
@@ -661,7 +635,6 @@ function renderSummary(topicStats, studentRows, rankMap, totalMax) {
     </div>`;
 }
 
-// ─── SCORE TABLE ──────────────────────────────────
 function getGrade(score, max) {
   const pct = (score / max) * 100;
   if (pct >= 95) return {label:"A+", cls:"g-aplus"};
