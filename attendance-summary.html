@@ -951,6 +951,9 @@ function countFromRecords(records, status) {
 }
 
 function renderGrid(year, mon, daysInMonth) {
+  // ✅ ประกาศ _stLabel ครั้งเดียวที่นี่ ที่ต้นฟังก์ชัน
+  const _stLabel = { present:"มาเรียน", late:"สาย", absent:"ขาด", ghost:"ไม่มีตัวตน" };
+
   const isAdmin = userRole === "admin";
   const today   = new Date().toISOString().split("T")[0];
   const days    = [];
@@ -1021,7 +1024,6 @@ function renderGrid(year, mon, daysInMonth) {
         if (l) dayLate[dateStr]=(dayLate[dateStr]||0)+1;
         if (a) dayAbsent[dateStr]=(dayAbsent[dateStr]||0)+1;
         const _subMap = window.__subjectMap || {};
-        const _stLabel = { present:"มาเรียน", late:"สาย", absent:"ขาด", ghost:"ไม่มีตัวตน" };
         const tooltip = recs.length === 0
           ? "ไม่มีข้อมูล"
           : recs.map(r => (_subMap[r.subjectId] || r.subjectId || "ไม่ระบุวิชา") + " → " + (_stLabel[r.status] || r.status || "—") + (r.note ? ` (${r.note})` : "")).join("\n");
@@ -1066,9 +1068,6 @@ function renderGrid(year, mon, daysInMonth) {
       ${cells}${sumP}${sumL}${sumA}${sumPct}
     </tr>`;
   });
-
-  // status label map for tooltip
-  const _stLabel = { present:"มาเรียน", late:"สาย", absent:"ขาด", ghost:"ไม่มีตัวตน" };
 
   let footerCells = "";
   days.forEach(({dateStr}) => {
@@ -1405,7 +1404,6 @@ window.mpSelectSubject = function(subjectId, docId) {
   const subMap = window.__subjectMap || {};
   const sName = subMap[subjectId] || subjectId || "ไม่ระบุวิชา";
 
-  // check if has existing status to show note button
   const recs = attMap[_mpState.dateStr]?.[_mpState.studentId];
   const recArr = Array.isArray(recs) ? recs : (recs ? [recs] : []);
   const existingRec = recArr.find(r => r.subjectId === subjectId);
@@ -1413,7 +1411,6 @@ window.mpSelectSubject = function(subjectId, docId) {
 
   document.getElementById("mpEditingSubj").innerHTML = `แก้ไข: <strong>${sName}</strong>`;
 
-  // inject note button into step2 if has status
   const noteRow = document.getElementById("mpNoteRow");
   if (noteRow) noteRow.remove();
   if (hasStatus) {
@@ -1470,7 +1467,7 @@ window.mpApplyStatus = async function(newStatus) {
         subjectId: selectedSubjectId,
         date: dateStr,
         status: newStatus,
-        note: existingNote, // คงหมายเหตุเดิมไว้
+        note: existingNote,
         savedAt: new Date().toISOString()
       });
       if (!attMap[dateStr]) attMap[dateStr] = {};
@@ -1511,7 +1508,6 @@ window.openPopup = function(td, event) {
   document.getElementById("popupDate").textContent = `${dd}/${dm}/${parseInt(dy)+543}`;
   document.getElementById("popupSaving").style.display = "none";
 
-  // แสดงปุ่มหมายเหตุเฉพาะเมื่อมีสถานะอยู่แล้ว
   const existingRec = attMap[td.dataset.date]?.[td.dataset.sid];
   const hasStatus   = existingRec?.status && existingRec.status !== "ghost";
   const noteBtn     = document.getElementById("popupNoteBtn");
@@ -1576,7 +1572,7 @@ window.applyStatus = async function(newStatus) {
         subjectId: subjectId||"",
         date: dateStr,
         status: newStatus,
-        note: existingNote, // คงหมายเหตุเดิมไว้
+        note: existingNote,
         savedAt: new Date().toISOString()
       });
       if (!attMap[dateStr]) attMap[dateStr] = {};
@@ -1633,7 +1629,6 @@ function openNotePopup(studentId, dateStr, subjectId, classId, studentName, docI
   setTimeout(() => document.getElementById("notePopupTextarea").focus(), 50);
 }
 
-// เปิด note popup จาก status popup (single subject)
 window.openNoteFromStatusPopup = function() {
   const { studentId, dateStr, subjectId, classId, studentName, tdEl } = _popup;
   const rec = attMap[dateStr]?.[studentId];
@@ -1642,11 +1637,9 @@ window.openNoteFromStatusPopup = function() {
   openNotePopup(studentId, dateStr, subjectId, classId, studentName, rec.docId||null, rec.note||"", tdEl);
 };
 
-// เปิด note popup จาก multi popup
 function openNoteFromMultiPopup(subjectId, docId, existingRec) {
   const { studentId, dateStr, classId, studentName } = _mpState;
   closeMultiPopup();
-  // หา td element
   const td = document.querySelector(`td.cell[data-sid="${studentId}"][data-date="${dateStr}"]`);
   openNotePopup(studentId, dateStr, subjectId, classId, studentName, docId||null, existingRec?.note||"", td);
 }
@@ -1663,7 +1656,6 @@ window.saveNoteText = async function(noteText) {
   document.getElementById("noteSaving").style.display = "block";
 
   try {
-    // หา record ปัจจุบัน
     const multiMode = window.__multiMode || false;
     let targetDocId = docId;
     let currentStatus = null;
@@ -1682,10 +1674,8 @@ window.saveNoteText = async function(noteText) {
       targetDocId = targetDocId || rec.docId || `${classId}_${subjectId||"none"}_${dateStr}_${studentId}`;
     }
 
-    // อัพเดทเฉพาะ field note (merge)
     await setDoc(doc(db, "attendance", targetDocId), { note }, { merge: true });
 
-    // อัพเดท attMap
     if (multiMode) {
       const recs = attMap[dateStr]?.[studentId];
       const recArr = Array.isArray(recs) ? recs : (recs ? [recs] : []);
@@ -1728,7 +1718,6 @@ document.addEventListener("keydown", e => {
     document.getElementById("multiPopup")?.classList.remove("open");
     document.getElementById("notePopup")?.classList.remove("open");
   }
-  // Ctrl+Enter บันทึกหมายเหตุ
   if ((e.ctrlKey || e.metaKey) && e.key==="Enter") {
     const npop = document.getElementById("notePopup");
     if (npop?.classList.contains("open")) {
