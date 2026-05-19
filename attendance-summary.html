@@ -281,11 +281,40 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
   .metrics{grid-template-columns:repeat(2,1fr);gap:8px;}
   .metric-val{font-size:20px;}
   .btn{padding:7px 12px;font-size:12px;}
+
+  /* page-header: stack title + buttons */
+  .page-header{flex-direction:column;align-items:flex-start;gap:8px;}
+  .page-header > div{width:100%;display:flex;flex-wrap:wrap;gap:6px;}
+  .page-header .btn{flex:1;min-width:120px;justify-content:center;}
+
+  /* filters stack */
+  .filters{flex-direction:column;align-items:stretch;}
+  .fgroup select,.fgroup input[type="month"]{width:100%;height:42px;font-size:14px;}
+
+  /* table toolbar */
+  .table-header{flex-direction:column;align-items:flex-start;gap:8px;}
+  .table-header > div{display:flex;flex-wrap:wrap;gap:6px;width:100%;}
+  .table-header .btn{flex:1;min-width:100px;justify-content:center;}
+
+  /* legend wrap */
+  .legend{gap:8px;}
 }
 @media(max-width:480px){
   .topbar{padding:0 12px;}
   .brand-name{display:none;}
   .topbar-right .btn-logout{display:none;}
+  .role-badge{display:none;}
+
+  .main{padding:10px;}
+  .page-title{font-size:16px;}
+
+  /* metrics: 2 col compact */
+  .metrics{gap:6px;}
+  .metric{padding:10px 12px;}
+  .metric-val{font-size:18px;}
+
+  /* default-bar wrap */
+  .default-bar{flex-wrap:wrap;gap:6px;}
 }
 </style>
 </head>
