@@ -24,6 +24,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min
 .role-admin{background:#fef2f2;color:#b91c1c;}.role-user{background:#f0fdf4;color:#166534;}
 .btn-logout{padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:transparent;font-family:'Sarabun',sans-serif;font-size:13px;color:var(--muted);cursor:pointer;}
 .btn-logout:hover{background:var(--bg);}
+.brand-name-hide{}
 .hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:6px;border:none;background:transparent;margin-right:4px;}
 .hamburger span{display:block;width:22px;height:2px;background:var(--text);border-radius:2px;transition:.25s;}
 .hamburger.open span:nth-child(1){transform:rotate(45deg) translate(5px,5px);}
@@ -122,16 +123,45 @@ tr:hover td{background:#fafafa;}
   .sidebar{transform:translateX(-100%);z-index:160;transition:transform .25s ease;}
   .sidebar.mobile-open{transform:translateX(0);}
   .hamburger{display:flex;}
-  .main{margin-left:0!important;grid-template-columns:1fr;}
+  .main{margin-left:0!important;padding:14px;grid-template-columns:1fr;}
   .rounds-panel{position:static;}
   .topbar-username{display:none;}
+  .brand-name-hide{display:none;}
   .page-title{font-size:17px!important;}
+
+  /* filters stack */
+  .filters{flex-direction:column;gap:10px;align-items:stretch;}
+  .fgroup select,.fgroup input{width:100%;height:42px;font-size:14px;}
+
+  /* page-header stack */
+  .page-header{flex-direction:column;align-items:flex-start;}
+  .page-header .btn{width:100%;justify-content:center;}
+
+  /* metrics 2-col */
+  .metrics-row{grid-template-columns:1fr 1fr;}
+
+  /* modal full-width */
+  .modal{width:92vw;padding:20px 16px;}
+  .form-row{grid-template-columns:1fr;}
 }
 @media(max-width:480px){
   .topbar{padding:0 10px!important;}
   .btn-logout{display:none;}
   .role-badge{display:none;}
+
+  /* metrics: stack to 1 col on very small */
   .metrics-row{grid-template-columns:1fr 1fr;}
+  .m-val{font-size:20px;}
+
+  /* table: compact */
+  table{font-size:12px;}
+  th,td{padding:8px 8px;}
+
+  /* rounds panel header buttons */
+  .rounds-head{flex-wrap:wrap;gap:6px;}
+
+  /* expense action buttons */
+  .card-head{flex-wrap:wrap;gap:6px;}
 }
 </style>
 </head>
@@ -139,13 +169,15 @@ tr:hover td{background:#fafafa;}
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="_closeSidebar()"></div>
 
 <header class="topbar">
-  <a href="dashboard.html" class="brand">
+  <div style="display:flex;align-items:center;gap:4px;">
     <button class="hamburger" id="hamburgerBtn" onclick="_toggleSidebar()" aria-label="เมนู">
       <span></span><span></span><span></span>
     </button>
-    <div class="brand-dot"><svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg></div>
-    ระบบจัดการนักเรียน
-  </a>
+    <a href="dashboard.html" class="brand">
+      <div class="brand-dot"><svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg></div>
+      <span class="brand-name-hide">ระบบจัดการนักเรียน</span>
+    </a>
+  </div>
   <div class="topbar-right">
     <div class="user-info">
       <div class="avatar" id="avatarEl">?</div>
