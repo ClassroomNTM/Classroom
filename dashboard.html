@@ -109,11 +109,36 @@ tr:hover td { background:#fafafa; }
   .brand-name-hide{display:none;}
   .topbar-username{display:none;}
   .page-title{font-size:17px!important;}
+
+  /* metrics: 2×2 grid on tablet */
+  .metrics{grid-template-columns:repeat(2,1fr);}
+  /* charts: stack to 1 col */
+  .row2,.row3{grid-template-columns:1fr;}
+  /* chart height shorter on mobile */
+  .card canvas{height:160px!important;}
 }
 @media(max-width:480px){
   .topbar{padding:0 10px!important;}
   .btn-logout{display:none;}
   .role-badge{display:none;}
+
+  /* metrics: 2×2 stays but tighter padding */
+  .metrics{gap:8px;}
+  .metric{padding:10px 12px;}
+  .m-val{font-size:22px;}
+
+  /* main padding tighter */
+  .main{padding:14px 12px;}
+  .page-title{font-size:16px!important;}
+  .page-sub{font-size:12px;margin-bottom:14px;}
+
+  /* cards */
+  .card{padding:12px 14px;}
+  .row2,.row3{gap:10px;margin-bottom:10px;}
+
+  /* table: smaller font */
+  table{font-size:11px;}
+  th,td{padding:7px 8px;}
 }
 
 </style>
@@ -123,12 +148,17 @@ tr:hover td { background:#fafafa; }
 
 <!-- TOPBAR -->
 <header class="topbar">
-  <a href="dashboard.html" class="brand">
-    <div class="brand-dot">
-      <svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg>
-    </div>
-    ระบบจัดการนักเรียน
-  </a>
+  <div style="display:flex;align-items:center;gap:4px;">
+    <button class="hamburger" id="hamburger" onclick="_sidebarToggle()" aria-label="เมนู">
+      <span></span><span></span><span></span>
+    </button>
+    <a href="dashboard.html" class="brand">
+      <div class="brand-dot">
+        <svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg>
+      </div>
+      <span class="brand-name-hide">ระบบจัดการนักเรียน</span>
+    </a>
+  </div>
   <div class="topbar-right">
     <div class="user-info">
       <div class="avatar" id="avatarEl">?</div>
