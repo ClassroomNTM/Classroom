@@ -69,7 +69,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min
 .btn-success:hover{background:#dcfce7;}
 .btn-sm{padding:5px 10px;font-size:12px;}
 /* filters */
-.filters{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;align-items:flex-end;}
+.filters{display:flex;gap:12px;margin-bottom:0;flex-wrap:wrap;align-items:flex-end;}
 .fgroup{display:flex;flex-direction:column;gap:4px;}
 .flabel{font-size:11px;font-weight:500;color:var(--muted);}
 select,input[type="text"],input[type="number"],input[type="date"]{
@@ -103,13 +103,13 @@ tr:hover td{background:#fafafa;}
 .stu-cell{display:flex;align-items:center;gap:8px;}
 .stu-av{width:30px;height:30px;border-radius:50%;background:var(--blue-lt);color:var(--blue);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;}
 .stu-name{font-size:13px;font-weight:500;}
-.stu-num{font-size:11px;color:var(--muted);}
 /* chip */
 .chip{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:500;}
 .chip-green{background:#f0fdf4;color:#166534;}
 .chip-red{background:#fef2f2;color:#b91c1c;}
-.chip-amber{background:#fffbeb;color:#92400e;}
 .chip-gray{background:#f9fafb;color:#6b7280;border:1px solid #e5e7eb;}
+/* default class bar */
+.default-bar{display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
 /* modal */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:200;align-items:center;justify-content:center;}
 .modal-overlay.open{display:flex;}
@@ -222,12 +222,32 @@ tr:hover td{background:#fafafa;}
   <div class="content-area">
     <div class="page-header">
       <div class="page-title">เงินเก็บห้อง</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <div class="fgroup">
-          <div class="flabel">ห้องเรียน</div>
-          <select id="classSelect" onchange="onClassChange()" style="width:140px;">
-            <option value="">— เลือกห้อง —</option>
-          </select>
+    </div>
+
+    <!-- ── ตัวเลือกห้อง + ปุ่ม default ── -->
+    <div class="default-bar">
+      <div class="fgroup">
+        <div class="flabel">ห้องเรียน</div>
+        <select id="classSelect" onchange="onClassChange()" style="width:150px;">
+          <option value="">— เลือกห้อง —</option>
+        </select>
+      </div>
+      <!-- ปุ่มตั้งค่าเริ่มต้น -->
+      <div class="fgroup" style="justify-content:flex-end;">
+        <div class="flabel" style="visibility:hidden;">_</div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button class="btn btn-sm" id="setDefaultBtn" onclick="setDefaultClass()" title="ตั้งห้องนี้เป็นค่าเริ่มต้น">
+            <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            ตั้งเป็นค่าเริ่มต้น
+          </button>
+          <button class="btn btn-sm" id="clearDefaultBtn" onclick="clearDefaultClass()" style="display:none;" title="ล้างค่าเริ่มต้น">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            ล้างค่าเริ่มต้น
+          </button>
+          <span id="defaultIndicator" style="font-size:11px;color:var(--muted);display:none;align-items:center;gap:3px;">
+            <svg viewBox="0 0 24 24" style="width:11px;height:11px;stroke:#1D9E75;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;"><polyline points="20 6 9 17 4 12"/></svg>
+            ค่าเริ่มต้น
+          </span>
         </div>
       </div>
     </div>
@@ -247,9 +267,7 @@ tr:hover td{background:#fafafa;}
     <div class="modal-title" id="roundModalTitle">เพิ่มรอบการเก็บเงิน</div>
     <div class="form-group" id="roundClassGroup">
       <label class="form-label">ห้องเรียน</label>
-      <select id="roundClassSelect" style="width:100%;">
-        <option value="">— เลือกห้อง —</option>
-      </select>
+      <select id="roundClassSelect" style="width:100%;"></select>
     </div>
     <div class="form-group">
       <label class="form-label">ชื่อรายการ</label>
@@ -339,39 +357,107 @@ tr:hover td{background:#fafafa;}
 <script type="module">
 import { initAuth, doLogout, db } from "./auth-guard.js";
 import {
-  collection, doc, getDocs, getDoc, setDoc, addDoc, deleteDoc, updateDoc,
-  query, where, orderBy, serverTimestamp, Timestamp
+  collection, doc, getDocs, setDoc, addDoc, deleteDoc, updateDoc,
+  query, where, serverTimestamp, Timestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 window.doLogout = doLogout;
 
 let userRole = "";
+let currentUserId = "";
 let currentClassId = "";
 let currentRoundId = "";
-let students = [];       // รายชื่อนักเรียนในห้อง
-let payments = {};       // { studentId: { paid, paidDate, amount, note } }
-let expenses = [];       // รายจ่ายของ round นี้
-let rounds = [];         // รอบการเก็บเงินทั้งหมดของห้อง
+let students = [];
+let payments = {};
+let expenses = [];
+let rounds   = [];
+let savedDefaultClassId = "";
 
 // ── Cache ──────────────────────────────────────────────────────
 const CACHE_TTL = 30 * 60 * 1000;
-function cacheSet(k, v){ sessionStorage.setItem(k, JSON.stringify({ts:Date.now(),data:v})); }
+function cacheSet(k,v){ sessionStorage.setItem(k,JSON.stringify({ts:Date.now(),data:v})); }
 function cacheGet(k){
   try{ const o=JSON.parse(sessionStorage.getItem(k)||"null"); if(!o) return null;
     if(Date.now()-o.ts>CACHE_TTL){sessionStorage.removeItem(k);return null;} return o.data; }
   catch{ return null; }
 }
-function stuCacheSet(cid, v){ sessionStorage.setItem("stu_"+cid, JSON.stringify(v)); }
+function stuCacheSet(cid,v){ sessionStorage.setItem("stu_"+cid,JSON.stringify(v)); }
 function stuCacheGet(cid){ try{ const r=sessionStorage.getItem("stu_"+cid); return r?JSON.parse(r):null; }catch{return null;} }
 
 // ── Init ───────────────────────────────────────────────────────
-initAuth({ requireAdmin: true, onReady: async ({ role }) => {
+initAuth({ requireAdmin: true, onReady: async ({ role, uid }) => {
   userRole = role;
+  currentUserId = uid || "";
   document.getElementById("adminNavItem").style.display = "flex";
   document.getElementById("addRoundBtn").style.display = "inline-flex";
+
+  // โหลด default class จาก Firestore
+  if (currentUserId) {
+    try {
+      const prefSnap = await getDocs(query(collection(db,"userPrefs"), where("uid","==",currentUserId)));
+      if (!prefSnap.empty) {
+        savedDefaultClassId = prefSnap.docs[0].data().defaultClassId_fund || "";
+      }
+    } catch(e) { console.warn("load pref fund:", e); }
+  }
+
   await loadClasses();
+
+  // apply ค่าเริ่มต้น
+  const sel = document.getElementById("classSelect");
+  if (savedDefaultClassId && [...sel.options].some(o => o.value === savedDefaultClassId)) {
+    sel.value = savedDefaultClassId;
+    await onClassChange();
+  }
+  updateDefaultUI();
 }});
 
+// ── Default class ──────────────────────────────────────────────
+window.setDefaultClass = async function() {
+  if (!currentClassId) { showToast("กรุณาเลือกห้องเรียนก่อน","error"); return; }
+  if (!currentUserId)  { showToast("ไม่พบข้อมูลผู้ใช้","error"); return; }
+  try {
+    await setDoc(doc(db,"userPrefs",currentUserId), {
+      uid: currentUserId,
+      defaultClassId_fund: currentClassId,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    savedDefaultClassId = currentClassId;
+    showToast("ตั้งค่าเริ่มต้นเรียบร้อย ✓","success");
+    updateDefaultUI();
+  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
+};
+
+window.clearDefaultClass = async function() {
+  if (!currentUserId) return;
+  try {
+    await setDoc(doc(db,"userPrefs",currentUserId), {
+      defaultClassId_fund: "",
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    savedDefaultClassId = "";
+    showToast("ล้างค่าเริ่มต้นแล้ว","success");
+    updateDefaultUI();
+  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
+};
+
+function updateDefaultUI() {
+  const isDefault = savedDefaultClassId && savedDefaultClassId === currentClassId;
+  document.getElementById("clearDefaultBtn").style.display    = savedDefaultClassId ? "inline-flex" : "none";
+  document.getElementById("defaultIndicator").style.display   = isDefault ? "inline-flex" : "none";
+  const setBtn = document.getElementById("setDefaultBtn");
+  if (isDefault) {
+    setBtn.style.background = "#f0fdf4";
+    setBtn.style.color      = "#166534";
+    setBtn.style.borderColor= "#bbf7d0";
+  } else {
+    setBtn.style.background = "";
+    setBtn.style.color      = "";
+    setBtn.style.borderColor= "";
+  }
+}
+
+// ── Load classes ───────────────────────────────────────────────
 async function loadClasses(){
   let classes = cacheGet("classes");
   if(!classes){
@@ -399,11 +485,15 @@ function populateRoundClassSelect(selectedId){
   });
 }
 
+// ── onClassChange ──────────────────────────────────────────────
 window.onClassChange = async function(){
   currentClassId = document.getElementById("classSelect").value;
   currentRoundId = "";
-  if(!currentClassId){ document.getElementById("roundsList").innerHTML='<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">เลือกห้องเรียนก่อน</div>'; return; }
-  // load students
+  updateDefaultUI();
+  if(!currentClassId){
+    document.getElementById("roundsList").innerHTML='<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">เลือกห้องเรียนก่อน</div>';
+    return;
+  }
   let cached = stuCacheGet(currentClassId);
   if(!cached){
     const snap = await getDocs(query(collection(db,"students"), where("classId","==",currentClassId)));
@@ -416,10 +506,7 @@ window.onClassChange = async function(){
 
 // ── Rounds ─────────────────────────────────────────────────────
 async function loadRounds(){
-  const snap = await getDocs(query(
-    collection(db,"fundRounds"),
-    where("classId","==",currentClassId)
-  ));
+  const snap = await getDocs(query(collection(db,"fundRounds"), where("classId","==",currentClassId)));
   rounds = snap.docs.map(d=>({id:d.id,...d.data()}))
     .sort((a,b)=>{
       const ta = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
@@ -459,20 +546,14 @@ window.selectRound = async function(roundId){
 
 // ── Payments ───────────────────────────────────────────────────
 async function loadPayments(){
-  const snap = await getDocs(query(
-    collection(db,"fundPayments"),
-    where("roundId","==",currentRoundId)
-  ));
+  const snap = await getDocs(query(collection(db,"fundPayments"), where("roundId","==",currentRoundId)));
   payments = {};
   snap.docs.forEach(d=>{ const x=d.data(); payments[x.studentId]=x; });
 }
 
 // ── Expenses ───────────────────────────────────────────────────
 async function loadExpenses(){
-  const snap = await getDocs(query(
-    collection(db,"fundExpenses"),
-    where("roundId","==",currentRoundId)
-  ));
+  const snap = await getDocs(query(collection(db,"fundExpenses"), where("roundId","==",currentRoundId)));
   expenses = snap.docs.map(d=>({id:d.id,...d.data()}))
     .sort((a,b)=>{
       const ta = a.date?.toDate ? a.date.toDate().getTime() : (a.date ? new Date(a.date).getTime() : 0);
@@ -486,19 +567,18 @@ function renderAll(){
   const round = rounds.find(r=>r.id===currentRoundId);
   if(!round) return;
 
-  const totalIncome   = Object.values(payments).reduce((s,p)=>s+(p.amount||0),0);
-  const totalExpense  = expenses.reduce((s,e)=>s+(e.amount||0),0);
-  const balance       = totalIncome - totalExpense;
-  const paidCount     = Object.values(payments).filter(p=>p.paid).length;
-  const total         = students.length;
-  const pct           = total>0 ? Math.round((paidCount/total)*100) : 0;
+  const totalIncome  = Object.values(payments).reduce((s,p)=>s+(p.amount||0),0);
+  const totalExpense = expenses.reduce((s,e)=>s+(e.amount||0),0);
+  const balance      = totalIncome - totalExpense;
+  const paidCount    = Object.values(payments).filter(p=>p.paid).length;
+  const total        = students.length;
+  const pct          = total>0 ? Math.round((paidCount/total)*100) : 0;
 
   const dueStr = round.dueDate
     ? fmtDate(round.dueDate.toDate ? round.dueDate.toDate() : new Date(round.dueDate))
     : "—";
 
   document.getElementById("mainArea").innerHTML = `
-    <!-- round header -->
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
       <div>
         <div style="font-size:18px;font-weight:600;">${esc(round.name)}</div>
@@ -515,35 +595,24 @@ function renderAll(){
       </div>
     </div>
 
-    <!-- metrics -->
     <div class="metrics-row">
       <div class="metric">
-        <div class="m-label">
-          <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 110 20A10 10 0 0112 2zm0 6v4l3 1.5"/></svg>
-          ยอดคงเหลือ
-        </div>
+        <div class="m-label"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 110 20A10 10 0 0112 2zm0 6v4l3 1.5"/></svg>ยอดคงเหลือ</div>
         <div class="m-val ${balance>=0?'m-val-green':'m-val-red'}">฿${num(balance)}</div>
         <div class="m-sub">รับ − จ่าย</div>
       </div>
       <div class="metric">
-        <div class="m-label">
-          <svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-          รายรับรวม
-        </div>
+        <div class="m-label"><svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>รายรับรวม</div>
         <div class="m-val m-val-blue">฿${num(totalIncome)}</div>
         <div class="m-sub">${paidCount} / ${total} คน</div>
       </div>
       <div class="metric">
-        <div class="m-label">
-          <svg viewBox="0 0 24 24"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
-          รายจ่ายรวม
-        </div>
+        <div class="m-label"><svg viewBox="0 0 24 24"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>รายจ่ายรวม</div>
         <div class="m-val m-val-red">฿${num(totalExpense)}</div>
         <div class="m-sub">${expenses.length} รายการ</div>
       </div>
     </div>
 
-    <!-- progress -->
     <div class="prog-wrap">
       <div class="prog-label">
         <span>ความคืบหน้าการเก็บเงิน</span>
@@ -552,17 +621,14 @@ function renderAll(){
       <div class="prog-bg"><div class="prog-fill" style="width:${pct}%"></div></div>
     </div>
 
-    <!-- student payment table -->
     <div class="card" style="margin-bottom:20px;">
       <div class="card-head">
         <span>รายชื่อนักเรียน</span>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <select id="filterStatus" onchange="renderStudentRows()" style="height:32px;font-size:12px;width:130px;">
-            <option value="all">ทั้งหมด</option>
-            <option value="paid">จ่ายแล้ว</option>
-            <option value="unpaid">ยังไม่จ่าย</option>
-          </select>
-        </div>
+        <select id="filterStatus" onchange="renderStudentRows()" style="height:32px;font-size:12px;width:130px;">
+          <option value="all">ทั้งหมด</option>
+          <option value="paid">จ่ายแล้ว</option>
+          <option value="unpaid">ยังไม่จ่าย</option>
+        </select>
       </div>
       <div class="tbl-wrap">
         <table>
@@ -580,7 +646,6 @@ function renderAll(){
       </div>
     </div>
 
-    <!-- expenses -->
     <div class="expense-section">
       <div class="expense-head">
         <div class="expense-title">รายจ่าย</div>
@@ -598,8 +663,7 @@ function renderAll(){
           </table>
         </div>
       </div>
-    </div>
-  `;
+    </div>`;
 
   renderStudentRows();
   renderExpenseRows();
@@ -607,7 +671,7 @@ function renderAll(){
 
 window.renderStudentRows = function(){
   const filter = document.getElementById("filterStatus")?.value || "all";
-  const tbody = document.getElementById("studentRows");
+  const tbody  = document.getElementById("studentRows");
   if(!tbody) return;
   const round = rounds.find(r=>r.id===currentRoundId);
   if(!round) return;
@@ -620,7 +684,6 @@ window.renderStudentRows = function(){
     tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted);">ไม่มีรายการ</td></tr>`;
     return;
   }
-
   tbody.innerHTML = list.map(s=>{
     const p = payments[s.id];
     const paid = p?.paid;
@@ -630,16 +693,13 @@ window.renderStudentRows = function(){
     const initials = (s.name||"?").substring(0,2);
     const chipCls  = paid ? "chip chip-green" : "chip chip-red";
     const chipTxt  = paid ? "จ่ายแล้ว" : "ยังไม่จ่าย";
-
     const actionBtn = paid
       ? `<button class="btn btn-sm btn-danger" onclick="cancelPay('${s.id}')">ยกเลิก</button>`
       : `<button class="btn btn-sm btn-success" onclick="openPayModal('${s.id}','${esc(s.name)}',${round.amountPerPerson||0})">บันทึก</button>`;
-
     return `<tr>
       <td style="color:var(--muted);font-size:12px;">${s.number||"—"}</td>
       <td><div class="stu-cell"><div class="stu-av">${initials}</div><span class="stu-name">${esc(s.name)}</span></div></td>
-      <td>${amount}</td>
-      <td>${paidDate}</td>
+      <td>${amount}</td><td>${paidDate}</td>
       <td style="color:var(--muted);font-size:12px;">${note}</td>
       <td><span class="${chipCls}">${chipTxt}</span></td>
       <td>${actionBtn}</td>
@@ -657,20 +717,17 @@ function renderExpenseRows(){
   tbody.innerHTML = expenses.map(e=>{
     const dt = e.date ? fmtDate(e.date.toDate ? e.date.toDate() : new Date(e.date)) : "—";
     return `<tr>
-      <td>${dt}</td>
-      <td>${esc(e.name)}</td>
+      <td>${dt}</td><td>${esc(e.name)}</td>
       <td style="color:#b91c1c;">฿${num(e.amount)}</td>
       <td style="color:var(--muted);font-size:12px;">${e.note?esc(e.note):"—"}</td>
-      <td>
-        <div style="display:flex;gap:6px;">
-          <button class="btn btn-sm" onclick="openEditExpense('${e.id}')">
-            <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          </button>
-          <button class="btn btn-sm btn-danger" onclick="deleteExpense('${e.id}')">
-            <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-          </button>
-        </div>
-      </td>
+      <td><div style="display:flex;gap:6px;">
+        <button class="btn btn-sm" onclick="openEditExpense('${e.id}')">
+          <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="btn btn-sm btn-danger" onclick="deleteExpense('${e.id}')">
+          <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+        </button>
+      </div></td>
     </tr>`;
   }).join("");
 }
@@ -688,8 +745,7 @@ window.openAddRound = function(){
   document.getElementById("roundModal").classList.add("open");
 };
 window.openEditRound = function(id){
-  const r = rounds.find(x=>x.id===id);
-  if(!r) return;
+  const r = rounds.find(x=>x.id===id); if(!r) return;
   document.getElementById("roundModalTitle").textContent = "แก้ไขรอบการเก็บเงิน";
   document.getElementById("roundName").value = r.name||"";
   document.getElementById("roundAmount").value = r.amountPerPerson||"";
@@ -699,7 +755,7 @@ window.openEditRound = function(id){
   document.getElementById("roundNote").value = r.note||"";
   document.getElementById("editRoundId").value = id;
   populateRoundClassSelect(r.classId || currentClassId);
-  document.getElementById("roundClassGroup").style.display = "none"; // แก้ไขไม่ให้เปลี่ยนห้อง
+  document.getElementById("roundClassGroup").style.display = "none";
   document.getElementById("roundModal").classList.add("open");
 };
 window.closeRoundModal = function(){ document.getElementById("roundModal").classList.remove("open"); };
@@ -709,7 +765,6 @@ window.saveRound = async function(){
   const due    = document.getElementById("roundDue").value;
   const note   = document.getElementById("roundNote").value.trim();
   const editId = document.getElementById("editRoundId").value;
-  // ใช้ห้องจาก modal select (กรณีไม่ได้เลือกไว้ก่อน) หรือจาก currentClassId
   const selectedClass = document.getElementById("roundClassSelect").value || currentClassId;
   if(!name){ showToast("กรุณาระบุชื่อรายการ","error"); return; }
   if(!selectedClass){ showToast("กรุณาเลือกห้องเรียน","error"); return; }
@@ -725,13 +780,11 @@ window.saveRound = async function(){
       payload.createdAt = serverTimestamp();
       await addDoc(collection(db,"fundRounds"), payload);
       showToast("เพิ่มรอบการเก็บเงินแล้ว","success");
-      // ถ้าผู้ใช้เพิ่งเลือกห้องใน modal → sync กลับ dropdown หลัก
       if(!currentClassId && selectedClass){
         const sel = document.getElementById("classSelect");
         sel.value = selectedClass;
         await onClassChange();
-        closeRoundModal();
-        return;
+        closeRoundModal(); return;
       }
     }
     closeRoundModal();
@@ -741,10 +794,9 @@ window.saveRound = async function(){
 window.deleteRound = async function(id){
   if(!confirm("ลบรอบการเก็บเงินนี้? (ข้อมูลการจ่ายและรายจ่ายทั้งหมดจะหายไป)")) return;
   try{
-    // delete payments & expenses
     const pSnap = await getDocs(query(collection(db,"fundPayments"), where("roundId","==",id)));
     const eSnap = await getDocs(query(collection(db,"fundExpenses"), where("roundId","==",id)));
-    await Promise.all([...pSnap.docs.map(d=>deleteDoc(d.ref)), ...eSnap.docs.map(d=>deleteDoc(d.ref))]);
+    await Promise.all([...pSnap.docs.map(d=>deleteDoc(d.ref)),...eSnap.docs.map(d=>deleteDoc(d.ref))]);
     await deleteDoc(doc(db,"fundRounds",id));
     showToast("ลบแล้ว","success");
     await loadRounds();
@@ -776,18 +828,15 @@ window.savePay = async function(){
       note, updatedAt: serverTimestamp()
     });
     payments[studentId] = { paid:true, amount, paidDate: Timestamp.fromDate(new Date(dateVal)), note };
-    closePayModal();
-    renderAll();
+    closePayModal(); renderAll();
     showToast("บันทึกการจ่ายเงินแล้ว","success");
   }catch(e){ showToast("เกิดข้อผิดพลาด","error"); console.error(e); }
 };
 window.cancelPay = async function(studentId){
   if(!confirm("ยกเลิกการจ่ายเงินของนักเรียนคนนี้?")) return;
   try{
-    const docId = `${currentRoundId}_${studentId}`;
-    await deleteDoc(doc(db,"fundPayments",docId));
-    delete payments[studentId];
-    renderAll();
+    await deleteDoc(doc(db,"fundPayments",`${currentRoundId}_${studentId}`));
+    delete payments[studentId]; renderAll();
     showToast("ยกเลิกแล้ว","success");
   }catch(e){ showToast("เกิดข้อผิดพลาด","error"); console.error(e); }
 };
@@ -803,8 +852,7 @@ window.openAddExpense = function(){
   document.getElementById("expenseModal").classList.add("open");
 };
 window.openEditExpense = function(id){
-  const e = expenses.find(x=>x.id===id);
-  if(!e) return;
+  const e = expenses.find(x=>x.id===id); if(!e) return;
   document.getElementById("expenseModalTitle").textContent = "แก้ไขรายจ่าย";
   document.getElementById("expenseName").value = e.name||"";
   document.getElementById("expenseAmount").value = e.amount||"";
@@ -826,31 +874,26 @@ window.saveExpense = async function(){
   if(!currentRoundId){ showToast("กรุณาเลือกรอบการเก็บเงินก่อน","error"); return; }
   try{
     if(editId){
-      const payload = { name, amount, note,
-        date: dateV ? Timestamp.fromDate(new Date(dateV)) : serverTimestamp(),
-      };
-      await updateDoc(doc(db,"fundExpenses",editId), payload);
+      await updateDoc(doc(db,"fundExpenses",editId), { name, amount, note,
+        date: dateV ? Timestamp.fromDate(new Date(dateV)) : serverTimestamp() });
       showToast("อัปเดตแล้ว","success");
     } else {
-      const payload = {
+      await addDoc(collection(db,"fundExpenses"), {
         name, amount, note, roundId: currentRoundId, classId: currentClassId,
         date: dateV ? Timestamp.fromDate(new Date(dateV)) : serverTimestamp(),
-        createdAt: serverTimestamp(),
-      };
-      await addDoc(collection(db,"fundExpenses"), payload);
+        createdAt: serverTimestamp()
+      });
       showToast("เพิ่มรายจ่ายแล้ว","success");
     }
     closeExpenseModal();
-    await loadExpenses();
-    renderAll();
+    await loadExpenses(); renderAll();
   }catch(e){ showToast("เกิดข้อผิดพลาด: "+e.message,"error"); console.error(e); }
 };
 window.deleteExpense = async function(id){
   if(!confirm("ลบรายจ่ายนี้?")) return;
   try{
     await deleteDoc(doc(db,"fundExpenses",id));
-    expenses = expenses.filter(e=>e.id!==id);
-    renderAll();
+    expenses = expenses.filter(e=>e.id!==id); renderAll();
     showToast("ลบแล้ว","success");
   }catch(e){ showToast("เกิดข้อผิดพลาด","error"); console.error(e); }
 };
@@ -877,13 +920,12 @@ function fmtDate(d){
   const months=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()+543}`;
 }
-
 let toastTimer;
-function showToast(msg, type="success"){
+function showToast(msg,type="success"){
   const el=document.getElementById("toast");
   el.textContent=msg; el.className="show "+type;
   clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>{ el.className=""; }, 3000);
+  toastTimer=setTimeout(()=>{ el.className=""; },3000);
 }
 </script>
 </body>
