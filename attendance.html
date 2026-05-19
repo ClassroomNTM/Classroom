@@ -70,6 +70,8 @@ tr:last-child td{border-bottom:none;}
 #toast.success{background:#052e16;color:#86efac;}
 #toast.error{background:#450a0a;color:#fca5a5;}
 .readonly-banner{background:#fffbeb;border:1px solid #fde68a;color:#92400e;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:16px;display:none;}
+.default-bar{display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
+.btn-sm{padding:5px 10px;font-size:12px;}
 .ghost-name-att{color:#b91c1c;text-decoration:line-through;font-style:italic;}
 .ghost-tag-att{background:#fef2f2;color:#b91c1c;padding:2px 6px;border-radius:99px;font-size:10px;font-weight:500;margin-left:5px;}
 .hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:6px;border:none;background:transparent;margin-right:4px;}
@@ -153,6 +155,21 @@ tr:last-child td{border-bottom:none;}
     <strong>โหมดดูอย่างเดียว:</strong> คุณไม่มีสิทธิ์แก้ไขข้อมูล กรุณาติดต่อ Admin
   </div>
 
+  <div class="default-bar" id="defaultBar" style="display:none;">
+    <button class="btn btn-sm" id="setDefaultBtn" onclick="setDefaultClass()" title="ตั้งห้องนี้เป็นค่าเริ่มต้น">
+      <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      ตั้งเป็นค่าเริ่มต้น
+    </button>
+    <button class="btn btn-sm" id="clearDefaultBtn" onclick="clearDefaultClass()" style="display:none;" title="ล้างค่าเริ่มต้น">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      ล้างค่าเริ่มต้น
+    </button>
+    <span id="defaultIndicator" style="font-size:11px;color:var(--muted);display:none;align-items:center;gap:3px;">
+      <svg viewBox="0 0 24 24" style="width:11px;height:11px;stroke:#1D9E75;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;"><polyline points="20 6 9 17 4 12"/></svg>
+      ค่าเริ่มต้น
+    </span>
+  </div>
+
   <div class="filters">
     <div class="fgroup">
       <div class="flabel">วิชา</div>
@@ -162,7 +179,7 @@ tr:last-child td{border-bottom:none;}
     </div>
     <div class="fgroup">
       <div class="flabel">ชั้นเรียน</div>
-      <select id="classSelect" onchange="loadStudents()">
+      <select id="classSelect" onchange="updateDefaultUI();loadStudents()">
         <option value="">— เลือกชั้น —</option>
       </select>
     </div>
@@ -206,13 +223,15 @@ tr:last-child td{border-bottom:none;}
 
 <script type="module">
 import { initAuth, doLogout, db } from "./auth-guard.js";
-import { collection, getDocs, doc, setDoc, query, where, updateDoc }
+import { collection, getDocs, doc, setDoc, getDoc, query, where, updateDoc, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 window.__db = db;
 window.doLogout = doLogout;
 
 let userRole   = "user";
+let currentUserId = "";
+let savedDefaultClassId = "";
 let students   = [];
 let attendance = {};
 window.attendance = attendance; // expose for inline oninput handlers
@@ -250,12 +269,32 @@ function studentsCacheGet(classId) {
 }
 
 // ─── init ─────────────────────────────────────────────────────
-initAuth({ requireAdmin: true, onReady: async ({ role }) => {
+initAuth({ requireAdmin: true, onReady: async ({ role, user }) => {
   userRole = role;
+  currentUserId = user?.uid || "";
   document.getElementById("adminNavItem").style.display = "flex";
   document.getElementById("saveBtn").style.display = "inline-flex";
+
+  // โหลด default class จาก Firestore
+  if (currentUserId) {
+    try {
+      const prefSnap = await getDoc(doc(db, "userPrefs", currentUserId));
+      if (prefSnap.exists()) {
+        savedDefaultClassId = prefSnap.data().defaultClassId_attendance || "";
+      }
+    } catch(e) { console.warn("load pref attendance:", e); }
+  }
+
   await loadSubjects();
   await loadClasses();
+
+  // apply ค่าเริ่มต้น
+  const sel = document.getElementById("classSelect");
+  if (savedDefaultClassId && [...sel.options].some(o => o.value === savedDefaultClassId)) {
+    sel.value = savedDefaultClassId;
+  }
+  document.getElementById("defaultBar").style.display = "flex";
+  updateDefaultUI();
   window.loadStudents();
 }});
 
@@ -305,7 +344,53 @@ async function loadClasses() {
   if (classes.length > 0) sel.value = classes[0].id;
 }
 
-// ─── loadStudents ─────────────────────────────────────────────
+// ─── Default Class ────────────────────────────────────────────
+window.setDefaultClass = async function() {
+  const classId = document.getElementById("classSelect").value;
+  if (!classId) { showToast("กรุณาเลือกห้องเรียนก่อน","error"); return; }
+  if (!currentUserId) { showToast("ไม่พบข้อมูลผู้ใช้","error"); return; }
+  try {
+    await setDoc(doc(db,"userPrefs",currentUserId), {
+      uid: currentUserId,
+      defaultClassId_attendance: classId,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    savedDefaultClassId = classId;
+    showToast("ตั้งค่าเริ่มต้นเรียบร้อย ✓","success");
+    updateDefaultUI();
+  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
+};
+
+window.clearDefaultClass = async function() {
+  if (!currentUserId) return;
+  try {
+    await setDoc(doc(db,"userPrefs",currentUserId), {
+      defaultClassId_attendance: "",
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    savedDefaultClassId = "";
+    showToast("ล้างค่าเริ่มต้นแล้ว","success");
+    updateDefaultUI();
+  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
+};
+
+function updateDefaultUI() {
+  const currentClassId = document.getElementById("classSelect").value;
+  const isDefault = savedDefaultClassId && savedDefaultClassId === currentClassId;
+  document.getElementById("clearDefaultBtn").style.display  = savedDefaultClassId ? "inline-flex" : "none";
+  document.getElementById("defaultIndicator").style.display = isDefault ? "inline-flex" : "none";
+  const setBtn = document.getElementById("setDefaultBtn");
+  if (isDefault) {
+    setBtn.style.background  = "#f0fdf4";
+    setBtn.style.color       = "#166534";
+    setBtn.style.borderColor = "#bbf7d0";
+  } else {
+    setBtn.style.background  = "";
+    setBtn.style.color       = "";
+    setBtn.style.borderColor = "";
+  }
+}
+window.updateDefaultUI = updateDefaultUI;
 window.loadStudents = async function() {
   const classId   = document.getElementById("classSelect").value;
   const subjectId = document.getElementById("subjectSelect").value;
