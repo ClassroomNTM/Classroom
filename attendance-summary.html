@@ -14,6 +14,7 @@
   --present:#1D9E75;--present-lt:#e1f5ee;
   --late:#EF9F27;--late-lt:#faeeda;
   --absent:#E24B4A;--absent-lt:#fef2f2;
+  --leave:#8B5CF6;--leave-lt:#f3f0ff;
   --ghost:#9ca3af;--ghost-lt:#f3f4f6;
 }
 body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
@@ -98,7 +99,6 @@ select:focus,input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,5
 .th-dayname{background:#fafaf8;font-size:10px;color:var(--muted);padding:4px 2px;}
 .th-daynum{background:#fafaf8;font-size:11px;font-weight:600;color:var(--text);padding:4px 2px;}
 .th-name{background:#f8f8f6;padding:8px 10px;text-align:left;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.05em;}
-/* ── DAY COLOR VARS (set by JS from localStorage) ── */
 :root{
   --dc-sun-h:#fde0e0;--dc-sun-t:#b91c1c;--dc-sun-c:#fff0f0;
   --dc-mon-h:#fffde7;--dc-mon-t:#b45309;--dc-mon-c:#fffef5;
@@ -135,7 +135,7 @@ td.cell.col-sat{background:var(--dc-sat-c)!important;}
 .col-today.th-daynum{color:var(--dc-today-t)!important;background:var(--dc-today-h)!important;font-weight:800!important;outline:2px solid var(--dc-today-h);outline-offset:-1px;}
 td.cell.col-today{outline:1px solid var(--dc-today-h);outline-offset:-1px;}
 
-/* ── FOCUS CELL (Excel style) ── */
+/* ── FOCUS CELL ── */
 .att-table tr.focus-row td:not(.cell-name):not(.cell-no){background-color:var(--dc-focus-row)!important;}
 .att-table td.focus-col{background-color:var(--dc-focus-col)!important;}
 .att-table td.focus-cell{outline:2px solid var(--dc-focus)!important;outline-offset:-2px;background:rgba(37,99,235,0.13)!important;z-index:3;position:relative;}
@@ -179,22 +179,27 @@ td.cell-no{padding:6px 4px;background:#fafafa;color:var(--muted);font-size:11px;
 tr.ghost-row td{background:#f9f9f9!important;opacity:.7;}
 tr.ghost-row td.cell-name{color:#9ca3af;}
 .ghost-strikethrough{text-decoration:line-through;color:#b91c1c;}
-.dot{display:inline-flex;width:22px;height:22px;border-radius:4px;align-items:center;justify-content:center;font-size:11px;font-weight:700;transition:transform .1s,box-shadow .1s;}
+.dot{display:inline-flex;width:22px;height:22px;border-radius:4px;align-items:center;justify-content:center;font-size:11px;font-weight:700;transition:transform .1s,box-shadow .1s;position:relative;}
 .dot-present{background:var(--present-lt);color:var(--present);}
 .dot-late{background:var(--late-lt);color:var(--late);}
 .dot-absent{background:var(--absent-lt);color:var(--absent);}
+.dot-leave{background:var(--leave-lt);color:var(--leave);}
 .dot-ghost{background:var(--ghost-lt);color:var(--ghost);}
 .dot-empty{background:#f3f4f6;color:#d1d5db;}
+/* note indicator */
+.dot-has-note::after{content:'';position:absolute;top:1px;right:1px;width:5px;height:5px;border-radius:50%;background:#f59e0b;border:1px solid white;}
 td.cell.editable{cursor:pointer;}
 td.cell.editable:hover .dot{transform:scale(1.18);box-shadow:0 2px 8px rgba(0,0,0,0.15);}
 td.sum-present{background:#e1f5ee;color:#0F6E56;font-weight:600;}
 td.sum-late{background:#faeeda;color:#854F0B;font-weight:600;}
 td.sum-absent{background:#fef2f2;color:#A32D2D;font-weight:600;}
+td.sum-leave{background:var(--leave-lt);color:#5b21b6;font-weight:600;}
 td.sum-pct{background:#eff6ff;color:#185FA5;font-weight:600;}
 tr.footer-row td{background:#f3f4f6;font-weight:600;font-size:11px;color:var(--muted);}
 tr.footer-row td.f-present{background:#e1f5ee;color:#0F6E56;}
 tr.footer-row td.f-late{background:#faeeda;color:#854F0B;}
 tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
+tr.footer-row td.f-leave{background:var(--leave-lt);color:#5b21b6;}
 .pct-bar{height:3px;background:#e5e7eb;border-radius:99px;margin-top:3px;overflow:hidden;}
 .pct-fill{height:100%;border-radius:99px;background:var(--present);}
 .pct-fill.low{background:var(--absent);}
@@ -212,7 +217,6 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
 .multi-subj-name{font-size:12px;font-weight:500;color:var(--text);flex:1;}
 .multi-subj-status{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;padding:2px 8px;border-radius:99px;}
 .multi-subj-edit-icon{font-size:11px;color:var(--muted);opacity:.6;}
-/* step 2 — เลือกสถานะ */
 .multi-step2{display:none;flex-direction:column;gap:4px;}
 .multi-step2.open{display:flex;}
 .multi-back-btn{display:flex;align-items:center;gap:5px;padding:4px 6px;border:none;background:transparent;font-family:'Sarabun',sans-serif;font-size:12px;color:var(--muted);cursor:pointer;border-radius:6px;margin-bottom:2px;}
@@ -221,7 +225,7 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
 .multi-editing-subj strong{color:var(--text);}
 
 /* ── STATUS POPUP ── */
-.status-popup{position:fixed;z-index:500;background:white;border:1px solid var(--border);border-radius:12px;padding:12px;box-shadow:0 8px 30px rgba(0,0,0,0.16);display:none;flex-direction:column;gap:5px;min-width:160px;}
+.status-popup{position:fixed;z-index:500;background:white;border:1px solid var(--border);border-radius:12px;padding:12px;box-shadow:0 8px 30px rgba(0,0,0,0.16);display:none;flex-direction:column;gap:5px;min-width:200px;max-width:260px;}
 .status-popup.open{display:flex;}
 .popup-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;padding-bottom:8px;border-bottom:1px solid var(--border);}
 .popup-name{font-size:13px;font-weight:600;color:var(--text);line-height:1.3;flex:1;}
@@ -233,9 +237,27 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
 .popup-btn.p-present{background:#f0fdf4;color:#166534;}
 .popup-btn.p-late   {background:#fffbeb;color:#92400e;}
 .popup-btn.p-absent {background:#fef2f2;color:#b91c1c;}
+.popup-btn.p-leave  {background:var(--leave-lt);color:#5b21b6;}
 .popup-btn.p-ghost  {background:#f3f4f6;color:#6b7280;}
 .popup-btn.p-clear  {background:#f9fafb;color:#9ca3af;border:1px solid #e5e7eb;font-size:12px;}
+
+/* ── NOTE SECTION inside popup ── */
+.note-section{margin-top:4px;padding-top:8px;border-top:1px solid var(--border);}
+.note-label{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;display:flex;align-items:center;gap:5px;}
+.note-label svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.note-textarea{width:100%;min-height:58px;border:1px solid var(--border);border-radius:8px;padding:7px 9px;font-family:'Sarabun',sans-serif;font-size:12px;color:var(--text);resize:vertical;outline:none;line-height:1.5;transition:border-color .15s;}
+.note-textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.07);}
+.note-save-row{display:flex;gap:6px;margin-top:6px;}
+.note-save-btn{flex:1;padding:6px 10px;border:none;border-radius:7px;background:var(--blue);color:white;font-family:'Sarabun',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:background .12s;}
+.note-save-btn:hover{background:#0a2847;}
+.note-clear-btn{padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:transparent;font-family:'Sarabun',sans-serif;font-size:12px;color:var(--muted);cursor:pointer;}
+.note-clear-btn:hover{background:var(--bg);}
+/* note indicator in cell tooltip */
+.note-chip{display:inline-flex;align-items:center;gap:3px;font-size:10px;background:#fef3c7;color:#92400e;padding:1px 5px;border-radius:4px;margin-left:3px;vertical-align:middle;}
+
 .popup-saving{font-size:11px;color:var(--muted);text-align:center;padding:4px;display:none;}
+.popup-current-note{font-size:11px;color:var(--muted);padding:4px 6px;background:#fafaf8;border-radius:6px;margin-top:2px;line-height:1.5;display:none;}
+.popup-current-note strong{color:var(--text);}
 
 /* ── DELETE MONTH MODAL ── */
 .del-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:600;align-items:center;justify-content:center;}
@@ -245,8 +267,7 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
 .del-modal h3{font-size:16px;font-weight:600;margin-bottom:8px;color:#b91c1c;}
 .del-modal p{font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6;}
 .del-modal strong{color:var(--text);}
-/* ── DELETE DAY ── */
-.del-day-input{width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-family:'Sarabun',sans-serif;font-size:13px;outline:none;margin-bottom:14px;transition:border-color .2s;}
+.del-day-input{width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-family:'Sarabun',sans-serif;font-size:13px;outline:none;margin-bottom:8px;transition:border-color .2s;}
 .del-day-input:focus{border-color:#b91c1c;box-shadow:0 0 0 3px rgba(185,28,28,.08);}
 .del-confirm-input{width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-family:'Sarabun',sans-serif;font-size:13px;outline:none;margin-bottom:14px;transition:border-color .2s;}
 .del-confirm-input:focus{border-color:#b91c1c;box-shadow:0 0 0 3px rgba(185,28,28,.08);}
@@ -281,22 +302,14 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
   .metrics{grid-template-columns:repeat(2,1fr);gap:8px;}
   .metric-val{font-size:20px;}
   .btn{padding:7px 12px;font-size:12px;}
-
-  /* page-header: stack title + buttons */
   .page-header{flex-direction:column;align-items:flex-start;gap:8px;}
   .page-header > div{width:100%;display:flex;flex-wrap:wrap;gap:6px;}
   .page-header .btn{flex:1;min-width:120px;justify-content:center;}
-
-  /* filters stack */
   .filters{flex-direction:column;align-items:stretch;}
   .fgroup select,.fgroup input[type="month"]{width:100%;height:42px;font-size:14px;}
-
-  /* table toolbar */
   .table-header{flex-direction:column;align-items:flex-start;gap:8px;}
   .table-header > div{display:flex;flex-wrap:wrap;gap:6px;width:100%;}
   .table-header .btn{flex:1;min-width:100px;justify-content:center;}
-
-  /* legend wrap */
   .legend{gap:8px;}
 }
 @media(max-width:480px){
@@ -304,16 +317,11 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
   .brand-name{display:none;}
   .topbar-right .btn-logout{display:none;}
   .role-badge{display:none;}
-
   .main{padding:10px;}
   .page-title{font-size:16px;}
-
-  /* metrics: 2 col compact */
   .metrics{gap:6px;}
   .metric{padding:10px 12px;}
   .metric-val{font-size:18px;}
-
-  /* default-bar wrap */
   .default-bar{flex-wrap:wrap;gap:6px;}
 }
 </style>
@@ -438,6 +446,11 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
       <div class="metric-sub">ครั้ง</div>
     </div>
     <div class="metric">
+      <div class="metric-label">ลารวม</div>
+      <div class="metric-val" style="color:var(--leave);" id="mLeave">—</div>
+      <div class="metric-sub">ครั้ง</div>
+    </div>
+    <div class="metric">
       <div class="metric-label">เข้าเรียนเฉลี่ย</div>
       <div class="metric-val" style="color:var(--blue);" id="mPct">—</div>
       <div class="metric-sub">ของนักเรียนปกติ</div>
@@ -448,9 +461,14 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
     <div class="leg-item"><div class="leg-dot dot-present">ม</div> มาเรียน</div>
     <div class="leg-item"><div class="leg-dot dot-late">ส</div> สาย</div>
     <div class="leg-item"><div class="leg-dot dot-absent">ข</div> ขาด</div>
+    <div class="leg-item"><div class="leg-dot dot-leave">ล</div> ลา</div>
     <div class="leg-item"><div class="leg-dot dot-ghost">—</div> ไม่มีตัวตน</div>
+    <div class="leg-item" style="gap:4px;">
+      <span style="width:8px;height:8px;border-radius:50%;background:#f59e0b;display:inline-block;"></span>
+      <span style="font-size:11px;">มีหมายเหตุ</span>
+    </div>
     <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
-      <button id="focusToggleBtn" onclick="toggleFocusMode()" style="display:none;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:white;font-family:Sarabun,sans-serif;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:5px;color:var(--muted);">
+      <button id="focusToggleBtn" onclick="toggleFocusMode()" style="display:none;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:white;font-family:Sarabun,sans-serif;font-size:11px;cursor:pointer;align-items:center;gap:5px;color:var(--muted);">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
         <span id="focusToggleLabel">Focus Mode</span>
       </button>
@@ -540,21 +558,32 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
     </div>
     <button class="popup-close-btn" onclick="closeMultiPopup()" title="ปิด">✕</button>
   </div>
-  <!-- step1: รายวิชา -->
   <div id="mpStep1"></div>
-  <!-- step2: เลือกสถานะ -->
   <div class="multi-step2" id="mpStep2">
     <button class="multi-back-btn" onclick="mpBack()">← กลับ</button>
     <div class="multi-editing-subj" id="mpEditingSubj"></div>
     <button class="popup-btn p-present" onclick="mpApplyStatus('present')">✓ มาเรียน</button>
     <button class="popup-btn p-late"    onclick="mpApplyStatus('late')">⏱ สาย</button>
     <button class="popup-btn p-absent"  onclick="mpApplyStatus('absent')">✗ ขาด</button>
+    <button class="popup-btn p-leave"   onclick="mpApplyStatus('leave')">📋 ลา</button>
     <button class="popup-btn p-clear"   onclick="mpApplyStatus(null)">🗑 ลบสถานะ</button>
+    <!-- note for multi -->
+    <div class="note-section" id="mpNoteSection" style="display:none;">
+      <div class="note-label">
+        <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        หมายเหตุ
+      </div>
+      <textarea class="note-textarea" id="mpNoteText" placeholder="พิมพ์หมายเหตุ..."></textarea>
+      <div class="note-save-row">
+        <button class="note-save-btn" onclick="mpSaveNote()">บันทึกหมายเหตุ</button>
+        <button class="note-clear-btn" onclick="mpClearNote()">ล้าง</button>
+      </div>
+    </div>
     <div class="popup-saving" id="mpSaving">กำลังบันทึก...</div>
   </div>
 </div>
 
-<!-- Status edit popup -->
+<!-- Status edit popup (single subject mode) -->
 <div class="status-popup" id="statusPopup">
   <div class="popup-header">
     <div>
@@ -566,8 +595,23 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
   <button class="popup-btn p-present" onclick="applyStatus('present')">✓ มาเรียน</button>
   <button class="popup-btn p-late"    onclick="applyStatus('late')">⏱ สาย</button>
   <button class="popup-btn p-absent"  onclick="applyStatus('absent')">✗ ขาด</button>
+  <button class="popup-btn p-leave"   onclick="applyStatus('leave')">📋 ลา</button>
   <button class="popup-btn p-ghost"   onclick="applyStatus('ghost')">— ไม่มีตัวตน</button>
   <button class="popup-btn p-clear"   onclick="applyStatus(null)">🗑 ลบสถานะ</button>
+
+  <!-- Note section — shows for late/absent/leave -->
+  <div class="note-section" id="noteSection" style="display:none;">
+    <div class="note-label">
+      <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      หมายเหตุ
+    </div>
+    <textarea class="note-textarea" id="noteText" placeholder="พิมพ์หมายเหตุ..."></textarea>
+    <div class="note-save-row">
+      <button class="note-save-btn" onclick="saveNote()">บันทึกหมายเหตุ</button>
+      <button class="note-clear-btn" onclick="clearNote()">ล้าง</button>
+    </div>
+  </div>
+
   <div class="popup-saving" id="popupSaving">กำลังบันทึก...</div>
 </div>
 
@@ -617,9 +661,11 @@ const THAI_MONTHS     = ["","มกราคม","กุมภาพันธ์
                           "กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const THAI_DAYS_SHORT = ["อา","จ","อ","พ","พฤ","ศ","ส"];
 
+// Statuses that support notes
+const NOTE_STATUSES = new Set(["late","absent","leave"]);
+
 let userRole      = "user";
 let currentUserId = "";
-// ── ค่าเริ่มต้น (บันทึกทั้งห้องและวิชา) ──
 let savedDefaultClassId   = "";
 let savedDefaultSubjectId = "";
 let allStudents = [];
@@ -632,9 +678,8 @@ const now = new Date();
 document.getElementById("monthInput").value =
   `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
 
-// ─── sessionStorage cache helpers ────────────────────────────
+// ─── Cache helpers ────────────────────────────────────────────
 const CACHE_TTL = 30 * 60 * 1000;
-
 function cacheSet(key, data) {
   sessionStorage.setItem(key, JSON.stringify({ ts: Date.now(), data }));
 }
@@ -647,7 +692,6 @@ function cacheGet(key) {
     return obj.data;
   } catch { return null; }
 }
-
 function studentsCacheSet(classId, data) {
   sessionStorage.setItem("students_" + classId, JSON.stringify({ ts: Date.now(), data }));
 }
@@ -674,7 +718,6 @@ initAuth({ requireAdmin: true, onReady: async ({ role, user }) => {
   await initColorSystem();
   await loadSubjects();
 
-  // โหลด default class + subject จาก Firestore
   if (currentUserId) {
     try {
       const prefSnap = await getDoc(doc(db, "userPrefs", currentUserId));
@@ -687,13 +730,10 @@ initAuth({ requireAdmin: true, onReady: async ({ role, user }) => {
 
   await loadClasses();
 
-  // apply ค่าเริ่มต้น — ห้องเรียน
   const sel = document.getElementById("classSelect");
   if (savedDefaultClassId && [...sel.options].some(o => o.value === savedDefaultClassId)) {
     sel.value = savedDefaultClassId;
   }
-
-  // apply ค่าเริ่มต้น — วิชา
   const selSub = document.getElementById("subjectSelect");
   if (savedDefaultSubjectId && [...selSub.options].some(o => o.value === savedDefaultSubjectId)) {
     selSub.value = savedDefaultSubjectId;
@@ -721,8 +761,7 @@ window.closeSidebar = function() {
 };
 window.syncSubjectFromSidebar = function() {
   document.getElementById("subjectSelect").value = document.getElementById("sidebarSubjectSelect").value;
-  updateDefaultUI();
-  loadData();
+  updateDefaultUI(); loadData();
 };
 window.syncSubjectToSidebar = function() {
   document.getElementById("sidebarSubjectSelect").value = document.getElementById("subjectSelect").value;
@@ -784,14 +823,10 @@ window.setDefaultClass = async function() {
     savedDefaultClassId   = classId;
     savedDefaultSubjectId = subjectId;
     const subName = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
-    const msg = subjectId
-      ? `ตั้งค่าเริ่มต้นเรียบร้อย (${subName}) ✓`
-      : "ตั้งค่าเริ่มต้นเรียบร้อย ✓";
-    showToast(msg,"success");
+    showToast(subjectId ? `ตั้งค่าเริ่มต้นเรียบร้อย (${subName}) ✓` : "ตั้งค่าเริ่มต้นเรียบร้อย ✓","success");
     updateDefaultUI();
   } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
 };
-
 window.clearDefaultClass = async function() {
   if (!currentUserId) return;
   try {
@@ -806,7 +841,6 @@ window.clearDefaultClass = async function() {
     updateDefaultUI();
   } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
 };
-
 function updateDefaultUI() {
   const currentClassId   = document.getElementById("classSelect").value;
   const currentSubjectId = document.getElementById("subjectSelect").value;
@@ -845,9 +879,7 @@ async function _loadDataAsync() {
     document.getElementById("legendEl").style.display  = "none";
     return;
   }
-
-  document.getElementById("tableArea").innerHTML =
-    `<div class="state-box">กำลังโหลดข้อมูล...</div>`;
+  document.getElementById("tableArea").innerHTML = `<div class="state-box">กำลังโหลดข้อมูล...</div>`;
 
   try {
     const [year, mon] = month.split("-").map(Number);
@@ -868,18 +900,14 @@ async function _loadDataAsync() {
     let attQuery;
     if (subjectId) {
       attQuery = query(collection(db,"attendance"),
-        where("classId","==",classId),
-        where("subjectId","==",subjectId),
-        where("date",">=",dateFrom),
-        where("date","<=",dateTo));
+        where("classId","==",classId), where("subjectId","==",subjectId),
+        where("date",">=",dateFrom), where("date","<=",dateTo));
     } else {
       attQuery = query(collection(db,"attendance"),
         where("classId","==",classId),
-        where("date",">=",dateFrom),
-        where("date","<=",dateTo));
+        where("date",">=",dateFrom), where("date","<=",dateTo));
     }
     const attSnap = await getDocs(attQuery);
-
     attMap = {};
     const multiMode = !subjectId;
     attSnap.docs.forEach(d => {
@@ -896,48 +924,42 @@ async function _loadDataAsync() {
       }
     });
     window.__multiMode = multiMode;
-
     renderGrid(year, mon, daysInMonth);
-
-    const clsNameLD = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
-    const subNameLD = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
-    const activeLD  = allStudents.filter(s => !s.ghost);
-    const daysLoadedCount = Object.keys(attMap).length;
-    window.logAction && window.logAction("attendance",
-      `เปิดดูสรุปเช็คชื่อ — ${clsNameLD}${subNameLD?" / "+subNameLD:""} เดือน ${THAI_MONTHS[mon]} ${year+543}`,
-      {
-        action:"viewSummary", month, year, monthName:THAI_MONTHS[mon],
-        classId, className:clsNameLD, subjectId:subjectId||"", subjectName:subNameLD,
-        totalStudents:allStudents.length, activeStudents:activeLD.length,
-        ghostStudents:allStudents.length-activeLD.length,
-        daysWithData:daysLoadedCount, totalRecords:attSnap.docs.length,
-      }
-    );
   } catch(err) {
     document.getElementById("tableArea").innerHTML =
       `<div class="state-box" style="color:#b91c1c;">⚠ โหลดข้อมูลไม่ได้: ${err.message}</div>`;
-    console.error("attendance-summary error:", err);
+    console.error(err);
   }
 }
 
 // ─── Render Grid ──────────────────────────────────────────────
-function statusDot(status) {
+function statusDot(status, note) {
+  const hasNote = note && note.trim() !== "" && NOTE_STATUSES.has(status);
+  const noteClass = hasNote ? " dot-has-note" : "";
   if (!status)            return `<span class="dot dot-empty">·</span>`;
-  if (status==="present") return `<span class="dot dot-present">ม</span>`;
-  if (status==="late")    return `<span class="dot dot-late">ส</span>`;
-  if (status==="absent")  return `<span class="dot dot-absent">ข</span>`;
+  if (status==="present") return `<span class="dot dot-present${noteClass}">ม</span>`;
+  if (status==="late")    return `<span class="dot dot-late${noteClass}">ส</span>`;
+  if (status==="absent")  return `<span class="dot dot-absent${noteClass}">ข</span>`;
+  if (status==="leave")   return `<span class="dot dot-leave${noteClass}">ล</span>`;
   if (status==="ghost")   return `<span class="dot dot-ghost">—</span>`;
   return `<span class="dot dot-empty">·</span>`;
 }
 
 function multiStatusDot(records) {
   if (!records || records.length === 0) return `<span class="dot dot-empty">·</span>`;
-  return records.map(r => statusDot(r.status)).join('<span style="font-size:8px;color:#d1d5db;margin:0 1px;">|</span>');
+  return records.map(r => statusDot(r.status, r.note)).join('<span style="font-size:8px;color:#d1d5db;margin:0 1px;">|</span>');
 }
 
 function countFromRecords(records, status) {
   if (!records || !Array.isArray(records)) return 0;
   return records.filter(r => r.status === status).length;
+}
+
+function buildTooltip(status, note) {
+  const stLabel = { present:"มาเรียน", late:"สาย", absent:"ขาด", leave:"ลา", ghost:"ไม่มีตัวตน" };
+  let tip = stLabel[status] || status || "ไม่มีข้อมูล";
+  if (note && note.trim()) tip += `\n📝 ${note.trim()}`;
+  return tip;
 }
 
 function renderGrid(year, mon, daysInMonth) {
@@ -950,7 +972,6 @@ function renderGrid(year, mon, daysInMonth) {
     days.push({ d, dateStr, dow, name: THAI_DAYS_SHORT[dow],
                 isWeekend: dow===0||dow===6, isToday: dateStr===today });
   }
-
   const DOW_CLS = ["col-sun","col-mon","col-tue","col-wed","col-thu","col-fri","col-sat"];
 
   let hName = `<tr>
@@ -960,9 +981,10 @@ function renderGrid(year, mon, daysInMonth) {
     const cls = [DOW_CLS[dow]||"", isToday?"col-today":""].filter(Boolean).join(" ");
     hName += `<th class="th-dayname col-day ${cls}" data-col-idx="${d}">${name}</th>`;
   });
-  hName += `<th class="th-name" style="font-size:10px;">รวม<br>ม</th>
-    <th class="th-name" style="font-size:10px;">รวม<br>ส</th>
-    <th class="th-name" style="font-size:10px;">รวม<br>ข</th>
+  hName += `<th class="th-name" style="font-size:10px;">ม</th>
+    <th class="th-name" style="font-size:10px;">ส</th>
+    <th class="th-name" style="font-size:10px;">ข</th>
+    <th class="th-name" style="font-size:10px;color:var(--leave);">ล</th>
     <th class="th-name" style="font-size:10px;">%มา</th></tr>`;
 
   let hNum = `<tr>
@@ -974,10 +996,10 @@ function renderGrid(year, mon, daysInMonth) {
     hNum += `<th class="th-daynum col-day ${cls}" data-col-idx="${d}">${d}</th>`;
   });
   hNum += `<th class="th-daynum">—</th><th class="th-daynum">—</th>
-    <th class="th-daynum">—</th><th class="th-daynum">—</th></tr>`;
+    <th class="th-daynum">—</th><th class="th-daynum">—</th><th class="th-daynum">—</th></tr>`;
 
-  const dayPresent={}, dayLate={}, dayAbsent={};
-  let totalPresent=0, totalLate=0, totalAbsent=0;
+  const dayPresent={}, dayLate={}, dayAbsent={}, dayLeave={};
+  let totalPresent=0, totalLate=0, totalAbsent=0, totalLeave=0;
   const activeStudents = allStudents.filter(s=>!s.ghost);
   const ghostStudents  = allStudents.filter(s=>s.ghost);
   const daysWithData   = new Set(Object.keys(attMap));
@@ -985,10 +1007,10 @@ function renderGrid(year, mon, daysInMonth) {
   let dataRows = "";
   [...allStudents].sort((a,b)=>(a.number||0)-(b.number||0)).forEach(s => {
     const isGhost = s.ghost === true;
-    let sP=0, sL=0, sA=0;
+    let sP=0, sL=0, sA=0, sLv=0;
     let cells = "";
-
     const multiMode = window.__multiMode || false;
+
     days.forEach(({dateStr,isToday,dow,d}) => {
       const cls = [DOW_CLS[dow]||"", isToday?"col-today":""].filter(Boolean).join(" ");
       const colIdxAttr = `data-col-idx="${d}"`;
@@ -1002,43 +1024,52 @@ function renderGrid(year, mon, daysInMonth) {
       const rawRec = attMap[dateStr]?.[s.id];
       if (multiMode) {
         const recs = Array.isArray(rawRec) ? rawRec : (rawRec ? [rawRec] : []);
-        const p = countFromRecords(recs,"present"), l = countFromRecords(recs,"late"), a = countFromRecords(recs,"absent");
-        sP+=p; sL+=l; sA+=a;
-        if (p) dayPresent[dateStr]=(dayPresent[dateStr]||0)+1;
-        if (l) dayLate[dateStr]=(dayLate[dateStr]||0)+1;
-        if (a) dayAbsent[dateStr]=(dayAbsent[dateStr]||0)+1;
+        const p = countFromRecords(recs,"present"), l = countFromRecords(recs,"late"),
+              a = countFromRecords(recs,"absent"),   lv= countFromRecords(recs,"leave");
+        sP+=p; sL+=l; sA+=a; sLv+=lv;
+        if (p)  dayPresent[dateStr]=(dayPresent[dateStr]||0)+1;
+        if (l)  dayLate[dateStr]=(dayLate[dateStr]||0)+1;
+        if (a)  dayAbsent[dateStr]=(dayAbsent[dateStr]||0)+1;
+        if (lv) dayLeave[dateStr]=(dayLeave[dateStr]||0)+1;
         const _subMap = window.__subjectMap || {};
-        const _stLabel = { present:"มาเรียน", late:"สาย", absent:"ขาด", ghost:"ไม่มีตัวตน" };
-        const tooltip = recs.length === 0
-          ? "ไม่มีข้อมูล"
-          : recs.map(r => (_subMap[r.subjectId] || r.subjectId || "ไม่ระบุวิชา") + " → " + (_stLabel[r.status] || r.status || "—")).join("\n");
+        const _stLabel = { present:"มาเรียน", late:"สาย", absent:"ขาด", leave:"ลา", ghost:"ไม่มีตัวตน" };
+        const tooltip = recs.length === 0 ? "ไม่มีข้อมูล"
+          : recs.map(r => {
+              let t = (_subMap[r.subjectId]||r.subjectId||"ไม่ระบุวิชา") + " → " + (_stLabel[r.status]||r.status||"—");
+              if (r.note && r.note.trim()) t += ` (📝 ${r.note.trim()})`;
+              return t;
+            }).join("\n");
         const mpEditAttr = isAdmin
           ? `data-sid="${s.id}" data-date="${dateStr}" data-name="${(s.prefix?s.prefix+" ":"")+s.name}" class="cell ${cls} editable" onclick="openMultiPopup(this,event)" ${colIdxAttr} title="${tooltip}"`
           : `class="cell ${cls}" ${colIdxAttr} title="${tooltip}" style="cursor:help;"`;
         cells += `<td ${mpEditAttr} style="padding:2px 1px;">${multiStatusDot(recs)}</td>`;
       } else {
         const status = (rawRec?.status === "ghost" && !isGhost) ? undefined : rawRec?.status;
-        if (status==="present") { sP++; dayPresent[dateStr]=(dayPresent[dateStr]||0)+1; }
-        if (status==="late")    { sL++; dayLate[dateStr]=(dayLate[dateStr]||0)+1; }
-        if (status==="absent")  { sA++; dayAbsent[dateStr]=(dayAbsent[dateStr]||0)+1; }
+        const note   = rawRec?.note || "";
+        if (status==="present") { sP++;  dayPresent[dateStr]=(dayPresent[dateStr]||0)+1; }
+        if (status==="late")    { sL++;  dayLate[dateStr]=(dayLate[dateStr]||0)+1; }
+        if (status==="absent")  { sA++;  dayAbsent[dateStr]=(dayAbsent[dateStr]||0)+1; }
+        if (status==="leave")   { sLv++; dayLeave[dateStr]=(dayLeave[dateStr]||0)+1; }
+        const tooltip = status ? buildTooltip(status, note) : "";
         const editAttr = isAdmin
-          ? `data-sid="${s.id}" data-date="${dateStr}" data-name="${(s.prefix?s.prefix+" ":"")+s.name}" class="cell ${cls} editable" onclick="openPopup(this,event)" ${colIdxAttr}`
-          : `class="cell ${cls}" ${colIdxAttr}`;
-        cells += `<td ${editAttr}>${statusDot(status)}</td>`;
+          ? `data-sid="${s.id}" data-date="${dateStr}" data-name="${(s.prefix?s.prefix+" ":"")+s.name}" class="cell ${cls} editable" onclick="openPopup(this,event)" ${colIdxAttr}${tooltip?` title="${tooltip}"`:""}`
+          : `class="cell ${cls}" ${colIdxAttr}${tooltip?` title="${tooltip}" style="cursor:help;"`:""}`; 
+        cells += `<td ${editAttr}>${statusDot(status, note)}</td>`;
       }
     });
 
-    totalPresent += sP; totalLate += sL; totalAbsent += sA;
-    const sDenom = sP+sL+sA;
-    const sPct   = sDenom>0 ? Math.round((sP+sL)/sDenom*100) : null;
+    totalPresent += sP; totalLate += sL; totalAbsent += sA; totalLeave += sLv;
+    const sDenom = sP+sL+sA+sLv;
+    const sPct   = sDenom>0 ? Math.round((sP+sL+sLv)/sDenom*100) : null;
     const pctCls = sPct===null?"":sPct>=80?"":sPct>=60?"mid":"low";
     const nameHtml = isGhost
       ? `<span class="ghost-strikethrough">${s.prefix?s.prefix+" ":""}${s.name||"—"}</span> <span style="font-size:10px;color:#9ca3af;">(ไม่มีตัวตน)</span>`
       : `${s.prefix?s.prefix+" ":""}${s.name||"—"}`;
 
-    const sumP = isGhost ? `<td class="cell sum-present">—</td>` : `<td class="cell sum-present">${sP||"—"}</td>`;
-    const sumL = isGhost ? `<td class="cell sum-late">—</td>`    : `<td class="cell sum-late">${sL||"—"}</td>`;
-    const sumA = isGhost ? `<td class="cell sum-absent">—</td>`  : `<td class="cell sum-absent">${sA||"—"}</td>`;
+    const sumP  = isGhost ? `<td class="cell sum-present">—</td>`  : `<td class="cell sum-present">${sP||"—"}</td>`;
+    const sumL  = isGhost ? `<td class="cell sum-late">—</td>`     : `<td class="cell sum-late">${sL||"—"}</td>`;
+    const sumA  = isGhost ? `<td class="cell sum-absent">—</td>`   : `<td class="cell sum-absent">${sA||"—"}</td>`;
+    const sumLv = isGhost ? `<td class="cell sum-leave">—</td>`    : `<td class="cell sum-leave">${sLv||"—"}</td>`;
     const sumPct = isGhost ? `<td class="cell sum-pct">—</td>`
       : sPct!==null
         ? `<td class="cell sum-pct"><div>${sPct}%</div><div class="pct-bar"><div class="pct-fill ${pctCls}" style="width:${sPct}%"></div></div></td>`
@@ -1047,23 +1078,25 @@ function renderGrid(year, mon, daysInMonth) {
     dataRows += `<tr class="${isGhost?"ghost-row":""}">
       <td class="cell-no">${s.number||"—"}</td>
       <td class="cell-name">${nameHtml}</td>
-      ${cells}${sumP}${sumL}${sumA}${sumPct}
+      ${cells}${sumP}${sumL}${sumA}${sumLv}${sumPct}
     </tr>`;
   });
 
   let footerCells = "";
   days.forEach(({dateStr}) => {
-    const p=dayPresent[dateStr]||0, l=dayLate[dateStr]||0, a=dayAbsent[dateStr]||0;
-    footerCells += (p+l+a)===0
+    const p=dayPresent[dateStr]||0, l=dayLate[dateStr]||0,
+          a=dayAbsent[dateStr]||0, lv=dayLeave[dateStr]||0;
+    footerCells += (p+l+a+lv)===0
       ? `<td class="cell" style="color:#d1d5db;font-size:10px;">—</td>`
       : `<td class="cell" style="font-size:10px;">
           <span style="color:var(--present);font-weight:600;">${p}</span>
           ${l?`<span style="color:var(--late);">/${l}</span>`:""}
           ${a?`<span style="color:var(--absent);">/${a}</span>`:""}
+          ${lv?`<span style="color:var(--leave);">/${lv}</span>`:""}
         </td>`;
   });
-  const totD   = totalPresent+totalLate+totalAbsent;
-  const totPct = totD>0 ? Math.round((totalPresent+totalLate)/totD*100) : 0;
+  const totD   = totalPresent+totalLate+totalAbsent+totalLeave;
+  const totPct = totD>0 ? Math.round((totalPresent+totalLate+totalLeave)/totD*100) : 0;
   const footerRow = `<tr class="footer-row">
     <td class="cell-no">—</td>
     <td class="cell-name" style="font-size:11px;font-weight:600;">รวมแต่ละวัน</td>
@@ -1071,6 +1104,7 @@ function renderGrid(year, mon, daysInMonth) {
     <td class="f-present">${totalPresent}</td>
     <td class="f-late">${totalLate}</td>
     <td class="f-absent">${totalAbsent}</td>
+    <td class="f-leave">${totalLeave}</td>
     <td style="background:#eff6ff;color:#185FA5;font-weight:600;">${totPct}%</td>
   </tr>`;
 
@@ -1081,6 +1115,7 @@ function renderGrid(year, mon, daysInMonth) {
   document.getElementById("mPresent").textContent = daysWithData.size>0
     ? (totalPresent/daysWithData.size).toFixed(1) : "—";
   document.getElementById("mAbsent").textContent  = totalAbsent;
+  document.getElementById("mLeave").textContent   = totalLeave;
   document.getElementById("mPct").textContent     = totPct+"%";
 
   const clsName = document.getElementById("classSelect").selectedOptions[0]?.text||"";
@@ -1104,33 +1139,34 @@ window.exportCSV = function() {
   const [year,mon] = month.split("-").map(Number);
   const daysInMonth = new Date(year,mon,0).getDate();
   const days = [];
-  for (let d=1;d<=daysInMonth;d++) {
-    days.push({ d, isWeekend: new Date(year,mon-1,d).getDay()===0||new Date(year,mon-1,d).getDay()===6 });
-  }
+  for (let d=1;d<=daysInMonth;d++) days.push({ d });
 
   const clsName = document.getElementById("classSelect").selectedOptions[0]?.text||"";
   const subName = document.getElementById("subjectSelect").selectedOptions[0]?.text||"";
-  const headerRow = ["ที่","ชื่อ-สกุล",...days.map(x=>x.d),"รวมมา","รวมสาย","รวมขาด","%มา"];
+  const headerRow = ["ที่","ชื่อ-สกุล",...days.map(x=>x.d),"รวมมา","รวมสาย","รวมขาด","รวมลา","%มา"];
   const rows = [headerRow];
 
   [...allStudents].sort((a,b)=>(a.number||0)-(b.number||0)).forEach(s => {
     const isGhost = s.ghost===true;
     const name    = (s.prefix?s.prefix+" ":"")+(s.name||"");
-    let p=0,l=0,a=0;
+    let p=0,l=0,a=0,lv=0;
     const cells = days.map(({d}) => {
       if (isGhost) return "—";
       const dateStr = `${year}-${String(mon).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-      const st = attMap[dateStr]?.[s.id]?.status;
+      const rec = attMap[dateStr]?.[s.id];
+      const st = rec?.status;
+      const note = rec?.note ? ` [${rec.note}]` : "";
       if (st==="present"){p++;return"ม";}
-      if (st==="late")   {l++;return"ส";}
-      if (st==="absent") {a++;return"ข";}
+      if (st==="late")   {l++;return"ส"+note;}
+      if (st==="absent") {a++;return"ข"+note;}
+      if (st==="leave")  {lv++;return"ล"+note;}
       if (st==="ghost")  return"—";
       return "";
     });
-    const tot = p+l+a;
-    const pct = tot>0?Math.round((p+l)/tot*100)+"%":"—";
+    const tot = p+l+a+lv;
+    const pct = tot>0?Math.round((p+l+lv)/tot*100)+"%":"—";
     rows.push([s.number||"—", isGhost?"[ไม่มีตัวตน] "+name:name, ...cells,
-      isGhost?"—":p, isGhost?"—":l, isGhost?"—":a, isGhost?"—":pct]);
+      isGhost?"—":p, isGhost?"—":l, isGhost?"—":a, isGhost?"—":lv, isGhost?"—":pct]);
   });
 
   const csv = [
@@ -1146,18 +1182,6 @@ window.exportCSV = function() {
   document.body.appendChild(a); a.click();
   document.body.removeChild(a); URL.revokeObjectURL(url);
   showToast("Export สำเร็จ ✓","success");
-
-  const activeExport = allStudents.filter(s => !s.ghost);
-  window.logAction && window.logAction("attendance",
-    `Export CSV สรุปเช็คชื่อ — ${clsName}${subName?" / "+subName:""} เดือน ${THAI_MONTHS[mon]} ${year+543}`,
-    {
-      action:"exportCSV", month, year, monthName:THAI_MONTHS[mon],
-      classId, className:clsName, subjectId:subjectId||"", subjectName:subName,
-      fileName:`เช็คชื่อ_${clsName}_${THAI_MONTHS[mon]}${year+543}.csv`,
-      totalStudents:allStudents.length, activeStudents:activeExport.length,
-      totalRows:rows.length-1,
-    }
-  );
 };
 
 // ─── Delete Month ─────────────────────────────────────────────
@@ -1174,10 +1198,8 @@ window.openDeleteModal = function() {
   document.getElementById("delConfirmBtn").disabled = true;
   document.getElementById("delOverlay").classList.add("open");
 };
-window.closeDeleteModal = function() {
-  document.getElementById("delOverlay").classList.remove("open");
-};
-window.checkDelConfirm = function() {
+window.closeDeleteModal = function() { document.getElementById("delOverlay").classList.remove("open"); };
+window.checkDelConfirm  = function() {
   document.getElementById("delConfirmBtn").disabled =
     document.getElementById("delConfirmInput").value.trim() !== "ยืนยันลบ";
 };
@@ -1189,8 +1211,7 @@ window.openDeleteDayModal = function() {
   if (!classId||!month) { showToast("กรุณาเลือกชั้นเรียนและเดือนก่อน","error"); return; }
   const clsName = document.getElementById("classSelect").selectedOptions[0]?.text||"";
   const subName = document.getElementById("subjectSelect").selectedOptions[0]?.text||"";
-  document.getElementById("delDayClassLabel").textContent =
-    `${clsName}${subName?" — "+subName:""}`;
+  document.getElementById("delDayClassLabel").textContent = `${clsName}${subName?" — "+subName:""}`;
   document.getElementById("delDayDateInput").value = month+"-01";
   document.getElementById("delDayDateInput").min   = month+"-01";
   const [yr,mn] = month.split("-").map(Number);
@@ -1201,10 +1222,8 @@ window.openDeleteDayModal = function() {
   updateDelDayInfo();
   document.getElementById("delDayOverlay").classList.add("open");
 };
-window.closeDeleteDayModal = function() {
-  document.getElementById("delDayOverlay").classList.remove("open");
-};
-window.checkDelDayConfirm = function() {
+window.closeDeleteDayModal = function() { document.getElementById("delDayOverlay").classList.remove("open"); };
+window.checkDelDayConfirm  = function() {
   document.getElementById("delDayConfirmBtn").disabled =
     document.getElementById("delDayConfirmInput").value.trim() !== "ยืนยันลบ";
 };
@@ -1230,39 +1249,21 @@ window.doDeleteDay = async function() {
   const subjectId = document.getElementById("subjectSelect").value;
   const dateVal   = document.getElementById("delDayDateInput").value;
   if (!classId||!dateVal) { showToast("กรุณาเลือกชั้นเรียนและวันที่","error"); return; }
-
   const btn = document.getElementById("delDayConfirmBtn");
   btn.disabled=true; btn.textContent="กำลังลบ...";
   try {
-    let delQuery;
-    if (subjectId) {
-      delQuery = query(collection(db,"attendance"),
-        where("classId","==",classId),
-        where("subjectId","==",subjectId),
-        where("date","==",dateVal));
-    } else {
-      delQuery = query(collection(db,"attendance"),
-        where("classId","==",classId),
-        where("date","==",dateVal));
-    }
+    let delQuery = subjectId
+      ? query(collection(db,"attendance"), where("classId","==",classId), where("subjectId","==",subjectId), where("date","==",dateVal))
+      : query(collection(db,"attendance"), where("classId","==",classId), where("date","==",dateVal));
     const snap = await getDocs(delQuery);
     const batch = writeBatch(db);
     snap.docs.forEach(d => batch.delete(d.ref));
     await batch.commit();
-
     if (attMap[dateVal]) delete attMap[dateVal];
-
     closeDeleteDayModal();
     const [year,mon] = document.getElementById("monthInput").value.split("-").map(Number);
     renderGrid(year, mon, new Date(year,mon,0).getDate());
     showToast(`ลบข้อมูลวันที่ ${dateVal} เรียบร้อย (${snap.docs.length} รายการ)`,"success");
-
-    const clsNameDel = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
-    const subNameDel = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
-    window.logAction && window.logAction("attendance",
-      `ลบข้อมูลเช็คชื่อวันที่ ${dateVal} — ${clsNameDel}${subNameDel?" / "+subNameDel:""} (${snap.docs.length} รายการ)`,
-      { action:"deleteDay", date:dateVal, classId, className:clsNameDel, subjectId:subjectId||"", subjectName:subNameDel, deletedCount:snap.docs.length }
-    );
   } catch(e) {
     showToast("เกิดข้อผิดพลาด: "+e.message,"error");
     btn.disabled=false; btn.textContent="ลบข้อมูล";
@@ -1277,25 +1278,13 @@ window.doDeleteMonth = async function() {
   const daysInMonth = new Date(year,mon,0).getDate();
   const dateFrom  = `${year}-${String(mon).padStart(2,"0")}-01`;
   const dateTo    = `${year}-${String(mon).padStart(2,"0")}-${String(daysInMonth).padStart(2,"0")}`;
-
   const btn = document.getElementById("delConfirmBtn");
   btn.disabled=true; btn.textContent="กำลังลบ...";
   try {
-    let delQuery;
-    if (subjectId) {
-      delQuery = query(collection(db,"attendance"),
-        where("classId","==",classId),
-        where("subjectId","==",subjectId),
-        where("date",">=",dateFrom),
-        where("date","<=",dateTo));
-    } else {
-      delQuery = query(collection(db,"attendance"),
-        where("classId","==",classId),
-        where("date",">=",dateFrom),
-        where("date","<=",dateTo));
-    }
+    let delQuery = subjectId
+      ? query(collection(db,"attendance"), where("classId","==",classId), where("subjectId","==",subjectId), where("date",">=",dateFrom), where("date","<=",dateTo))
+      : query(collection(db,"attendance"), where("classId","==",classId), where("date",">=",dateFrom), where("date","<=",dateTo));
     const snap = await getDocs(delQuery);
-
     const batchSize = 500;
     const docs = snap.docs;
     for (let i = 0; i < docs.length; i += batchSize) {
@@ -1303,23 +1292,10 @@ window.doDeleteMonth = async function() {
       docs.slice(i, i + batchSize).forEach(d => batch.delete(d.ref));
       await batch.commit();
     }
-
     attMap = {};
     closeDeleteModal();
     renderGrid(year,mon,daysInMonth);
     showToast(`ลบข้อมูลเรียบร้อย (${docs.length} รายการ)`,"success");
-
-    const clsNameDel = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
-    const subNameDel = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
-    window.logAction && window.logAction("attendance",
-      `ลบข้อมูลเช็คชื่อทั้งเดือน — ${clsNameDel}${subNameDel?" / "+subNameDel:""} เดือน${THAI_MONTHS[mon]} ${year+543} (${docs.length} รายการ)`,
-      {
-        action:"deleteMonth", month:`${year}-${String(mon).padStart(2,"0")}`,
-        year, monthName:THAI_MONTHS[mon], classId, className:clsNameDel,
-        subjectId:subjectId||"", subjectName:subNameDel,
-        deletedCount:docs.length, dateFrom, dateTo,
-      }
-    );
   } catch(e) {
     showToast("เกิดข้อผิดพลาด: "+e.message,"error");
     btn.disabled=false; btn.textContent="ลบข้อมูล";
@@ -1333,7 +1309,6 @@ window.openMultiPopup = function(td, event) {
   if (event) event.stopPropagation();
   const classId = document.getElementById("classSelect").value;
   _mpState = { studentId:td.dataset.sid, dateStr:td.dataset.date, classId, studentName:td.dataset.name, selectedSubjectId:null, selectedDocId:null };
-
   const [dy,dm,dd] = td.dataset.date.split("-");
   document.getElementById("mpName").textContent = td.dataset.name;
   document.getElementById("mpDate").textContent = `${dd}/${dm}/${parseInt(dy)+543}`;
@@ -1342,16 +1317,17 @@ window.openMultiPopup = function(td, event) {
   const recs = attMap[td.dataset.date]?.[td.dataset.sid];
   const recArr = Array.isArray(recs) ? recs : (recs ? [recs] : []);
   const subMap = window.__subjectMap || {};
-  const stLabel = { present:"มาเรียน", late:"สาย", absent:"ขาด", ghost:"ไม่มีตัวตน" };
-  const stColor = { present:"#f0fdf4;color:#166534", late:"#fffbeb;color:#92400e", absent:"#fef2f2;color:#b91c1c", ghost:"#f3f4f6;color:#6b7280" };
+  const stLabel = { present:"มาเรียน", late:"สาย", absent:"ขาด", leave:"ลา", ghost:"ไม่มีตัวตน" };
+  const stColor = { present:"#f0fdf4;color:#166534", late:"#fffbeb;color:#92400e", absent:"#fef2f2;color:#b91c1c", leave:"#f3f0ff;color:#5b21b6", ghost:"#f3f4f6;color:#6b7280" };
 
   let step1Html = "";
   recArr.forEach(r => {
     const sName = subMap[r.subjectId] || r.subjectId || "ไม่ระบุวิชา";
     const stStyle = stColor[r.status] ? `background:${stColor[r.status]}` : "background:#f3f4f6;color:#6b7280";
+    const noteIcon = (r.note && r.note.trim() && NOTE_STATUSES.has(r.status)) ? " 📝" : "";
     step1Html += `<div class="multi-subj-row" onclick="mpSelectSubject('${r.subjectId}','${r.docId||""}')">
       <span class="multi-subj-name">${sName}</span>
-      <span class="multi-subj-status" style="${stStyle}">${stLabel[r.status]||"—"}</span>
+      <span class="multi-subj-status" style="${stStyle}">${stLabel[r.status]||"—"}${noteIcon}</span>
       <span class="multi-subj-edit-icon">✎</span>
     </div>`;
   });
@@ -1363,13 +1339,13 @@ window.openMultiPopup = function(td, event) {
   document.getElementById("mpStep1").style.flexDirection = "column";
   document.getElementById("mpStep1").style.gap = "4px";
   document.getElementById("mpStep2").classList.remove("open");
+  document.getElementById("mpNoteSection").style.display = "none";
 
-  // ── position popup (fixed ไม่มี scroll offset) ──
-  const pop  = document.getElementById("multiPopup");
+  const pop = document.getElementById("multiPopup");
   pop.classList.add("open");
   const rect = td.getBoundingClientRect();
-  const popW = 220;
-  const popH = Math.min(60 + recArr.length * 46, window.innerHeight - 80);
+  const popW = 230;
+  const popH = Math.min(80 + recArr.length * 46, window.innerHeight - 80);
   let left = rect.left, top = rect.bottom + 6;
   if (left + popW > window.innerWidth - 8)  left = window.innerWidth - popW - 8;
   if (left < 8) left = 8;
@@ -1388,11 +1364,20 @@ window.mpSelectSubject = function(subjectId, docId) {
   document.getElementById("mpStep1").style.display = "none";
   document.getElementById("mpStep2").classList.add("open");
   document.getElementById("mpSaving").style.display = "none";
+
+  // Load existing note if any
+  const recs = attMap[_mpState.dateStr]?.[_mpState.studentId];
+  const recArr = Array.isArray(recs) ? recs : (recs ? [recs] : []);
+  const rec = recArr.find(r => r.subjectId === subjectId);
+  const showNote = rec && NOTE_STATUSES.has(rec.status);
+  document.getElementById("mpNoteSection").style.display = showNote ? "block" : "none";
+  document.getElementById("mpNoteText").value = rec?.note || "";
 };
 
 window.mpBack = function() {
   document.getElementById("mpStep1").style.display = "flex";
   document.getElementById("mpStep2").classList.remove("open");
+  document.getElementById("mpNoteSection").style.display = "none";
 };
 
 window.mpApplyStatus = async function(newStatus) {
@@ -1400,15 +1385,11 @@ window.mpApplyStatus = async function(newStatus) {
   if (!studentId || !dateStr || !classId || selectedSubjectId === null) return;
   document.getElementById("mpSaving").style.display = "block";
 
-  const subMap = window.__subjectMap || {};
-  const subName = subMap[selectedSubjectId] || selectedSubjectId || "";
-  const statusLabel = { present:"มาเรียน", late:"สาย", absent:"ขาดเรียน", ghost:"ไม่มีตัวตน" };
-  const clsName = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
-
+  // Carry over note if new status supports it
   const recs = attMap[dateStr]?.[studentId];
   const recArr = Array.isArray(recs) ? recs : (recs ? [recs] : []);
   const oldRec = recArr.find(r => r.subjectId === selectedSubjectId);
-  const oldStatus = oldRec?.status || null;
+  const noteVal = NOTE_STATUSES.has(newStatus) ? (document.getElementById("mpNoteText").value || oldRec?.note || "") : "";
 
   try {
     const docId = (selectedDocId && selectedDocId !== "null" && selectedDocId !== "")
@@ -1425,23 +1406,28 @@ window.mpApplyStatus = async function(newStatus) {
       await setDoc(doc(db, "attendance", docId), {
         studentId, studentName, classId,
         subjectId: selectedSubjectId,
-        date: dateStr,
-        status: newStatus,
-        note: "",
+        date: dateStr, status: newStatus,
+        note: noteVal,
         savedAt: new Date().toISOString()
       });
       if (!attMap[dateStr]) attMap[dateStr] = {};
       if (!Array.isArray(attMap[dateStr][studentId])) attMap[dateStr][studentId] = [];
       const idx = attMap[dateStr][studentId].findIndex(r => r.subjectId === selectedSubjectId);
-      const updatedRec = { status:newStatus, note:"", savedAt:new Date().toISOString(), docId, subjectId:selectedSubjectId };
+      const updatedRec = { status:newStatus, note:noteVal, savedAt:new Date().toISOString(), docId, subjectId:selectedSubjectId };
       if (idx >= 0) attMap[dateStr][studentId][idx] = updatedRec;
       else attMap[dateStr][studentId].push(updatedRec);
     }
 
-    window.logAction && window.logAction("attendance",
-      `แก้ไขสถานะ (ทั้งหมด) "${studentName}" วิชา ${subName} → ${statusLabel[newStatus]||"(ลบ)"}`,
-      { action:"editAttendance", studentId, studentName, date:dateStr, subjectId:selectedSubjectId, subjectName:subName, before:oldStatus, after:newStatus, classId, className:clsName }
-    );
+    // Show note section if applicable
+    if (newStatus && NOTE_STATUSES.has(newStatus)) {
+      document.getElementById("mpNoteSection").style.display = "block";
+      document.getElementById("mpNoteText").value = noteVal;
+      document.getElementById("mpSaving").style.display = "none";
+      const [year,mon] = document.getElementById("monthInput").value.split("-").map(Number);
+      renderGrid(year, mon, new Date(year,mon,0).getDate());
+      showToast("บันทึกสถานะเรียบร้อย ✓ (ใส่หมายเหตุได้)","success");
+      return;
+    }
 
     const [year,mon] = document.getElementById("monthInput").value.split("-").map(Number);
     renderGrid(year, mon, new Date(year,mon,0).getDate());
@@ -1452,11 +1438,49 @@ window.mpApplyStatus = async function(newStatus) {
   document.getElementById("multiPopup").classList.remove("open");
 };
 
+window.mpSaveNote = async function() {
+  const { studentId, dateStr, classId, studentName, selectedSubjectId, selectedDocId } = _mpState;
+  if (!studentId || !dateStr || !classId || selectedSubjectId === null) return;
+  const noteVal = document.getElementById("mpNoteText").value.trim();
+  document.getElementById("mpSaving").style.display = "block";
+
+  const recs = attMap[dateStr]?.[studentId];
+  const recArr = Array.isArray(recs) ? recs : (recs ? [recs] : []);
+  const oldRec = recArr.find(r => r.subjectId === selectedSubjectId);
+  if (!oldRec) { showToast("ไม่พบข้อมูลที่จะแก้ไข","error"); return; }
+
+  try {
+    const docId = (selectedDocId && selectedDocId !== "null") ? selectedDocId
+      : `${classId}_${selectedSubjectId||"none"}_${dateStr}_${studentId}`;
+    await setDoc(doc(db, "attendance", docId), {
+      studentId, studentName, classId,
+      subjectId: selectedSubjectId,
+      date: dateStr, status: oldRec.status,
+      note: noteVal,
+      savedAt: new Date().toISOString()
+    });
+    const idx = recArr.findIndex(r => r.subjectId === selectedSubjectId);
+    if (idx >= 0) recArr[idx] = { ...recArr[idx], note: noteVal };
+
+    const [year,mon] = document.getElementById("monthInput").value.split("-").map(Number);
+    renderGrid(year, mon, new Date(year,mon,0).getDate());
+    showToast("บันทึกหมายเหตุเรียบร้อย ✓","success");
+  } catch(e) {
+    showToast("เกิดข้อผิดพลาด: "+e.message,"error");
+  }
+  document.getElementById("mpSaving").style.display = "none";
+  document.getElementById("multiPopup").classList.remove("open");
+};
+
+window.mpClearNote = function() {
+  document.getElementById("mpNoteText").value = "";
+};
+
 window.closeMultiPopup = function() {
   document.getElementById("multiPopup").classList.remove("open");
 };
 
-// ─── Status Popup ─────────────────────────────────────────────
+// ─── Status Popup (single subject mode) ──────────────────────
 window.openPopup = function(td, event) {
   if (event) event.stopPropagation();
   const classId   = document.getElementById("classSelect").value;
@@ -1468,11 +1492,19 @@ window.openPopup = function(td, event) {
   document.getElementById("popupDate").textContent = `${dd}/${dm}/${parseInt(dy)+543}`;
   document.getElementById("popupSaving").style.display = "none";
 
-  // ── position popup (fixed ไม่มี scroll offset) ──
-  const pop  = document.getElementById("statusPopup");
+  // Show existing note
+  const existing = attMap[td.dataset.date]?.[td.dataset.sid];
+  const existingStatus = existing?.status;
+  const existingNote   = existing?.note || "";
+  const showNote = NOTE_STATUSES.has(existingStatus);
+  const noteSection = document.getElementById("noteSection");
+  noteSection.style.display = showNote ? "block" : "none";
+  document.getElementById("noteText").value = existingNote;
+
+  const pop = document.getElementById("statusPopup");
   pop.classList.add("open");
   const rect = td.getBoundingClientRect();
-  const popW = 148, popH = 235;
+  const popW = 210, popH = showNote ? 380 : 250;
   let left = rect.left, top = rect.bottom + 6;
   if (left + popW > window.innerWidth - 8)  left = window.innerWidth - popW - 8;
   if (left < 8) left = 8;
@@ -1483,15 +1515,13 @@ window.openPopup = function(td, event) {
 };
 
 window.applyStatus = async function(newStatus) {
-  const { studentId, dateStr, subjectId, classId, studentName, tdEl } = _popup;
+  const { studentId, dateStr, subjectId, classId, studentName } = _popup;
   if (!studentId||!dateStr||!classId) return;
   document.getElementById("popupSaving").style.display = "block";
 
   const oldRec    = attMap[dateStr]?.[studentId];
   const oldStatus = oldRec?.status || null;
-  const clsName   = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
-  const subName   = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
-  const statusLabel = { present:"มาเรียน", late:"สาย", absent:"ขาดเรียน", ghost:"ไม่มีตัวตน" };
+  const existingNote = NOTE_STATUSES.has(newStatus) ? (document.getElementById("noteText").value.trim() || oldRec?.note || "") : "";
 
   try {
     const stu = (window.__allStudents||[]).find(x => x.id === studentId);
@@ -1501,7 +1531,6 @@ window.applyStatus = async function(newStatus) {
     if (wasGhost !== nowGhost) {
       await setDoc(doc(db, "students", studentId), { ghost: nowGhost }, { merge: true });
       if (stu) stu.ghost = nowGhost;
-      window.__allStudents = window.__allStudents || [];
       sessionStorage.removeItem("students_" + classId);
     }
 
@@ -1520,33 +1549,67 @@ window.applyStatus = async function(newStatus) {
       await setDoc(doc(db, "attendance", docId), {
         studentId, studentName, classId,
         subjectId: subjectId||"",
-        date: dateStr,
-        status: newStatus,
-        note: "",
+        date: dateStr, status: newStatus,
+        note: existingNote,
         savedAt: new Date().toISOString()
       });
       if (!attMap[dateStr]) attMap[dateStr] = {};
-      attMap[dateStr][studentId] = { status:newStatus, note:"", savedAt:new Date().toISOString(), docId };
+      attMap[dateStr][studentId] = { status:newStatus, note:existingNote, savedAt:new Date().toISOString(), docId };
     }
 
-    window.logAction && window.logAction("attendance",
-      `แก้ไขสถานะเช็คชื่อ "${studentName}" จาก ${statusLabel[oldStatus]||oldStatus||"(ว่าง)"} → ${statusLabel[newStatus]||newStatus||"(ลบ)"}`,
-      {
-        action:"editAttendance", studentId, studentName,
-        date:dateStr, before:oldStatus, after:newStatus,
-        beforeLabel:statusLabel[oldStatus]||oldStatus||"(ว่าง)",
-        afterLabel:statusLabel[newStatus]||newStatus||"(ลบ)",
-        classId, className:clsName, subjectId:subjectId||"", subjectName:subName,
-      }
-    );
-
+    // Re-render before possibly showing note
     const [year,mon] = document.getElementById("monthInput").value.split("-").map(Number);
     renderGrid(year, mon, new Date(year,mon,0).getDate());
+
+    // If status supports note → show note section instead of closing
+    if (newStatus && NOTE_STATUSES.has(newStatus)) {
+      document.getElementById("popupSaving").style.display = "none";
+      const noteSection = document.getElementById("noteSection");
+      noteSection.style.display = "block";
+      document.getElementById("noteText").value = existingNote;
+      showToast("บันทึกสถานะเรียบร้อย ✓ (ใส่หมายเหตุได้)","success");
+      return;
+    }
+
     showToast("บันทึกเรียบร้อย ✓","success");
   } catch(e) {
     showToast("เกิดข้อผิดพลาด: "+e.message,"error");
   }
   document.getElementById("statusPopup").classList.remove("open");
+};
+
+// Save note separately (for existing status)
+window.saveNote = async function() {
+  const { studentId, dateStr, subjectId, classId, studentName } = _popup;
+  if (!studentId||!dateStr||!classId) return;
+  const noteVal = document.getElementById("noteText").value.trim();
+  document.getElementById("popupSaving").style.display = "block";
+
+  const existing = attMap[dateStr]?.[studentId];
+  if (!existing || !existing.status) { showToast("กรุณาเลือกสถานะก่อนใส่หมายเหตุ","error"); return; }
+
+  try {
+    const docId = existing.docId || `${classId}_${subjectId||"none"}_${dateStr}_${studentId}`;
+    await setDoc(doc(db, "attendance", docId), {
+      studentId, studentName, classId,
+      subjectId: subjectId||"",
+      date: dateStr, status: existing.status,
+      note: noteVal,
+      savedAt: new Date().toISOString()
+    });
+    attMap[dateStr][studentId] = { ...existing, note: noteVal };
+    const [year,mon] = document.getElementById("monthInput").value.split("-").map(Number);
+    renderGrid(year, mon, new Date(year,mon,0).getDate());
+    showToast("บันทึกหมายเหตุเรียบร้อย ✓","success");
+  } catch(e) {
+    showToast("เกิดข้อผิดพลาด: "+e.message,"error");
+  }
+  document.getElementById("popupSaving").style.display = "none";
+  document.getElementById("statusPopup").classList.remove("open");
+};
+
+window.clearNote = function() {
+  document.getElementById("noteText").value = "";
 };
 
 window.closePopup = function() {
@@ -1568,35 +1631,6 @@ document.addEventListener("keydown", e => {
   }
 });
 
-// ─── Log Filter Change ────────────────────────────────────────
-let _sumFilterLogTimer = null;
-function logSummaryFilterChange() {
-  clearTimeout(_sumFilterLogTimer);
-  _sumFilterLogTimer = setTimeout(() => {
-    const classId   = document.getElementById("classSelect").value;
-    const subjectId = document.getElementById("subjectSelect").value;
-    const month     = document.getElementById("monthInput").value;
-    if (!classId || !month) return;
-    const clsName = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
-    const subName = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
-    const [year,mon] = month.split("-").map(Number);
-    window.logAction && window.logAction("attendance",
-      `เปลี่ยน filter สรุปเช็คชื่อ — ${clsName}${subName?" / "+subName:""} เดือน ${THAI_MONTHS[mon]} ${year+543}`,
-      {
-        action:"changeFilter", page:"summary", month, year,
-        monthName:THAI_MONTHS[mon], classId, className:clsName,
-        subjectId:subjectId||"", subjectName:subName,
-      }
-    );
-  }, 1500);
-}
-document.addEventListener("DOMContentLoaded", () => {
-  ["classSelect","subjectSelect","monthInput"].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener("change", logSummaryFilterChange);
-  });
-});
-
 // ─── Color System ─────────────────────────────────────────────
 const DAY_DEFS = [
   { key:"sun", label:"อา", defH:"#fde0e0", defT:"#b91c1c" },
@@ -1610,29 +1644,27 @@ const DAY_DEFS = [
 const LS_KEY = "att_color_settings_v2";
 
 function hexToRgb(hex) {
-  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
   return {r,g,b};
 }
 function rgbToHex(r,g,b) {
   return "#"+[r,g,b].map(v=>Math.round(v).toString(16).padStart(2,"0")).join("");
 }
 function blendToWhite(hex, intensity) {
-  const {r,g,b} = hexToRgb(hex);
-  const f = intensity/100;
-  return rgbToHex(255+(r-255)*f, 255+(g-255)*f, 255+(b-255)*f);
+  const {r,g,b}=hexToRgb(hex), f=intensity/100;
+  return rgbToHex(255+(r-255)*f,255+(g-255)*f,255+(b-255)*f);
 }
 
 let colorSettings = null;
-
 function defaultSettings() {
-  const s = { today_h:"#0f3460", today_t:"#ffffff", focus:"#2563eb", focusIntensity:7, days:{} };
-  DAY_DEFS.forEach(d => { s.days[d.key] = { base: d.defH, txt: d.defT, intensity: 60 }; });
+  const s={today_h:"#0f3460",today_t:"#ffffff",focus:"#2563eb",focusIntensity:7,days:{}};
+  DAY_DEFS.forEach(d=>{s.days[d.key]={base:d.defH,txt:d.defT,intensity:60};});
   return s;
 }
 
 async function initColorSystem() {
   try {
-    const snap = await getDoc(doc(db, "settings", "tableColors"));
+    const snap = await getDoc(doc(db,"settings","tableColors"));
     if (snap.exists()) {
       colorSettings = snap.data();
       try { localStorage.setItem(LS_KEY, JSON.stringify(colorSettings)); } catch{}
@@ -1641,7 +1673,6 @@ async function initColorSystem() {
       colorSettings = raw ? JSON.parse(raw) : defaultSettings();
     }
   } catch(err) {
-    console.warn("Color settings: Firestore unavailable, using localStorage", err);
     try {
       const raw = localStorage.getItem(LS_KEY);
       colorSettings = raw ? JSON.parse(raw) : defaultSettings();
@@ -1655,19 +1686,16 @@ function applyColorSettings() {
   const s = colorSettings;
   const root = document.documentElement;
   DAY_DEFS.forEach(d => {
-    const ds = s.days[d.key] || { base: d.defH, txt: d.defT, intensity: 60 };
-    const hBg  = blendToWhite(ds.base, ds.intensity);
-    const cBg  = blendToWhite(ds.base, Math.round(ds.intensity * 0.35));
-    root.style.setProperty(`--dc-${d.key}-h`, hBg);
+    const ds = s.days[d.key]||{base:d.defH,txt:d.defT,intensity:60};
+    root.style.setProperty(`--dc-${d.key}-h`, blendToWhite(ds.base, ds.intensity));
     root.style.setProperty(`--dc-${d.key}-t`, ds.txt);
-    root.style.setProperty(`--dc-${d.key}-c`, cBg);
+    root.style.setProperty(`--dc-${d.key}-c`, blendToWhite(ds.base, Math.round(ds.intensity*0.35)));
   });
   root.style.setProperty("--dc-today-h", s.today_h||"#0f3460");
   root.style.setProperty("--dc-today-t", s.today_t||"#ffffff");
-  const fc = s.focus||"#2563eb";
-  const fi = s.focusIntensity??7;
+  const fc=s.focus||"#2563eb", fi=s.focusIntensity??7;
   root.style.setProperty("--dc-focus", fc);
-  const {r,g,b} = hexToRgb(fc);
+  const {r,g,b}=hexToRgb(fc);
   root.style.setProperty("--dc-focus-row", `rgba(${r},${g},${b},${fi/100})`);
   root.style.setProperty("--dc-focus-col", `rgba(${r},${g},${b},${fi/100})`);
 }
@@ -1678,7 +1706,7 @@ function buildColorPanel() {
   if (!container) return;
   container.innerHTML = "";
   DAY_DEFS.forEach(d => {
-    const ds = s.days[d.key] || { base: d.defH, txt: d.defT, intensity: 60 };
+    const ds = s.days[d.key]||{base:d.defH,txt:d.defT,intensity:60};
     const hBg = blendToWhite(ds.base, ds.intensity);
     const row = document.createElement("div");
     row.className = "cp-day-row";
@@ -1704,133 +1732,88 @@ function buildColorPanel() {
     container.appendChild(row);
   });
   updatePreviewStrip();
-
-  const swTH = document.getElementById("swTodayH");
-  const swTT = document.getElementById("swTodayT");
-  if (swTH) {
-    swTH.style.background = s.today_h||"#0f3460";
-    swTH.querySelector(".cp-swatch-fill").style.background = s.today_h||"#0f3460";
-    swTH.querySelector("input").value = s.today_h||"#0f3460";
-  }
-  if (swTT) {
-    swTT.style.background = s.today_t||"#ffffff";
-    swTT.querySelector(".cp-swatch-fill").style.background = s.today_t||"#ffffff";
-    swTT.querySelector("input").value = s.today_t||"#ffffff";
-  }
-  const swF = document.getElementById("swFocus");
-  if (swF) {
-    swF.style.background = s.focus||"#2563eb";
-    swF.querySelector(".cp-swatch-fill").style.background = s.focus||"#2563eb";
-    swF.querySelector("input").value = s.focus||"#2563eb";
-  }
-  const fiEl = document.getElementById("focusIntensity");
-  const fiValEl = document.getElementById("focusIntensityVal");
-  if (fiEl) fiEl.value = s.focusIntensity??7;
-  if (fiValEl) fiValEl.textContent = (s.focusIntensity??7)+"%";
+  const swTH=document.getElementById("swTodayH"), swTT=document.getElementById("swTodayT");
+  if (swTH) { swTH.style.background=s.today_h||"#0f3460"; swTH.querySelector(".cp-swatch-fill").style.background=s.today_h||"#0f3460"; swTH.querySelector("input").value=s.today_h||"#0f3460"; }
+  if (swTT) { swTT.style.background=s.today_t||"#ffffff"; swTT.querySelector(".cp-swatch-fill").style.background=s.today_t||"#ffffff"; swTT.querySelector("input").value=s.today_t||"#ffffff"; }
+  const swF=document.getElementById("swFocus");
+  if (swF) { swF.style.background=s.focus||"#2563eb"; swF.querySelector(".cp-swatch-fill").style.background=s.focus||"#2563eb"; swF.querySelector("input").value=s.focus||"#2563eb"; }
+  const fiEl=document.getElementById("focusIntensity"), fiValEl=document.getElementById("focusIntensityVal");
+  if (fiEl) fiEl.value=s.focusIntensity??7;
+  if (fiValEl) fiValEl.textContent=(s.focusIntensity??7)+"%";
 }
-
 function updatePreviewStrip() {
-  const strip = document.getElementById("cpPreviewStrip");
+  const strip=document.getElementById("cpPreviewStrip");
   if (!strip) return;
-  strip.innerHTML = "";
-  DAY_DEFS.forEach(d => {
-    const ds = colorSettings.days[d.key] || { base: d.defH, intensity: 60 };
-    const hBg = blendToWhite(ds.base, ds.intensity);
-    const el = document.createElement("div");
-    el.style.background = hBg;
-    el.title = d.label;
+  strip.innerHTML="";
+  DAY_DEFS.forEach(d=>{
+    const ds=colorSettings.days[d.key]||{base:d.defH,intensity:60};
+    const el=document.createElement("div");
+    el.style.background=blendToWhite(ds.base,ds.intensity);
+    el.title=d.label;
     strip.appendChild(el);
   });
 }
-
-window.onSwatchInput = function(key, part, val) {
-  if (key === "today") {
-    if (part === "h") { colorSettings.today_h = val; }
-    else { colorSettings.today_t = val; }
-    const sw = document.getElementById(`swToday${part==="h"?"H":"T"}`);
-    if (sw) { sw.style.background=val; sw.querySelector(".cp-swatch-fill").style.background=val; }
-  } else {
-    if (!colorSettings.days[key]) colorSettings.days[key] = {};
-    if (part === "h") {
-      colorSettings.days[key].base = val;
-      const ds = colorSettings.days[key];
-      const hBg = blendToWhite(val, ds.intensity||60);
-      const sw = document.getElementById(`sw-${key}-h`);
-      if (sw) { sw.style.background=hBg; sw.querySelector(".cp-swatch-fill").style.background=hBg; }
-    } else {
-      colorSettings.days[key].txt = val;
-      const sw = document.getElementById(`sw-${key}-t`);
-      if (sw) { sw.style.background=val; sw.querySelector(".cp-swatch-fill").style.background=val; }
+window.onSwatchInput=function(key,part,val){
+  if(key==="today"){
+    if(part==="h"){colorSettings.today_h=val;}else{colorSettings.today_t=val;}
+    const sw=document.getElementById(`swToday${part==="h"?"H":"T"}`);
+    if(sw){sw.style.background=val;sw.querySelector(".cp-swatch-fill").style.background=val;}
+  }else{
+    if(!colorSettings.days[key])colorSettings.days[key]={};
+    if(part==="h"){
+      colorSettings.days[key].base=val;
+      const ds=colorSettings.days[key], hBg=blendToWhite(val,ds.intensity||60);
+      const sw=document.getElementById(`sw-${key}-h`);
+      if(sw){sw.style.background=hBg;sw.querySelector(".cp-swatch-fill").style.background=hBg;}
+    }else{
+      colorSettings.days[key].txt=val;
+      const sw=document.getElementById(`sw-${key}-t`);
+      if(sw){sw.style.background=val;sw.querySelector(".cp-swatch-fill").style.background=val;}
     }
     updatePreviewStrip();
   }
   applyColorSettings();
 };
-
-window.onIntensityInput = function(key, val) {
-  if (!colorSettings.days[key]) colorSettings.days[key] = {};
-  colorSettings.days[key].intensity = parseInt(val);
-  const iv = document.getElementById(`iv-${key}`);
-  if (iv) iv.textContent = val+"%";
-  const ds = colorSettings.days[key];
-  const hBg = blendToWhite(ds.base||"#cccccc", ds.intensity);
-  const sw = document.getElementById(`sw-${key}-h`);
-  if (sw) { sw.style.background=hBg; sw.querySelector(".cp-swatch-fill").style.background=hBg; }
-  updatePreviewStrip();
+window.onIntensityInput=function(key,val){
+  if(!colorSettings.days[key])colorSettings.days[key]={};
+  colorSettings.days[key].intensity=parseInt(val);
+  const iv=document.getElementById(`iv-${key}`);if(iv)iv.textContent=val+"%";
+  const ds=colorSettings.days[key],hBg=blendToWhite(ds.base||"#cccccc",ds.intensity);
+  const sw=document.getElementById(`sw-${key}-h`);
+  if(sw){sw.style.background=hBg;sw.querySelector(".cp-swatch-fill").style.background=hBg;}
+  updatePreviewStrip();applyColorSettings();
+};
+window.onFocusColorInput=function(val){
+  colorSettings.focus=val;
+  const sw=document.getElementById("swFocus");
+  if(sw){sw.style.background=val;sw.querySelector(".cp-swatch-fill").style.background=val;}
   applyColorSettings();
 };
-
-window.onFocusColorInput = function(val) {
-  colorSettings.focus = val;
-  const sw = document.getElementById("swFocus");
-  if (sw) { sw.style.background=val; sw.querySelector(".cp-swatch-fill").style.background=val; }
+window.onFocusIntensityInput=function(val){
+  colorSettings.focusIntensity=parseInt(val);
+  const el=document.getElementById("focusIntensityVal");if(el)el.textContent=val+"%";
   applyColorSettings();
 };
-window.onFocusIntensityInput = function(val) {
-  colorSettings.focusIntensity = parseInt(val);
-  const el = document.getElementById("focusIntensityVal");
-  if (el) el.textContent = val+"%";
+window.openColorPanel=function(){buildColorPanel();document.getElementById("colorPanel").classList.add("open");document.getElementById("colorPanelOverlay").classList.add("open");};
+window.closeColorPanel=function(){document.getElementById("colorPanel").classList.remove("open");document.getElementById("colorPanelOverlay").classList.remove("open");};
+window.saveColorPanel=async function(){
+  const btn=document.querySelector(".cp-btn-save");
+  if(btn){btn.textContent="กำลังบันทึก...";btn.disabled=true;}
+  try{localStorage.setItem(LS_KEY,JSON.stringify(colorSettings));}catch{}
   applyColorSettings();
-};
-
-window.openColorPanel = function() {
-  buildColorPanel();
-  document.getElementById("colorPanel").classList.add("open");
-  document.getElementById("colorPanelOverlay").classList.add("open");
-};
-window.closeColorPanel = function() {
-  document.getElementById("colorPanel").classList.remove("open");
-  document.getElementById("colorPanelOverlay").classList.remove("open");
-};
-window.saveColorPanel = async function() {
-  const btn = document.querySelector(".cp-btn-save");
-  if (btn) { btn.textContent = "กำลังบันทึก..."; btn.disabled = true; }
-  try { localStorage.setItem(LS_KEY, JSON.stringify(colorSettings)); } catch{}
-  applyColorSettings();
-  try {
-    await setDoc(doc(db, "settings", "tableColors"), { ...colorSettings, savedAt: new Date().toISOString() });
+  try{
+    await setDoc(doc(db,"settings","tableColors"),{...colorSettings,savedAt:new Date().toISOString()});
     showToast("บันทึกลง Database แล้ว ✓","success");
-    window.logAction && window.logAction("attendance","บันทึกตั้งค่าสีตาราง",
-      { action:"saveColorSettings", savedTo:"firestore", settingsKeys:Object.keys(colorSettings) });
-  } catch(err) {
-    console.error("Save color to Firestore failed:", err);
-    showToast("บันทึก localStorage แล้ว (Firestore ขัดข้อง)","success");
-  } finally {
-    if (btn) { btn.textContent = "บันทึก ✓"; btn.disabled = false; }
-  }
+  }catch(err){showToast("บันทึก localStorage แล้ว (Firestore ขัดข้อง)","success");}
+  finally{if(btn){btn.textContent="บันทึก ✓";btn.disabled=false;}}
   closeColorPanel();
 };
-window.resetColorPanel = async function() {
-  colorSettings = defaultSettings();
-  try { localStorage.removeItem(LS_KEY); } catch{}
-  applyColorSettings();
-  buildColorPanel();
-  try {
-    await setDoc(doc(db, "settings", "tableColors"), { ...colorSettings, savedAt: new Date().toISOString() });
-    showToast("รีเซ็ตสีและบันทึก Database แล้ว","success");
-  } catch {
-    showToast("รีเซ็ตสีเรียบร้อย (localStorage)","success");
-  }
+window.resetColorPanel=async function(){
+  colorSettings=defaultSettings();
+  try{localStorage.removeItem(LS_KEY);}catch{}
+  applyColorSettings();buildColorPanel();
+  try{await setDoc(doc(db,"settings","tableColors"),{...colorSettings,savedAt:new Date().toISOString()});showToast("รีเซ็ตสีและบันทึก Database แล้ว","success");}
+  catch{showToast("รีเซ็ตสีเรียบร้อย (localStorage)","success");}
 };
 
 // ─── Focus Cell System ────────────────────────────────────────
@@ -1839,106 +1822,82 @@ let focusRow = -1, focusCol = -1;
 
 window.toggleFocusMode = function() {
   focusModeActive = !focusModeActive;
-  const btn = document.getElementById("focusToggleBtn");
-  const lbl = document.getElementById("focusToggleLabel");
-  if (focusModeActive) {
-    btn.style.background = "var(--dc-focus)";
-    btn.style.color = "white";
-    btn.style.borderColor = "var(--dc-focus)";
-    lbl.textContent = "Focus: เปิด";
-  } else {
-    btn.style.background = "white";
-    btn.style.color = "var(--muted)";
-    btn.style.borderColor = "var(--border)";
-    lbl.textContent = "Focus Mode";
-    clearFocus();
+  const btn=document.getElementById("focusToggleBtn"), lbl=document.getElementById("focusToggleLabel");
+  if(focusModeActive){
+    btn.style.background="var(--dc-focus)";btn.style.color="white";btn.style.borderColor="var(--dc-focus)";
+    lbl.textContent="Focus: เปิด";
+  }else{
+    btn.style.background="white";btn.style.color="var(--muted)";btn.style.borderColor="var(--border)";
+    lbl.textContent="Focus Mode";clearFocus();
   }
 };
-
 function clearFocus() {
-  document.querySelectorAll(".focus-row,.focus-cell,.focus-col,.focus-col-hdr,.focus-name").forEach(el => {
+  document.querySelectorAll(".focus-row,.focus-cell,.focus-col,.focus-col-hdr,.focus-name").forEach(el=>{
     el.classList.remove("focus-row","focus-cell","focus-col","focus-col-hdr","focus-name");
   });
-  focusRow = -1; focusCol = -1;
+  focusRow=-1;focusCol=-1;
 }
-
-function applyFocus(rowIdx, colIdx) {
-  clearFocus();
-  focusRow = rowIdx; focusCol = colIdx;
-  const tbl = document.querySelector(".att-table");
-  if (!tbl) return;
-
-  const rows = tbl.querySelectorAll("tbody tr");
-  const headerRows = tbl.querySelectorAll("thead tr");
-
-  if (rowIdx >= 0 && rowIdx < rows.length) {
+function applyFocus(rowIdx,colIdx) {
+  clearFocus();focusRow=rowIdx;focusCol=colIdx;
+  const tbl=document.querySelector(".att-table");if(!tbl)return;
+  const rows=tbl.querySelectorAll("tbody tr"), headerRows=tbl.querySelectorAll("thead tr");
+  if(rowIdx>=0&&rowIdx<rows.length){
     rows[rowIdx].classList.add("focus-row");
-    const nameCell = rows[rowIdx].querySelector(".cell-name");
-    if (nameCell) nameCell.classList.add("focus-name");
+    const nameCell=rows[rowIdx].querySelector(".cell-name");if(nameCell)nameCell.classList.add("focus-name");
   }
-
-  headerRows.forEach(hRow => {
-    hRow.querySelectorAll("th[data-col-idx]").forEach(th => {
-      if (parseInt(th.dataset.colIdx) === colIdx) th.classList.add("focus-col-hdr");
+  headerRows.forEach(hRow=>{
+    hRow.querySelectorAll("th[data-col-idx]").forEach(th=>{
+      if(parseInt(th.dataset.colIdx)===colIdx)th.classList.add("focus-col-hdr");
     });
   });
-
-  rows.forEach((tr, ri) => {
-    tr.querySelectorAll("td[data-col-idx]").forEach(td => {
-      if (parseInt(td.dataset.colIdx) === colIdx) {
+  rows.forEach((tr,ri)=>{
+    tr.querySelectorAll("td[data-col-idx]").forEach(td=>{
+      if(parseInt(td.dataset.colIdx)===colIdx){
         td.classList.add("focus-col");
-        if (ri === rowIdx) td.classList.add("focus-cell");
+        if(ri===rowIdx)td.classList.add("focus-cell");
       }
     });
   });
 }
-
-let _focusRaf = null;
-document.addEventListener("mouseover", function(e) {
-  if (!focusModeActive) return;
-  const td = e.target.closest("td[data-col-idx]");
-  if (!td) return;
-  const tbl = td.closest(".att-table");
-  if (!tbl) return;
-  const row = td.closest("tr");
-  const rows = Array.from(tbl.querySelectorAll("tbody tr"));
-  const rowIdx = rows.indexOf(row);
-  const colIdx = parseInt(td.dataset.colIdx);
-  if (rowIdx < 0 || isNaN(colIdx)) return;
-  if (focusRow === rowIdx && focusCol === colIdx) return;
-  if (_focusRaf) cancelAnimationFrame(_focusRaf);
-  _focusRaf = requestAnimationFrame(() => { applyFocus(rowIdx, colIdx); });
+let _focusRaf=null;
+document.addEventListener("mouseover",function(e){
+  if(!focusModeActive)return;
+  const td=e.target.closest("td[data-col-idx]");if(!td)return;
+  const tbl=td.closest(".att-table");if(!tbl)return;
+  const row=td.closest("tr"), rows=Array.from(tbl.querySelectorAll("tbody tr"));
+  const rowIdx=rows.indexOf(row), colIdx=parseInt(td.dataset.colIdx);
+  if(rowIdx<0||isNaN(colIdx))return;
+  if(focusRow===rowIdx&&focusCol===colIdx)return;
+  if(_focusRaf)cancelAnimationFrame(_focusRaf);
+  _focusRaf=requestAnimationFrame(()=>{applyFocus(rowIdx,colIdx);});
 });
-
-document.addEventListener("mouseleave", function(e) {
-  if (!focusModeActive) return;
-  const tbl = e.target.closest(".att-table");
-  if (tbl && !tbl.contains(e.relatedTarget)) clearFocus();
-}, true);
-
-document.addEventListener("keydown", function(e) {
-  if (!focusModeActive || focusRow < 0) return;
-  const tbl = document.querySelector(".att-table");
-  if (!tbl) return;
-  const rows = tbl.querySelectorAll("tbody tr");
-  const colIdxes = Array.from(tbl.querySelectorAll("thead th[data-col-idx]")).map(th=>parseInt(th.dataset.colIdx));
-  const curColPos = colIdxes.indexOf(focusCol);
-  let newRow = focusRow, newColPos = curColPos;
-  if (e.key==="ArrowDown"||e.key==="ArrowUp"||e.key==="ArrowLeft"||e.key==="ArrowRight") {
+document.addEventListener("mouseleave",function(e){
+  if(!focusModeActive)return;
+  const tbl=e.target.closest(".att-table");
+  if(tbl&&!tbl.contains(e.relatedTarget))clearFocus();
+},true);
+document.addEventListener("keydown",function(e){
+  if(!focusModeActive||focusRow<0)return;
+  const tbl=document.querySelector(".att-table");if(!tbl)return;
+  const rows=tbl.querySelectorAll("tbody tr");
+  const colIdxes=Array.from(tbl.querySelectorAll("thead th[data-col-idx]")).map(th=>parseInt(th.dataset.colIdx));
+  const curColPos=colIdxes.indexOf(focusCol);
+  let newRow=focusRow,newColPos=curColPos;
+  if(["ArrowDown","ArrowUp","ArrowLeft","ArrowRight"].includes(e.key)){
     e.preventDefault();
-    if (e.key==="ArrowDown")  newRow = Math.min(focusRow+1, rows.length-1);
-    if (e.key==="ArrowUp")    newRow = Math.max(focusRow-1, 0);
-    if (e.key==="ArrowRight") newColPos = Math.min(curColPos+1, colIdxes.length-1);
-    if (e.key==="ArrowLeft")  newColPos = Math.max(curColPos-1, 0);
-    applyFocus(newRow, colIdxes[newColPos]);
+    if(e.key==="ArrowDown")  newRow=Math.min(focusRow+1,rows.length-1);
+    if(e.key==="ArrowUp")    newRow=Math.max(focusRow-1,0);
+    if(e.key==="ArrowRight") newColPos=Math.min(curColPos+1,colIdxes.length-1);
+    if(e.key==="ArrowLeft")  newColPos=Math.max(curColPos-1,0);
+    applyFocus(newRow,colIdxes[newColPos]);
   }
-  if (e.key==="Escape") { clearFocus(); }
+  if(e.key==="Escape")clearFocus();
 });
 
 function showToast(msg, type) {
-  const t = document.getElementById("toast");
-  t.textContent=msg; t.className="show "+type;
-  setTimeout(()=>{ t.className=""; }, 3000);
+  const t=document.getElementById("toast");
+  t.textContent=msg;t.className="show "+type;
+  setTimeout(()=>{t.className="";},3000);
 }
 </script>
 </body>
