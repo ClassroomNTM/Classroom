@@ -14,6 +14,7 @@
   --present:#1D9E75;--present-lt:#e1f5ee;
   --late:#EF9F27;--late-lt:#faeeda;
   --absent:#E24B4A;--absent-lt:#fef2f2;
+  --leave:#7C3AED;--leave-lt:#ede9fe;
   --ghost:#9ca3af;--ghost-lt:#f3f4f6;
 }
 body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
@@ -98,7 +99,7 @@ select:focus,input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,5
 .th-dayname{background:#fafaf8;font-size:10px;color:var(--muted);padding:4px 2px;}
 .th-daynum{background:#fafaf8;font-size:11px;font-weight:600;color:var(--text);padding:4px 2px;}
 .th-name{background:#f8f8f6;padding:8px 10px;text-align:left;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.05em;}
-/* ── DAY COLOR VARS (set by JS from localStorage) ── */
+/* ── DAY COLOR VARS ── */
 :root{
   --dc-sun-h:#fde0e0;--dc-sun-t:#b91c1c;--dc-sun-c:#fff0f0;
   --dc-mon-h:#fffde7;--dc-mon-t:#b45309;--dc-mon-c:#fffef5;
@@ -135,7 +136,7 @@ td.cell.col-sat{background:var(--dc-sat-c)!important;}
 .col-today.th-daynum{color:var(--dc-today-t)!important;background:var(--dc-today-h)!important;font-weight:800!important;outline:2px solid var(--dc-today-h);outline-offset:-1px;}
 td.cell.col-today{outline:1px solid var(--dc-today-h);outline-offset:-1px;}
 
-/* ── FOCUS CELL (Excel style) ── */
+/* ── FOCUS CELL ── */
 .att-table tr.focus-row td:not(.cell-name):not(.cell-no){background-color:var(--dc-focus-row)!important;}
 .att-table td.focus-col{background-color:var(--dc-focus-col)!important;}
 .att-table td.focus-cell{outline:2px solid var(--dc-focus)!important;outline-offset:-2px;background:rgba(37,99,235,0.13)!important;z-index:3;position:relative;}
@@ -183,6 +184,7 @@ tr.ghost-row td.cell-name{color:#9ca3af;}
 .dot-present{background:var(--present-lt);color:var(--present);}
 .dot-late{background:var(--late-lt);color:var(--late);}
 .dot-absent{background:var(--absent-lt);color:var(--absent);}
+.dot-leave{background:var(--leave-lt);color:var(--leave);}
 .dot-ghost{background:var(--ghost-lt);color:var(--ghost);}
 .dot-empty{background:#f3f4f6;color:#d1d5db;}
 td.cell.editable{cursor:pointer;}
@@ -190,11 +192,13 @@ td.cell.editable:hover .dot{transform:scale(1.18);box-shadow:0 2px 8px rgba(0,0,
 td.sum-present{background:#e1f5ee;color:#0F6E56;font-weight:600;}
 td.sum-late{background:#faeeda;color:#854F0B;font-weight:600;}
 td.sum-absent{background:#fef2f2;color:#A32D2D;font-weight:600;}
+td.sum-leave{background:#ede9fe;color:#5B21B6;font-weight:600;}
 td.sum-pct{background:#eff6ff;color:#185FA5;font-weight:600;}
 tr.footer-row td{background:#f3f4f6;font-weight:600;font-size:11px;color:var(--muted);}
 tr.footer-row td.f-present{background:#e1f5ee;color:#0F6E56;}
 tr.footer-row td.f-late{background:#faeeda;color:#854F0B;}
 tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
+tr.footer-row td.f-leave{background:#ede9fe;color:#5B21B6;}
 .pct-bar{height:3px;background:#e5e7eb;border-radius:99px;margin-top:3px;overflow:hidden;}
 .pct-fill{height:100%;border-radius:99px;background:var(--present);}
 .pct-fill.low{background:var(--absent);}
@@ -212,7 +216,6 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
 .multi-subj-name{font-size:12px;font-weight:500;color:var(--text);flex:1;}
 .multi-subj-status{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;padding:2px 8px;border-radius:99px;}
 .multi-subj-edit-icon{font-size:11px;color:var(--muted);opacity:.6;}
-/* step 2 — เลือกสถานะ */
 .multi-step2{display:none;flex-direction:column;gap:4px;}
 .multi-step2.open{display:flex;}
 .multi-back-btn{display:flex;align-items:center;gap:5px;padding:4px 6px;border:none;background:transparent;font-family:'Sarabun',sans-serif;font-size:12px;color:var(--muted);cursor:pointer;border-radius:6px;margin-bottom:2px;}
@@ -233,6 +236,7 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
 .popup-btn.p-present{background:#f0fdf4;color:#166534;}
 .popup-btn.p-late   {background:#fffbeb;color:#92400e;}
 .popup-btn.p-absent {background:#fef2f2;color:#b91c1c;}
+.popup-btn.p-leave  {background:#ede9fe;color:#5B21B6;}
 .popup-btn.p-ghost  {background:#f3f4f6;color:#6b7280;}
 .popup-btn.p-clear  {background:#f9fafb;color:#9ca3af;border:1px solid #e5e7eb;font-size:12px;}
 .popup-saving{font-size:11px;color:var(--muted);text-align:center;padding:4px;display:none;}
@@ -245,7 +249,6 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
 .del-modal h3{font-size:16px;font-weight:600;margin-bottom:8px;color:#b91c1c;}
 .del-modal p{font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6;}
 .del-modal strong{color:var(--text);}
-/* ── DELETE DAY ── */
 .del-day-input{width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-family:'Sarabun',sans-serif;font-size:13px;outline:none;margin-bottom:14px;transition:border-color .2s;}
 .del-day-input:focus{border-color:#b91c1c;box-shadow:0 0 0 3px rgba(185,28,28,.08);}
 .del-confirm-input{width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-family:'Sarabun',sans-serif;font-size:13px;outline:none;margin-bottom:14px;transition:border-color .2s;}
@@ -281,22 +284,14 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
   .metrics{grid-template-columns:repeat(2,1fr);gap:8px;}
   .metric-val{font-size:20px;}
   .btn{padding:7px 12px;font-size:12px;}
-
-  /* page-header: stack title + buttons */
   .page-header{flex-direction:column;align-items:flex-start;gap:8px;}
   .page-header > div{width:100%;display:flex;flex-wrap:wrap;gap:6px;}
   .page-header .btn{flex:1;min-width:120px;justify-content:center;}
-
-  /* filters stack */
   .filters{flex-direction:column;align-items:stretch;}
   .fgroup select,.fgroup input[type="month"]{width:100%;height:42px;font-size:14px;}
-
-  /* table toolbar */
   .table-header{flex-direction:column;align-items:flex-start;gap:8px;}
   .table-header > div{display:flex;flex-wrap:wrap;gap:6px;width:100%;}
   .table-header .btn{flex:1;min-width:100px;justify-content:center;}
-
-  /* legend wrap */
   .legend{gap:8px;}
 }
 @media(max-width:480px){
@@ -304,16 +299,11 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
   .brand-name{display:none;}
   .topbar-right .btn-logout{display:none;}
   .role-badge{display:none;}
-
   .main{padding:10px;}
   .page-title{font-size:16px;}
-
-  /* metrics: 2 col compact */
   .metrics{gap:6px;}
   .metric{padding:10px 12px;}
   .metric-val{font-size:18px;}
-
-  /* default-bar wrap */
   .default-bar{flex-wrap:wrap;gap:6px;}
 }
 </style>
@@ -438,6 +428,11 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
       <div class="metric-sub">ครั้ง</div>
     </div>
     <div class="metric">
+      <div class="metric-label">ลารวม</div>
+      <div class="metric-val" style="color:var(--leave);" id="mLeave">—</div>
+      <div class="metric-sub">ครั้ง</div>
+    </div>
+    <div class="metric">
       <div class="metric-label">เข้าเรียนเฉลี่ย</div>
       <div class="metric-val" style="color:var(--blue);" id="mPct">—</div>
       <div class="metric-sub">ของนักเรียนปกติ</div>
@@ -448,6 +443,7 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
     <div class="leg-item"><div class="leg-dot dot-present">ม</div> มาเรียน</div>
     <div class="leg-item"><div class="leg-dot dot-late">ส</div> สาย</div>
     <div class="leg-item"><div class="leg-dot dot-absent">ข</div> ขาด</div>
+    <div class="leg-item"><div class="leg-dot dot-leave">ล</div> ลา</div>
     <div class="leg-item"><div class="leg-dot dot-ghost">—</div> ไม่มีตัวตน</div>
     <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
       <button id="focusToggleBtn" onclick="toggleFocusMode()" style="display:none;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:white;font-family:Sarabun,sans-serif;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:5px;color:var(--muted);">
@@ -531,7 +527,7 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
   </div>
 </div>
 
-<!-- Multi-subject popup (multiMode) -->
+<!-- Multi-subject popup -->
 <div class="multi-popup" id="multiPopup">
   <div class="multi-popup-header">
     <div>
@@ -540,15 +536,14 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
     </div>
     <button class="popup-close-btn" onclick="closeMultiPopup()" title="ปิด">✕</button>
   </div>
-  <!-- step1: รายวิชา -->
   <div id="mpStep1"></div>
-  <!-- step2: เลือกสถานะ -->
   <div class="multi-step2" id="mpStep2">
     <button class="multi-back-btn" onclick="mpBack()">← กลับ</button>
     <div class="multi-editing-subj" id="mpEditingSubj"></div>
     <button class="popup-btn p-present" onclick="mpApplyStatus('present')">✓ มาเรียน</button>
     <button class="popup-btn p-late"    onclick="mpApplyStatus('late')">⏱ สาย</button>
     <button class="popup-btn p-absent"  onclick="mpApplyStatus('absent')">✗ ขาด</button>
+    <button class="popup-btn p-leave"   onclick="mpApplyStatus('leave')">📋 ลา</button>
     <button class="popup-btn p-clear"   onclick="mpApplyStatus(null)">🗑 ลบสถานะ</button>
     <div class="popup-saving" id="mpSaving">กำลังบันทึก...</div>
   </div>
@@ -566,6 +561,7 @@ tr.footer-row td.f-absent{background:#fef2f2;color:#A32D2D;}
   <button class="popup-btn p-present" onclick="applyStatus('present')">✓ มาเรียน</button>
   <button class="popup-btn p-late"    onclick="applyStatus('late')">⏱ สาย</button>
   <button class="popup-btn p-absent"  onclick="applyStatus('absent')">✗ ขาด</button>
+  <button class="popup-btn p-leave"   onclick="applyStatus('leave')">📋 ลา</button>
   <button class="popup-btn p-ghost"   onclick="applyStatus('ghost')">— ไม่มีตัวตน</button>
   <button class="popup-btn p-clear"   onclick="applyStatus(null)">🗑 ลบสถานะ</button>
   <div class="popup-saving" id="popupSaving">กำลังบันทึก...</div>
@@ -672,7 +668,6 @@ initAuth({ requireAdmin: true, onReady: async ({ role, user }) => {
   await initColorSystem();
   await loadSubjects();
 
-  // โหลด default class จาก Firestore
   if (currentUserId) {
     try {
       const prefSnap = await getDoc(doc(db, "userPrefs", currentUserId));
@@ -684,7 +679,6 @@ initAuth({ requireAdmin: true, onReady: async ({ role, user }) => {
 
   await loadClasses();
 
-  // apply ค่าเริ่มต้น
   const sel = document.getElementById("classSelect");
   if (savedDefaultClassId && [...sel.options].some(o => o.value === savedDefaultClassId)) {
     sel.value = savedDefaultClassId;
@@ -901,6 +895,7 @@ function statusDot(status) {
   if (status==="present") return `<span class="dot dot-present">ม</span>`;
   if (status==="late")    return `<span class="dot dot-late">ส</span>`;
   if (status==="absent")  return `<span class="dot dot-absent">ข</span>`;
+  if (status==="leave")   return `<span class="dot dot-leave">ล</span>`;
   if (status==="ghost")   return `<span class="dot dot-ghost">—</span>`;
   return `<span class="dot dot-empty">·</span>`;
 }
@@ -938,6 +933,7 @@ function renderGrid(year, mon, daysInMonth) {
   hName += `<th class="th-name" style="font-size:10px;">รวม<br>ม</th>
     <th class="th-name" style="font-size:10px;">รวม<br>ส</th>
     <th class="th-name" style="font-size:10px;">รวม<br>ข</th>
+    <th class="th-name" style="font-size:10px;">รวม<br>ล</th>
     <th class="th-name" style="font-size:10px;">%มา</th></tr>`;
 
   let hNum = `<tr>
@@ -949,10 +945,10 @@ function renderGrid(year, mon, daysInMonth) {
     hNum += `<th class="th-daynum col-day ${cls}" data-col-idx="${d}">${d}</th>`;
   });
   hNum += `<th class="th-daynum">—</th><th class="th-daynum">—</th>
-    <th class="th-daynum">—</th><th class="th-daynum">—</th></tr>`;
+    <th class="th-daynum">—</th><th class="th-daynum">—</th><th class="th-daynum">—</th></tr>`;
 
-  const dayPresent={}, dayLate={}, dayAbsent={};
-  let totalPresent=0, totalLate=0, totalAbsent=0;
+  const dayPresent={}, dayLate={}, dayAbsent={}, dayLeave={};
+  let totalPresent=0, totalLate=0, totalAbsent=0, totalLeave=0;
   const activeStudents = allStudents.filter(s=>!s.ghost);
   const ghostStudents  = allStudents.filter(s=>s.ghost);
   const daysWithData   = new Set(Object.keys(attMap));
@@ -960,7 +956,7 @@ function renderGrid(year, mon, daysInMonth) {
   let dataRows = "";
   [...allStudents].sort((a,b)=>(a.number||0)-(b.number||0)).forEach(s => {
     const isGhost = s.ghost === true;
-    let sP=0, sL=0, sA=0;
+    let sP=0, sL=0, sA=0, sLv=0;
     let cells = "";
 
     const multiMode = window.__multiMode || false;
@@ -977,13 +973,17 @@ function renderGrid(year, mon, daysInMonth) {
       const rawRec = attMap[dateStr]?.[s.id];
       if (multiMode) {
         const recs = Array.isArray(rawRec) ? rawRec : (rawRec ? [rawRec] : []);
-        const p = countFromRecords(recs,"present"), l = countFromRecords(recs,"late"), a = countFromRecords(recs,"absent");
-        sP+=p; sL+=l; sA+=a;
-        if (p) dayPresent[dateStr]=(dayPresent[dateStr]||0)+1;
-        if (l) dayLate[dateStr]=(dayLate[dateStr]||0)+1;
-        if (a) dayAbsent[dateStr]=(dayAbsent[dateStr]||0)+1;
+        const p  = countFromRecords(recs,"present");
+        const l  = countFromRecords(recs,"late");
+        const a  = countFromRecords(recs,"absent");
+        const lv = countFromRecords(recs,"leave");
+        sP+=p; sL+=l; sA+=a; sLv+=lv;
+        if (p)  dayPresent[dateStr]=(dayPresent[dateStr]||0)+1;
+        if (l)  dayLate[dateStr]=(dayLate[dateStr]||0)+1;
+        if (a)  dayAbsent[dateStr]=(dayAbsent[dateStr]||0)+1;
+        if (lv) dayLeave[dateStr]=(dayLeave[dateStr]||0)+1;
         const _subMap = window.__subjectMap || {};
-        const _stLabel = { present:"มาเรียน", late:"สาย", absent:"ขาด", ghost:"ไม่มีตัวตน" };
+        const _stLabel = { present:"มาเรียน", late:"สาย", absent:"ขาด", leave:"ลา", ghost:"ไม่มีตัวตน" };
         const tooltip = recs.length === 0
           ? "ไม่มีข้อมูล"
           : recs.map(r => (_subMap[r.subjectId] || r.subjectId || "ไม่ระบุวิชา") + " → " + (_stLabel[r.status] || r.status || "—")).join("\n");
@@ -993,9 +993,10 @@ function renderGrid(year, mon, daysInMonth) {
         cells += `<td ${mpEditAttr} style="padding:2px 1px;">${multiStatusDot(recs)}</td>`;
       } else {
         const status = (rawRec?.status === "ghost" && !isGhost) ? undefined : rawRec?.status;
-        if (status==="present") { sP++; dayPresent[dateStr]=(dayPresent[dateStr]||0)+1; }
-        if (status==="late")    { sL++; dayLate[dateStr]=(dayLate[dateStr]||0)+1; }
-        if (status==="absent")  { sA++; dayAbsent[dateStr]=(dayAbsent[dateStr]||0)+1; }
+        if (status==="present") { sP++;  dayPresent[dateStr]=(dayPresent[dateStr]||0)+1; }
+        if (status==="late")    { sL++;  dayLate[dateStr]=(dayLate[dateStr]||0)+1; }
+        if (status==="absent")  { sA++;  dayAbsent[dateStr]=(dayAbsent[dateStr]||0)+1; }
+        if (status==="leave")   { sLv++; dayLeave[dateStr]=(dayLeave[dateStr]||0)+1; }
         const editAttr = isAdmin
           ? `data-sid="${s.id}" data-date="${dateStr}" data-name="${(s.prefix?s.prefix+" ":"")+s.name}" class="cell ${cls} editable" onclick="openPopup(this,event)" ${colIdxAttr}`
           : `class="cell ${cls}" ${colIdxAttr}`;
@@ -1003,17 +1004,19 @@ function renderGrid(year, mon, daysInMonth) {
       }
     });
 
-    totalPresent += sP; totalLate += sL; totalAbsent += sA;
-    const sDenom = sP+sL+sA;
-    const sPct   = sDenom>0 ? Math.round((sP+sL)/sDenom*100) : null;
+    totalPresent += sP; totalLate += sL; totalAbsent += sA; totalLeave += sLv;
+    // %มา นับ ม + ส + ล เป็น "มา" (ลาถือว่ายังมีสถานะ), ไม่นับ ข
+    const sDenom = sP+sL+sA+sLv;
+    const sPct   = sDenom>0 ? Math.round((sP+sL+sLv)/sDenom*100) : null;
     const pctCls = sPct===null?"":sPct>=80?"":sPct>=60?"mid":"low";
     const nameHtml = isGhost
       ? `<span class="ghost-strikethrough">${s.prefix?s.prefix+" ":""}${s.name||"—"}</span> <span style="font-size:10px;color:#9ca3af;">(ไม่มีตัวตน)</span>`
       : `${s.prefix?s.prefix+" ":""}${s.name||"—"}`;
 
-    const sumP = isGhost ? `<td class="cell sum-present">—</td>` : `<td class="cell sum-present">${sP||"—"}</td>`;
-    const sumL = isGhost ? `<td class="cell sum-late">—</td>`    : `<td class="cell sum-late">${sL||"—"}</td>`;
-    const sumA = isGhost ? `<td class="cell sum-absent">—</td>`  : `<td class="cell sum-absent">${sA||"—"}</td>`;
+    const sumP  = isGhost ? `<td class="cell sum-present">—</td>` : `<td class="cell sum-present">${sP||"—"}</td>`;
+    const sumL  = isGhost ? `<td class="cell sum-late">—</td>`    : `<td class="cell sum-late">${sL||"—"}</td>`;
+    const sumA  = isGhost ? `<td class="cell sum-absent">—</td>`  : `<td class="cell sum-absent">${sA||"—"}</td>`;
+    const sumLv = isGhost ? `<td class="cell sum-leave">—</td>`   : `<td class="cell sum-leave">${sLv||"—"}</td>`;
     const sumPct = isGhost ? `<td class="cell sum-pct">—</td>`
       : sPct!==null
         ? `<td class="cell sum-pct"><div>${sPct}%</div><div class="pct-bar"><div class="pct-fill ${pctCls}" style="width:${sPct}%"></div></div></td>`
@@ -1022,23 +1025,24 @@ function renderGrid(year, mon, daysInMonth) {
     dataRows += `<tr class="${isGhost?"ghost-row":""}">
       <td class="cell-no">${s.number||"—"}</td>
       <td class="cell-name">${nameHtml}</td>
-      ${cells}${sumP}${sumL}${sumA}${sumPct}
+      ${cells}${sumP}${sumL}${sumA}${sumLv}${sumPct}
     </tr>`;
   });
 
   let footerCells = "";
   days.forEach(({dateStr}) => {
-    const p=dayPresent[dateStr]||0, l=dayLate[dateStr]||0, a=dayAbsent[dateStr]||0;
-    footerCells += (p+l+a)===0
+    const p=dayPresent[dateStr]||0, l=dayLate[dateStr]||0, a=dayAbsent[dateStr]||0, lv=dayLeave[dateStr]||0;
+    footerCells += (p+l+a+lv)===0
       ? `<td class="cell" style="color:#d1d5db;font-size:10px;">—</td>`
       : `<td class="cell" style="font-size:10px;">
           <span style="color:var(--present);font-weight:600;">${p}</span>
           ${l?`<span style="color:var(--late);">/${l}</span>`:""}
           ${a?`<span style="color:var(--absent);">/${a}</span>`:""}
+          ${lv?`<span style="color:var(--leave);">/${lv}</span>`:""}
         </td>`;
   });
-  const totD   = totalPresent+totalLate+totalAbsent;
-  const totPct = totD>0 ? Math.round((totalPresent+totalLate)/totD*100) : 0;
+  const totD   = totalPresent+totalLate+totalAbsent+totalLeave;
+  const totPct = totD>0 ? Math.round((totalPresent+totalLate+totalLeave)/totD*100) : 0;
   const footerRow = `<tr class="footer-row">
     <td class="cell-no">—</td>
     <td class="cell-name" style="font-size:11px;font-weight:600;">รวมแต่ละวัน</td>
@@ -1046,6 +1050,7 @@ function renderGrid(year, mon, daysInMonth) {
     <td class="f-present">${totalPresent}</td>
     <td class="f-late">${totalLate}</td>
     <td class="f-absent">${totalAbsent}</td>
+    <td class="f-leave">${totalLeave}</td>
     <td style="background:#eff6ff;color:#185FA5;font-weight:600;">${totPct}%</td>
   </tr>`;
 
@@ -1056,6 +1061,7 @@ function renderGrid(year, mon, daysInMonth) {
   document.getElementById("mPresent").textContent = daysWithData.size>0
     ? (totalPresent/daysWithData.size).toFixed(1) : "—";
   document.getElementById("mAbsent").textContent  = totalAbsent;
+  document.getElementById("mLeave").textContent   = totalLeave;
   document.getElementById("mPct").textContent     = totPct+"%";
 
   const clsName = document.getElementById("classSelect").selectedOptions[0]?.text||"";
@@ -1085,27 +1091,28 @@ window.exportCSV = function() {
 
   const clsName = document.getElementById("classSelect").selectedOptions[0]?.text||"";
   const subName = document.getElementById("subjectSelect").selectedOptions[0]?.text||"";
-  const headerRow = ["ที่","ชื่อ-สกุล",...days.map(x=>x.d),"รวมมา","รวมสาย","รวมขาด","%มา"];
+  const headerRow = ["ที่","ชื่อ-สกุล",...days.map(x=>x.d),"รวมมา","รวมสาย","รวมขาด","รวมลา","%มา"];
   const rows = [headerRow];
 
   [...allStudents].sort((a,b)=>(a.number||0)-(b.number||0)).forEach(s => {
     const isGhost = s.ghost===true;
     const name    = (s.prefix?s.prefix+" ":"")+(s.name||"");
-    let p=0,l=0,a=0;
+    let p=0,l=0,a=0,lv=0;
     const cells = days.map(({d}) => {
       if (isGhost) return "—";
       const dateStr = `${year}-${String(mon).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
       const st = attMap[dateStr]?.[s.id]?.status;
-      if (st==="present"){p++;return"ม";}
-      if (st==="late")   {l++;return"ส";}
-      if (st==="absent") {a++;return"ข";}
+      if (st==="present"){p++; return"ม";}
+      if (st==="late")   {l++; return"ส";}
+      if (st==="absent") {a++; return"ข";}
+      if (st==="leave")  {lv++;return"ล";}
       if (st==="ghost")  return"—";
       return "";
     });
-    const tot = p+l+a;
-    const pct = tot>0?Math.round((p+l)/tot*100)+"%":"—";
+    const tot = p+l+a+lv;
+    const pct = tot>0?Math.round((p+l+lv)/tot*100)+"%":"—";
     rows.push([s.number||"—", isGhost?"[ไม่มีตัวตน] "+name:name, ...cells,
-      isGhost?"—":p, isGhost?"—":l, isGhost?"—":a, isGhost?"—":pct]);
+      isGhost?"—":p, isGhost?"—":l, isGhost?"—":a, isGhost?"—":lv, isGhost?"—":pct]);
   });
 
   const csv = [
@@ -1317,8 +1324,14 @@ window.openMultiPopup = function(td, event) {
   const recs = attMap[td.dataset.date]?.[td.dataset.sid];
   const recArr = Array.isArray(recs) ? recs : (recs ? [recs] : []);
   const subMap = window.__subjectMap || {};
-  const stLabel = { present:"มาเรียน", late:"สาย", absent:"ขาด", ghost:"ไม่มีตัวตน" };
-  const stColor = { present:"#f0fdf4;color:#166534", late:"#fffbeb;color:#92400e", absent:"#fef2f2;color:#b91c1c", ghost:"#f3f4f6;color:#6b7280" };
+  const stLabel = { present:"มาเรียน", late:"สาย", absent:"ขาด", leave:"ลา", ghost:"ไม่มีตัวตน" };
+  const stColor = {
+    present:"#f0fdf4;color:#166534",
+    late:"#fffbeb;color:#92400e",
+    absent:"#fef2f2;color:#b91c1c",
+    leave:"#ede9fe;color:#5B21B6",
+    ghost:"#f3f4f6;color:#6b7280"
+  };
 
   let step1Html = "";
   recArr.forEach(r => {
@@ -1339,7 +1352,6 @@ window.openMultiPopup = function(td, event) {
   document.getElementById("mpStep1").style.gap = "4px";
   document.getElementById("mpStep2").classList.remove("open");
 
-  // ── position popup (fixed ไม่มี scroll offset) ──
   const pop  = document.getElementById("multiPopup");
   pop.classList.add("open");
   const rect = td.getBoundingClientRect();
@@ -1377,7 +1389,7 @@ window.mpApplyStatus = async function(newStatus) {
 
   const subMap = window.__subjectMap || {};
   const subName = subMap[selectedSubjectId] || selectedSubjectId || "";
-  const statusLabel = { present:"มาเรียน", late:"สาย", absent:"ขาดเรียน", ghost:"ไม่มีตัวตน" };
+  const statusLabel = { present:"มาเรียน", late:"สาย", absent:"ขาดเรียน", leave:"ลา", ghost:"ไม่มีตัวตน" };
   const clsName = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
 
   const recs = attMap[dateStr]?.[studentId];
@@ -1443,11 +1455,10 @@ window.openPopup = function(td, event) {
   document.getElementById("popupDate").textContent = `${dd}/${dm}/${parseInt(dy)+543}`;
   document.getElementById("popupSaving").style.display = "none";
 
-  // ── position popup (fixed ไม่มี scroll offset) ──
   const pop  = document.getElementById("statusPopup");
   pop.classList.add("open");
   const rect = td.getBoundingClientRect();
-  const popW = 148, popH = 235;
+  const popW = 148, popH = 280; /* เพิ่มความสูงเพราะมีปุ่มลาเพิ่ม */
   let left = rect.left, top = rect.bottom + 6;
   if (left + popW > window.innerWidth - 8)  left = window.innerWidth - popW - 8;
   if (left < 8) left = 8;
@@ -1466,7 +1477,7 @@ window.applyStatus = async function(newStatus) {
   const oldStatus = oldRec?.status || null;
   const clsName   = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
   const subName   = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
-  const statusLabel = { present:"มาเรียน", late:"สาย", absent:"ขาดเรียน", ghost:"ไม่มีตัวตน" };
+  const statusLabel = { present:"มาเรียน", late:"สาย", absent:"ขาดเรียน", leave:"ลา", ghost:"ไม่มีตัวตน" };
 
   try {
     const stu = (window.__allStudents||[]).find(x => x.id === studentId);
