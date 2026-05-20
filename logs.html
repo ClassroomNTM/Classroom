@@ -342,8 +342,8 @@ tr:hover td { background:#fafafa; }
             <th>ผู้ใช้</th>
             <th>Role</th>
             <th>ประเภท</th>
-            <th>การกระทำ</th>
-            <th>รายละเอียด</th>
+            <th style="min-width:240px;">การกระทำ</th>
+            <th style="min-width:220px;">รายละเอียด</th>
             <th>สถานะ</th>
           </tr>
         </thead>
@@ -579,8 +579,8 @@ function renderTable() {
         </td>
         <td>${log.userRole==="admin"?`<span class="rbadge rbadge-admin">Admin</span>`:`<span class="rbadge rbadge-user">User</span>`}</td>
         <td>${getActionChip(log.actionType)}</td>
-        <td style="max-width:220px;"><div style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(log.description||"–")}${viewBadge}</div></td>
-        <td style="max-width:200px;"><div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${humanDetail(log.detail, log.actionType)}</div></td>
+        <td style="min-width:240px;max-width:360px;"><div style="font-size:13px;white-space:normal;word-break:break-word;line-height:1.5;">${escHtml(log.description||"–")}${viewBadge}</div></td>
+        <td style="min-width:220px;max-width:340px;"><div style="font-size:11px;color:var(--muted);white-space:normal;word-break:break-word;line-height:1.5;">${humanDetail(log.detail, log.actionType)}</div></td>
         <td>${getStatusChip(log.status)}</td>
       </tr>
       <tr class="detail-row" id="${detId}">
