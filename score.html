@@ -308,7 +308,7 @@ window.__db = db;
 window.doLogout = doLogout;
 
 let userRole = "", currentClassId = "", currentSubjectId = "", currentTopicId = "", currentMaxScore = 100;
-let students = [], scores = {}, topics = [];
+let students = [], scores = {}, topics = [], allClasses = [];
 const VIEW_TOPIC = "topic", VIEW_SUMMARY = "summary";
 let currentView = VIEW_TOPIC;
 let currentUserId = "";
@@ -431,6 +431,7 @@ async function loadClasses() {
     classes = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.name||"").localeCompare(b.name||"", "th"));
     cacheSet("classes", classes);
   }
+  allClasses = classes;
   const sel = document.getElementById("classSelect");
   classes.forEach(c => { const o = document.createElement("option"); o.value = c.id; o.textContent = c.name; sel.appendChild(o); });
   if (classes.length > 0 && !savedDefaultClassId) sel.value = classes[0].id;
@@ -443,13 +444,23 @@ window.onClassChange = async function() {
 
   let cached = studentsCacheGet(currentClassId);
   if (!cached) {
+    // ลองหา class name จาก allClasses ก่อน
+    const cls = allClasses.find(c => c.id === currentClassId);
+    const className = cls?.name || "";
+
+    // query ด้วย classId (document ID)
     let sSnap = await getDocs(query(collection(db, "students"), where("classId", "==", currentClassId)));
-    if (sSnap.empty) {
-      const allClasses = cacheGet("classes") || [];
-      const cls = allClasses.find(c => c.id === currentClassId);
-      const className = cls?.name || "";
-      if (className) sSnap = await getDocs(query(collection(db, "students"), where("classId", "==", className)));
+
+    // fallback: query ด้วยชื่อห้องเรียน ถ้าไม่เจอ
+    if (sSnap.empty && className) {
+      sSnap = await getDocs(query(collection(db, "students"), where("classId", "==", className)));
     }
+
+    // fallback: query ด้วยชื่อห้องเรียน ถ้า classId เป็น name อยู่แล้ว
+    if (sSnap.empty && !className) {
+      sSnap = await getDocs(query(collection(db, "students"), where("className", "==", currentClassId)));
+    }
+
     cached = sSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (a.number||0)-(b.number||0));
     studentsCacheSet(currentClassId, cached);
   }
