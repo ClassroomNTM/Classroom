@@ -218,7 +218,7 @@ input:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15
 <div id="toast"></div>
 
 <script type="module">
-import { initAuth, doLogout, db } from "./auth-guard.js";
+import { initAuth, doLogout, db, logAction } from "./auth-guard.js";
 import {
   collection, doc, getDocs, addDoc, setDoc, deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
