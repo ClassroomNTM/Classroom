@@ -740,6 +740,9 @@ initAuth({ requireAdmin: true, onReady: async ({ role, user }) => {
   document.getElementById("deleteDayBtn").style.display    = "inline-flex";
   document.getElementById("colorPanelBtn").style.display   = "inline-flex";
   document.getElementById("focusToggleBtn").style.display  = "inline-flex";
+
+  logAction("attendance", "เปิดหน้าสรุปเช็คชื่อ",
+    { action: "pageView", page: "attendance-summary.html", role });
   await initColorSystem();
   await loadSubjects();
 
@@ -1350,11 +1353,15 @@ window.doDeleteDay = async function() {
     );
   } catch(e) {
     showToast("เกิดข้อผิดพลาด: "+e.message,"error");
+    const clsNameErr = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
+    logAction("attendance",
+      `ลบข้อมูลเช็คชื่อรายวันล้มเหลว — ${clsNameErr} วันที่ ${dateVal}`,
+      { action:"deleteDay", date:dateVal, classId, error:e.message },
+      "error", e.message
+    );
     btn.disabled=false; btn.textContent="ลบข้อมูล";
   }
-};
-
-window.doDeleteMonth = async function() {
+}; = async function() {
   const classId   = document.getElementById("classSelect").value;
   const subjectId = document.getElementById("subjectSelect").value;
   const month     = document.getElementById("monthInput").value;
@@ -1405,6 +1412,12 @@ window.doDeleteMonth = async function() {
     );
   } catch(e) {
     showToast("เกิดข้อผิดพลาด: "+e.message,"error");
+    const clsNameErr = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
+    logAction("attendance",
+      `ลบข้อมูลเช็คชื่อทั้งเดือนล้มเหลว — ${clsNameErr}`,
+      { action:"deleteMonth", month:`${year}-${String(mon).padStart(2,"0")}`, classId, error:e.message },
+      "error", e.message
+    );
     btn.disabled=false; btn.textContent="ลบข้อมูล";
   }
 };

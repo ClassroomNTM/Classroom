@@ -322,6 +322,9 @@ initAuth({ requireAdmin: true, onReady: async ({ role, user }) => {
   document.getElementById("adminNavItem").style.display = "flex";
   document.getElementById("saveBtn").style.display = "inline-flex";
 
+  logAction("attendance", "เปิดหน้าเช็คชื่อ",
+    { action: "pageView", page: "attendance.html", role });
+
   // โหลด default class จาก Firestore
   if (currentUserId) {
     try {
@@ -906,6 +909,12 @@ window.saveAll = async function() {
     showToast(`บันทึกการเช็คชื่อเรียบร้อย ✓ (${activeStudents.length} คน)`, "success");
   } catch(e) {
     showToast("เกิดข้อผิดพลาด: " + e.message, "error");
+    const clsNameErr = document.getElementById("classSelect").selectedOptions[0]?.text || "";
+    logAction("attendance",
+      `บันทึกเช็คชื่อล้มเหลว${clsNameErr ? " — "+clsNameErr : ""}`,
+      { action: "saveAll", error: e.message },
+      "error", e.message
+    );
   }
 
   btn.disabled = false;

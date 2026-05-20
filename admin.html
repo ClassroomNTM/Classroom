@@ -314,6 +314,10 @@ initAuth({ requireAdmin: true, onReady: async ({ role }) => {
   document.getElementById("adminContent").style.display = "block";
   document.getElementById("adminNavItem") &&
     (document.getElementById("adminNavItem").style.display = "flex");
+
+  logAction("user_manage", "เปิดหน้าจัดการผู้ใช้",
+    { action: "pageView", page: "admin.html", role });
+
   await loadUsers();
 }});
 
@@ -324,6 +328,15 @@ async function loadUsers() {
   renderUsers();
   renderActivity();
   document.getElementById("userCountBadge").textContent = `${users.length} บัญชี`;
+  logAction("user_manage",
+    `โหลดรายชื่อผู้ใช้ทั้งหมด (${users.length} บัญชี)`,
+    {
+      action: "viewUsers",
+      totalUsers:  users.length,
+      adminCount:  users.filter(u => u.role === "admin").length,
+      userCount:   users.filter(u => u.role !== "admin").length,
+    }
+  );
 }
 
 function renderUsers() {
