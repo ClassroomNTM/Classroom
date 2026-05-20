@@ -366,7 +366,7 @@ tr:hover td{background:#fafafa;}
 <div id="toast"></div>
 
 <script type="module">
-import { initAuth, doLogout, db } from "./auth-guard.js";
+import { initAuth, doLogout, db, logAction } from "./auth-guard.js";
 import {
   collection, doc, getDocs, getDoc, setDoc, addDoc, deleteDoc, updateDoc,
   query, where, serverTimestamp, Timestamp
@@ -399,6 +399,9 @@ initAuth({ requireAdmin: true, onReady: async ({ role, user }) => {
   currentUserId = user?.uid || "";
   document.getElementById("adminNavItem").style.display = "flex";
   document.getElementById("addRoundBtn").style.display = "inline-flex";
+
+  logAction("fund", "เปิดหน้าเงินเก็บห้อง",
+    { action: "pageView", page: "fund.html", role });
 
   // โหลด default class จาก Firestore
   if (currentUserId) {
@@ -547,6 +550,13 @@ window.selectRound = async function(roundId){
   await loadPayments();
   await loadExpenses();
   renderAll();
+  const round = rounds.find(r=>r.id===roundId);
+  if(round){
+    const clsName = (cacheGet("classes")||[]).find(c=>c.id===currentClassId)?.name || currentClassId;
+    logAction("fund", `เปิดดูรอบ "${round.name}" — ${clsName}`,
+      { action:"viewRound", roundId, roundName:round.name, classId:currentClassId, className:clsName,
+        amountPerPerson:round.amountPerPerson });
+  }
 };
 
 async function loadPayments(){
@@ -689,20 +699,28 @@ window.renderStudentRows = function(){
   tbody.innerHTML = list.map(s=>{
     const p = payments[s.id];
     const paid = p?.paid;
+    const isGhost = s.ghost === true;
     const paidDate = paid && p.paidDate ? fmtDate(p.paidDate.toDate ? p.paidDate.toDate() : new Date(p.paidDate)) : "—";
     const amount   = paid ? `฿${num(p.amount)}` : "—";
     const note     = paid && p.note ? esc(p.note) : "—";
     const initials = (s.name||"?").substring(0,2);
-    const chipCls  = paid ? "chip chip-green" : "chip chip-red";
-    const chipTxt  = paid ? "จ่ายแล้ว" : "ยังไม่จ่าย";
-    const actionBtn = paid
-      ? `<button class="btn btn-sm btn-danger" onclick="cancelPay('${s.id}')">ยกเลิก</button>`
-      : `<button class="btn btn-sm btn-success" onclick="openPayModal('${s.id}','${esc(s.name)}',${round.amountPerPerson||0})">บันทึก</button>`;
-    return `<tr>
+    // ถ้าเป็น ghost: avatar สีแดงอ่อน, ชื่อขีดฆ่า + badge
+    const avStyle  = isGhost ? 'background:#fef2f2;color:#b91c1c;' : '';
+    const nameHtml = isGhost
+      ? `<span style="text-decoration:line-through;color:#9ca3af;">${esc((s.prefix?s.prefix+' ':'')+s.name)}</span>
+         <span style="margin-left:5px;padding:1px 7px;border-radius:99px;font-size:10px;font-weight:600;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;">ไม่มีตัวตน</span>`
+      : `${esc((s.prefix?s.prefix+' ':'')+s.name)}`;
+    const chipCls  = isGhost ? "chip chip-gray" : (paid ? "chip chip-green" : "chip chip-red");
+    const chipTxt  = isGhost ? "ไม่มีตัวตน" : (paid ? "จ่ายแล้ว" : "ยังไม่จ่าย");
+    const actionBtn = isGhost ? `<span style="font-size:11px;color:var(--muted);">—</span>`
+      : (paid
+        ? `<button class="btn btn-sm btn-danger" onclick="cancelPay('${s.id}')">ยกเลิก</button>`
+        : `<button class="btn btn-sm btn-success" onclick="openPayModal('${s.id}','${esc((s.prefix?s.prefix+' ':'')+s.name)}',${round.amountPerPerson||0})">บันทึก</button>`);
+    return `<tr style="${isGhost?'opacity:.65;background:#fffafa;':''}">
       <td style="color:var(--muted);font-size:12px;">${s.number||"—"}</td>
-      <td><div class="stu-cell"><div class="stu-av">${initials}</div><span class="stu-name">${esc(s.name)}</span></div></td>
-      <td>${amount}</td><td>${paidDate}</td>
-      <td style="color:var(--muted);font-size:12px;">${note}</td>
+      <td><div class="stu-cell"><div class="stu-av" style="${avStyle}">${initials}</div><span class="stu-name">${nameHtml}</span></div></td>
+      <td>${isGhost?"—":amount}</td><td>${isGhost?"—":paidDate}</td>
+      <td style="color:var(--muted);font-size:12px;">${isGhost?"—":note}</td>
       <td><span class="${chipCls}">${chipTxt}</span></td>
       <td>${actionBtn}</td>
     </tr>`;
@@ -773,14 +791,23 @@ window.saveRound = async function(){
     name, amountPerPerson: amount, note, classId: selectedClass,
     dueDate: due ? Timestamp.fromDate(new Date(due)) : null,
   };
+  const clsName = (cacheGet("classes")||[]).find(c=>c.id===selectedClass)?.name || selectedClass;
   try{
     if(editId){
+      const prev = rounds.find(r=>r.id===editId);
       await updateDoc(doc(db,"fundRounds",editId), payload);
       showToast("อัปเดตเรียบร้อย","success");
+      logAction("fund", `แก้ไขรอบ "${name}" — ${clsName}`,
+        { action:"editRound", roundId:editId, name, amount, due, note,
+          before:{ name:prev?.name, amountPerPerson:prev?.amountPerPerson },
+          classId:selectedClass, className:clsName });
     } else {
       payload.createdAt = serverTimestamp();
-      await addDoc(collection(db,"fundRounds"), payload);
+      const ref = await addDoc(collection(db,"fundRounds"), payload);
       showToast("เพิ่มรอบการเก็บเงินแล้ว","success");
+      logAction("fund", `เพิ่มรอบการเก็บเงิน "${name}" — ${clsName} ฿${amount}/คน`,
+        { action:"addRound", roundId:ref.id, name, amountPerPerson:amount, due, note,
+          classId:selectedClass, className:clsName });
       if(!currentClassId && selectedClass){
         const sel = document.getElementById("classSelect");
         sel.value = selectedClass;
@@ -790,18 +817,34 @@ window.saveRound = async function(){
     }
     closeRoundModal();
     await loadRounds();
-  }catch(e){ showToast("เกิดข้อผิดพลาด: "+e.message,"error"); console.error(e); }
+  }catch(e){
+    showToast("เกิดข้อผิดพลาด: "+e.message,"error"); console.error(e);
+    logAction("fund", `บันทึกรอบล้มเหลว "${name}"`,
+      { action: editId?"editRound":"addRound", name, classId:selectedClass, error:e.message },
+      "error", e.message);
+  }
 };
 window.deleteRound = async function(id){
   if(!confirm("ลบรอบการเก็บเงินนี้? (ข้อมูลการจ่ายและรายจ่ายทั้งหมดจะหายไป)")) return;
+  const round = rounds.find(r=>r.id===id);
+  const clsName = (cacheGet("classes")||[]).find(c=>c.id===currentClassId)?.name || currentClassId;
   try{
     const pSnap = await getDocs(query(collection(db,"fundPayments"), where("roundId","==",id)));
     const eSnap = await getDocs(query(collection(db,"fundExpenses"), where("roundId","==",id)));
     await Promise.all([...pSnap.docs.map(d=>deleteDoc(d.ref)),...eSnap.docs.map(d=>deleteDoc(d.ref))]);
     await deleteDoc(doc(db,"fundRounds",id));
     showToast("ลบแล้ว","success");
+    logAction("fund", `ลบรอบการเก็บเงิน "${round?.name||id}" — ${clsName}`,
+      { action:"deleteRound", roundId:id, roundName:round?.name||"",
+        classId:currentClassId, className:clsName,
+        deletedPayments:pSnap.docs.length, deletedExpenses:eSnap.docs.length });
     await loadRounds();
-  }catch(e){ showToast("เกิดข้อผิดพลาด","error"); console.error(e); }
+  }catch(e){
+    showToast("เกิดข้อผิดพลาด","error"); console.error(e);
+    logAction("fund", `ลบรอบล้มเหลว "${round?.name||id}"`,
+      { action:"deleteRound", roundId:id, roundName:round?.name||"", classId:currentClassId, error:e.message },
+      "error", e.message);
+  }
 };
 
 window.openPayModal = function(studentId, studentName, defaultAmount){
@@ -819,6 +862,10 @@ window.savePay = async function(){
   const amount    = parseFloat(document.getElementById("payAmount").value)||0;
   const note      = document.getElementById("payNote").value.trim();
   if(!dateVal){ showToast("กรุณาระบุวันที่","error"); return; }
+  const stu = students.find(s=>s.id===studentId);
+  const stuName = (stu?.prefix?stu.prefix+' ':'')+( stu?.name||studentId);
+  const round = rounds.find(r=>r.id===currentRoundId);
+  const clsName = (cacheGet("classes")||[]).find(c=>c.id===currentClassId)?.name || currentClassId;
   try{
     const docId = `${currentRoundId}_${studentId}`;
     await setDoc(doc(db,"fundPayments",docId), {
@@ -830,15 +877,42 @@ window.savePay = async function(){
     payments[studentId] = { paid:true, amount, paidDate: Timestamp.fromDate(new Date(dateVal)), note };
     closePayModal(); renderAll();
     showToast("บันทึกการจ่ายเงินแล้ว","success");
-  }catch(e){ showToast("เกิดข้อผิดพลาด","error"); console.error(e); }
+    logAction("fund",
+      `บันทึกการจ่ายเงิน "${stuName}" — ${round?.name||""} ฿${amount}`,
+      { action:"savePay", studentId, studentName:stuName,
+        roundId:currentRoundId, roundName:round?.name||"",
+        classId:currentClassId, className:clsName,
+        amount, paidDate:dateVal, note });
+  }catch(e){
+    showToast("เกิดข้อผิดพลาด","error"); console.error(e);
+    logAction("fund", `บันทึกการจ่ายเงินล้มเหลว "${stuName}"`,
+      { action:"savePay", studentId, studentName:stuName, roundId:currentRoundId, error:e.message },
+      "error", e.message);
+  }
 };
 window.cancelPay = async function(studentId){
   if(!confirm("ยกเลิกการจ่ายเงินของนักเรียนคนนี้?")) return;
+  const stu = students.find(s=>s.id===studentId);
+  const stuName = (stu?.prefix?stu.prefix+' ':'')+(stu?.name||studentId);
+  const round = rounds.find(r=>r.id===currentRoundId);
+  const clsName = (cacheGet("classes")||[]).find(c=>c.id===currentClassId)?.name || currentClassId;
+  const prevPay = payments[studentId];
   try{
     await deleteDoc(doc(db,"fundPayments",`${currentRoundId}_${studentId}`));
     delete payments[studentId]; renderAll();
     showToast("ยกเลิกแล้ว","success");
-  }catch(e){ showToast("เกิดข้อผิดพลาด","error"); console.error(e); }
+    logAction("fund",
+      `ยกเลิกการจ่ายเงิน "${stuName}" — ${round?.name||""}`,
+      { action:"cancelPay", studentId, studentName:stuName,
+        roundId:currentRoundId, roundName:round?.name||"",
+        classId:currentClassId, className:clsName,
+        prevAmount:prevPay?.amount||0 });
+  }catch(e){
+    showToast("เกิดข้อผิดพลาด","error"); console.error(e);
+    logAction("fund", `ยกเลิกการจ่ายเงินล้มเหลว "${stuName}"`,
+      { action:"cancelPay", studentId, studentName:stuName, roundId:currentRoundId, error:e.message },
+      "error", e.message);
+  }
 };
 
 window.openAddExpense = function(){
@@ -871,30 +945,59 @@ window.saveExpense = async function(){
   const editId = document.getElementById("editExpenseId").value;
   if(!name){ showToast("กรุณาระบุรายการ","error"); return; }
   if(!currentRoundId){ showToast("กรุณาเลือกรอบการเก็บเงินก่อน","error"); return; }
+  const round = rounds.find(r=>r.id===currentRoundId);
+  const clsName = (cacheGet("classes")||[]).find(c=>c.id===currentClassId)?.name || currentClassId;
   try{
     if(editId){
+      const prev = expenses.find(e=>e.id===editId);
       await updateDoc(doc(db,"fundExpenses",editId), { name, amount, note,
         date: dateV ? Timestamp.fromDate(new Date(dateV)) : serverTimestamp() });
       showToast("อัปเดตแล้ว","success");
+      logAction("fund", `แก้ไขรายจ่าย "${name}" — ${round?.name||""} ฿${amount}`,
+        { action:"editExpense", expenseId:editId, name, amount, date:dateV, note,
+          before:{ name:prev?.name, amount:prev?.amount },
+          roundId:currentRoundId, roundName:round?.name||"",
+          classId:currentClassId, className:clsName });
     } else {
-      await addDoc(collection(db,"fundExpenses"), {
+      const ref = await addDoc(collection(db,"fundExpenses"), {
         name, amount, note, roundId: currentRoundId, classId: currentClassId,
         date: dateV ? Timestamp.fromDate(new Date(dateV)) : serverTimestamp(),
         createdAt: serverTimestamp()
       });
       showToast("เพิ่มรายจ่ายแล้ว","success");
+      logAction("fund", `เพิ่มรายจ่าย "${name}" — ${round?.name||""} ฿${amount}`,
+        { action:"addExpense", expenseId:ref.id, name, amount, date:dateV, note,
+          roundId:currentRoundId, roundName:round?.name||"",
+          classId:currentClassId, className:clsName });
     }
     closeExpenseModal();
     await loadExpenses(); renderAll();
-  }catch(e){ showToast("เกิดข้อผิดพลาด: "+e.message,"error"); console.error(e); }
+  }catch(e){
+    showToast("เกิดข้อผิดพลาด: "+e.message,"error"); console.error(e);
+    logAction("fund", `บันทึกรายจ่ายล้มเหลว "${name}"`,
+      { action: editId?"editExpense":"addExpense", name, amount, roundId:currentRoundId, error:e.message },
+      "error", e.message);
+  }
 };
 window.deleteExpense = async function(id){
   if(!confirm("ลบรายจ่ายนี้?")) return;
+  const exp = expenses.find(e=>e.id===id);
+  const round = rounds.find(r=>r.id===currentRoundId);
+  const clsName = (cacheGet("classes")||[]).find(c=>c.id===currentClassId)?.name || currentClassId;
   try{
     await deleteDoc(doc(db,"fundExpenses",id));
     expenses = expenses.filter(e=>e.id!==id); renderAll();
     showToast("ลบแล้ว","success");
-  }catch(e){ showToast("เกิดข้อผิดพลาด","error"); console.error(e); }
+    logAction("fund", `ลบรายจ่าย "${exp?.name||id}" — ${round?.name||""} ฿${exp?.amount||0}`,
+      { action:"deleteExpense", expenseId:id, name:exp?.name||"", amount:exp?.amount||0,
+        roundId:currentRoundId, roundName:round?.name||"",
+        classId:currentClassId, className:clsName });
+  }catch(e){
+    showToast("เกิดข้อผิดพลาด","error"); console.error(e);
+    logAction("fund", `ลบรายจ่ายล้มเหลว`,
+      { action:"deleteExpense", expenseId:id, roundId:currentRoundId, error:e.message },
+      "error", e.message);
+  }
 };
 
 window._toggleSidebar = function(){
