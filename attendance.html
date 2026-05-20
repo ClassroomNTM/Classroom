@@ -72,6 +72,7 @@ tr:last-child td{border-bottom:none;}
 .btn-restore{padding:4px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;transition:all .15s;font-family:'Sarabun',sans-serif;}
 .btn-restore:hover{background:#dbeafe;}
 .note-input{width:120px;height:30px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-family:'Sarabun',sans-serif;font-size:12px;background:#fafafa;}
+.note-inline{display:none;}
 #toast{position:fixed;bottom:24px;right:24px;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;}
 #toast.show{opacity:1;transform:translateY(0);}
 #toast.success{background:#052e16;color:#86efac;}
@@ -140,9 +141,8 @@ tr:last-child td{border-bottom:none;}
   /* table columns tighter */
   th:nth-child(1),td:nth-child(1){width:36px;padding-left:6px;padding-right:4px;}
   th:nth-child(4),td:nth-child(4){display:none;}
-
-  /* note input appears below name instead */
-  .note-input{display:block;width:100%;margin-top:6px;}
+  /* note input ย้ายไปอยู่ใต้ปุ่มสถานะ (ใน td ที่ 3) แทน */
+  .note-inline{display:block;width:100%;margin-top:6px;height:30px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-family:'Sarabun',sans-serif;font-size:12px;background:#fafafa;}
 }
 </style>
 </head>
@@ -572,10 +572,12 @@ function renderTable() {
           <button class="stat-btn clear"
             onclick="clearStatus('${s.id}')">ลบสถานะ</button>
         </div>
+        <input class="note-inline" id="note-inline-${s.id}" value="${cur.note||""}" placeholder="หมายเหตุ..."
+          oninput="window.attendance['${s.id}'].note=this.value;document.getElementById('note-${s.id}')&&(document.getElementById('note-${s.id}').value=this.value);scheduleSave('${s.id}')">
       </td>
       <td>
         <input class="note-input" id="note-${s.id}" value="${cur.note||""}" placeholder="หมายเหตุ"
-          oninput="window.attendance['${s.id}'].note=this.value;scheduleSave('${s.id}')">
+          oninput="window.attendance['${s.id}'].note=this.value;document.getElementById('note-inline-${s.id}')&&(document.getElementById('note-inline-${s.id}').value=this.value);scheduleSave('${s.id}')">
       </td>
     </tr>`;
   }).join("");
