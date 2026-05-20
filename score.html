@@ -443,7 +443,7 @@ window.onClassChange = async function() {
   if (!currentClassId) return;
 
   let cached = studentsCacheGet(currentClassId);
-  if (!cached) {
+  if (!Array.isArray(cached)) {
     // ลองหา class name จาก allClasses ก่อน
     const cls = allClasses.find(c => c.id === currentClassId);
     const className = cls?.name || "";
@@ -456,15 +456,10 @@ window.onClassChange = async function() {
       sSnap = await getDocs(query(collection(db, "students"), where("classId", "==", className)));
     }
 
-    // fallback: query ด้วยชื่อห้องเรียน ถ้า classId เป็น name อยู่แล้ว
-    if (sSnap.empty && !className) {
-      sSnap = await getDocs(query(collection(db, "students"), where("className", "==", currentClassId)));
-    }
-
     cached = sSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (a.number||0)-(b.number||0));
     studentsCacheSet(currentClassId, cached);
   }
-  students = cached;
+  students = Array.isArray(cached) ? cached : [];
   currentView = VIEW_TOPIC;
   updateDefaultUI();
   logAction("score", "เปิดดูคะแนนชั้นเรียน", { action:"loadScore", classId: currentClassId, subjectId: currentSubjectId||"", studentCount: students.length });
@@ -793,6 +788,7 @@ window.saveScores = async function() {
 };
 
 function updateMetrics() {
+  if (!Array.isArray(students)) return;
   const vals = students.map(s => scores[s.id]).filter(v => v !== undefined && v !== null);
   document.getElementById("mTotal").textContent = students.length;
   document.getElementById("mAvg").textContent = vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1) : "—";
