@@ -9,9 +9,10 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{--bg:#f5f4f0;--surface:#ffffff;--blue:#0f3460;--blue-lt:#e6eef7;--text:#1a1a2e;--muted:#6b7280;--border:rgba(0,0,0,0.08);--radius:12px;--sidebar-w:200px;--topbar-h:56px;}
 body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
-.topbar{position:fixed;top:0;left:0;right:0;height:var(--topbar-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:100;}
+.topbar{position:fixed;top:0;left:0;right:0;height:var(--topbar-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 16px;z-index:200;}
 .brand{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;color:var(--text);text-decoration:none;}
-.brand-dot{width:32px;height:32px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;}
+.brand-dot{width:32px;height:32px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.brand-name{white-space:nowrap;}
 .brand-dot svg{width:18px;height:18px;fill:white;}
 .topbar-right{display:flex;align-items:center;gap:14px;}
 .user-info{font-size:13px;display:flex;align-items:center;gap:8px;}
@@ -135,15 +136,21 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);bac
   .sidebar.mobile-open{transform:translateX(0);}
   .hamburger{display:flex;}
   .main,.main-content{margin-left:0!important;}
-  .topbar-username{display:none;}
+  .user-name-text{display:none;}
   .page-title{font-size:17px!important;}
-  .main{grid-template-columns:1fr!important;}
+  .main{grid-template-columns:1fr!important;padding:14px;}
   .topics-panel{position:static;}
+  .filters{flex-direction:column;align-items:stretch;gap:8px;}
+  .fgroup select{width:100%;height:40px;font-size:14px;}
+  .metrics-row{grid-template-columns:repeat(2,1fr);gap:8px;}
+  .page-header{flex-wrap:wrap;gap:8px;}
 }
 @media(max-width:480px){
-  .topbar{padding:0 10px!important;}
+  .topbar{padding:0 12px;}
+  .brand-name{display:none;}
   .btn-logout{display:none;}
   .role-badge{display:none;}
+  .main{padding:10px;}
 }
 </style>
 </head>
@@ -151,14 +158,19 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);bac
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="_closeSidebar()"></div>
 
 <header class="topbar">
-  <a href="dashboard.html" class="brand">
-    <div class="brand-dot"><svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg></div>
-    ระบบจัดการนักเรียน
-  </a>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <button class="hamburger" id="hamburger" onclick="_sidebarToggle()" aria-label="เปิดเมนู">
+      <span></span><span></span><span></span>
+    </button>
+    <a href="dashboard.html" class="brand">
+      <div class="brand-dot"><svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg></div>
+      <span class="brand-name">ระบบจัดการนักเรียน</span>
+    </a>
+  </div>
   <div class="topbar-right">
     <div class="user-info">
       <div class="avatar" id="avatarEl">?</div>
-      <span id="userNameEl">ผู้ใช้</span>
+      <span id="userNameEl" class="user-name-text">ผู้ใช้</span>
       <span class="role-badge" id="roleBadgeEl">—</span>
     </div>
     <button class="btn-logout" onclick="doLogout()">ออกจากระบบ</button>
