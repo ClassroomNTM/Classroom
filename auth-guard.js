@@ -118,8 +118,38 @@ function enforceAccess(role) {
   }
 }
 
+// ── Google Apps Script URL ───────────────────────────────────────────────
+const GAS_URL = "https://script.google.com/macros/s/AKfycbxarf3f9nPgFImUgxv9wkeCZcEfEOO-a79va2-T7E4RoNinBIZdQt_3e9qStx3_gHuPeg/exec";
+
+// ── logAction — บันทึกลง Google Sheet (ใช้ได้ทุกหน้า) ──────────────────
+export async function logAction(actionType, description, detail = {}, status = "success", errorMsg = "") {
+  try {
+    const cached = getCached();
+    const payload = {
+      userId:    cached?.uid   || auth.currentUser?.uid   || "",
+      userName:  cached?.name  || auth.currentUser?.displayName || "",
+      userEmail: auth.currentUser?.email || "",
+      userRole:  cached?.role  || "user",
+      actionType,
+      description,
+      detail,
+      status,
+      errorMsg,
+      timestamp: new Date().toISOString()
+    };
+    fetch(GAS_URL, {
+      method:  "POST",
+      headers: { "Content-Type": "text/plain" },
+      body:    JSON.stringify(payload)
+    }).catch(e => console.warn("logAction failed:", e));
+  } catch (e) {
+    console.warn("logAction error:", e);
+  }
+}
+
 // ── Logout helper ────────────────────────────────────────────────────────
 export async function doLogout() {
+  await logAction("logout", "ออกจากระบบ", {}, "success");
   clearCache();
   await signOut(auth);
   window.location.href = "index.html";

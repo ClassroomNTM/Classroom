@@ -356,6 +356,7 @@ tr:hover td { background:#fafafa; }
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { logAction } from "./auth-guard.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCBXMi3sy-3iDDzHDXVvlmaa6szcmnFbwQ",
@@ -466,31 +467,6 @@ window.loadLogs = async function() {
         <small>ตรวจสอบว่า Deploy เป็น "Anyone" และ URL ถูกต้อง</small>
       </td></tr>`;
     showToast("โหลดไม่สำเร็จ", "error");
-  }
-};
-
-// ── logAction — ส่งไป Google Sheet ──
-window.logAction = async function(actionType, description, detail={}, status="success", errorMsg="") {
-  const url = getScriptUrl();
-  if (!url) return;
-
-  try {
-    const payload = {
-      userId:      sessionStorage.getItem("userId")   || currentUser?.uid || "",
-      userName:    sessionStorage.getItem("userName") || currentUser?.displayName || "",
-      userEmail:   auth.currentUser?.email || "",
-      userRole:    sessionStorage.getItem("userRole") || "user",
-      actionType, description, detail, status, errorMsg,
-      timestamp:   new Date().toISOString()
-    };
-
-    fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify(payload)
-    }).catch(e => console.warn("logAction failed:", e));
-  } catch(e) {
-    console.warn("logAction error:", e);
   }
 };
 
@@ -767,7 +743,7 @@ window.exportCSV = function() {
 
 // ── Logout ──
 window.doLogout = async function() {
-  await window.logAction("logout","ออกจากระบบ",{},"success");
+  await logAction("logout","ออกจากระบบ",{},"success");
   setTimeout(async () => {
     await signOut(auth);
     sessionStorage.clear();

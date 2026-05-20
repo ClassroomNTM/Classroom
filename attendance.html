@@ -268,7 +268,7 @@ tr:last-child td{border-bottom:none;}
 <div id="toast"></div>
 
 <script type="module">
-import { initAuth, doLogout, db } from "./auth-guard.js";
+import { initAuth, doLogout, db, logAction } from "./auth-guard.js";
 import { collection, getDocs, doc, setDoc, getDoc, query, where, updateDoc, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -491,7 +491,7 @@ window.loadStudents = async function() {
     const clsNameLoad = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
     const subNameLoad = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
     const activeLoad  = students.filter(s => !s.ghost);
-    window.logAction && window.logAction("attendance",
+    logAction("attendance",
       `เปิดดูเช็คชื่อ — ${clsNameLoad}${subNameLoad?" / "+subNameLoad:""} วันที่ ${date}`,
       {
         action:       "loadAttendance",
@@ -510,7 +510,7 @@ window.loadStudents = async function() {
   } catch(err) {
     document.getElementById("studentTbody").innerHTML =
       `<tr><td colspan="4" style="text-align:center;color:#b91c1c;padding:20px;">⚠ โหลดไม่ได้: ${err.message}</td></tr>`;
-    window.logAction && window.logAction("attendance",
+    logAction("attendance",
       `โหลดข้อมูลเช็คชื่อล้มเหลว: ${err.message}`,
       { action:"loadAttendance", error: err.message, classId, date },
       "error", err.message
@@ -615,7 +615,7 @@ window.restoreStudent = async function(sid) {
     renderTable();
     updateSummary();
 
-    window.logAction && window.logAction("attendance",
+    logAction("attendance",
       `แก้สถานะ "${sName}" จาก ไม่มีตัวตน → มีตัวตน`,
       {
         action:      "restoreStudent",
@@ -662,7 +662,7 @@ window.setStatus = function(sid, status) {
     const clsName = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
     const subName = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
     const statusLabel = { present:"มาเรียน", late:"สาย", absent:"ขาดเรียน", leave:"ลา", ghost:"ไม่มีตัวตน", "":"ยังไม่ได้เช็ค" };
-    window.logAction && window.logAction("attendance",
+    logAction("attendance",
       `เปลี่ยนสถานะ "${sName}" จาก ${statusLabel[prevStatus]||prevStatus} → ${statusLabel[status]||status}`,
       {
         studentId:   sid,
@@ -766,7 +766,7 @@ window.markAllPresent = function() {
   updateSummary();
 
   if (changed.length > 0) {
-    window.logAction && window.logAction("attendance",
+    logAction("attendance",
       `ตั้งมาเรียนทุกคน (${changed.length} คนที่เปลี่ยน)`,
       {
         action:      "markAllPresent",
@@ -785,7 +785,7 @@ window.markAllPresent = function() {
       }
     );
   } else {
-    window.logAction && window.logAction("attendance",
+    logAction("attendance",
       `ตั้งมาเรียนทุกคน — ไม่มีการเปลี่ยนแปลง`,
       { action:"markAllPresent", date, classId, className: clsName,
         subjectId: subjectId||"", subjectName: subName, changedCount: 0 }
@@ -878,7 +878,7 @@ window.saveAll = async function() {
       return acc;
     }, {});
 
-    window.logAction && window.logAction("attendance",
+    logAction("attendance",
       `บันทึกเช็คชื่อ ${activeStudents.length} คน — ${clsName}${subName?" / "+subName:""}`,
       {
         action:      "saveAll",
@@ -931,7 +931,7 @@ function logFilterChange() {
     if (!classId || !date) return;
     const clsName = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
     const subName = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
-    window.logAction && window.logAction("attendance",
+    logAction("attendance",
       `เปลี่ยน filter เช็คชื่อ — ${clsName}${subName?" / "+subName:""} วันที่ ${date}`,
       {
         action:     "changeFilter",

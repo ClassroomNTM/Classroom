@@ -679,7 +679,7 @@ tr.footer-row td.f-leave{background:#f3e8ff;color:#6D28D9;}
 </div>
 
 <script type="module">
-import { initAuth, doLogout, db } from "./auth-guard.js";
+import { initAuth, doLogout, db, logAction } from "./auth-guard.js";
 import { collection, getDocs, doc, getDoc, setDoc, deleteDoc, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 window.doLogout = doLogout;
@@ -963,7 +963,7 @@ async function _loadDataAsync() {
     const subNameLD = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
     const activeLD  = allStudents.filter(s => !s.ghost);
     const daysLoadedCount = Object.keys(attMap).length;
-    window.logAction && window.logAction("attendance",
+    logAction("attendance",
       `เปิดดูสรุปเช็คชื่อ — ${clsNameLD}${subNameLD?" / "+subNameLD:""} เดือน ${THAI_MONTHS[mon]} ${year+543}`,
       {
         action:"viewSummary", month, year, monthName:THAI_MONTHS[mon],
@@ -1234,7 +1234,7 @@ window.exportCSV = function() {
   showToast("Export สำเร็จ ✓","success");
 
   const activeExport = allStudents.filter(s => !s.ghost);
-  window.logAction && window.logAction("attendance",
+  logAction("attendance",
     `Export CSV สรุปเช็คชื่อ — ${clsName}${subName?" / "+subName:""} เดือน ${THAI_MONTHS[mon]} ${year+543}`,
     {
       action:"exportCSV", month, year, monthName:THAI_MONTHS[mon],
@@ -1344,7 +1344,7 @@ window.doDeleteDay = async function() {
 
     const clsNameDel = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
     const subNameDel = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
-    window.logAction && window.logAction("attendance",
+    logAction("attendance",
       `ลบข้อมูลเช็คชื่อวันที่ ${dateVal} — ${clsNameDel}${subNameDel?" / "+subNameDel:""} (${snap.docs.length} รายการ)`,
       { action:"deleteDay", date:dateVal, classId, className:clsNameDel, subjectId:subjectId||"", subjectName:subNameDel, deletedCount:snap.docs.length }
     );
@@ -1394,7 +1394,7 @@ window.doDeleteMonth = async function() {
 
     const clsNameDel = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
     const subNameDel = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
-    window.logAction && window.logAction("attendance",
+    logAction("attendance",
       `ลบข้อมูลเช็คชื่อทั้งเดือน — ${clsNameDel}${subNameDel?" / "+subNameDel:""} เดือน${THAI_MONTHS[mon]} ${year+543} (${docs.length} รายการ)`,
       {
         action:"deleteMonth", month:`${year}-${String(mon).padStart(2,"0")}`,
@@ -1544,7 +1544,7 @@ window.mpApplyStatus = async function(newStatus) {
       else attMap[dateStr][studentId].push(updatedRec);
     }
 
-    window.logAction && window.logAction("attendance",
+    logAction("attendance",
       `แก้ไขสถานะ (ทั้งหมด) "${studentName}" วิชา ${subName} → ${STATUS_LABEL[newStatus]||"(ลบ)"}`,
       { action:"editAttendance", studentId, studentName, date:dateStr, subjectId:selectedSubjectId, subjectName:subName, before:oldStatus, after:newStatus, classId, className:clsName }
     );
@@ -1644,7 +1644,7 @@ window.applyStatus = async function(newStatus) {
       attMap[dateStr][studentId] = { status:newStatus, note:existingNote, savedAt:new Date().toISOString(), docId };
     }
 
-    window.logAction && window.logAction("attendance",
+    logAction("attendance",
       `แก้ไขสถานะเช็คชื่อ "${studentName}" จาก ${STATUS_LABEL[oldStatus]||oldStatus||"(ว่าง)"} → ${STATUS_LABEL[newStatus]||newStatus||"(ลบ)"}`,
       {
         action:"editAttendance", studentId, studentName,
@@ -1751,7 +1751,7 @@ window.saveNoteText = async function(noteText) {
     }
 
     const clsName = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
-    window.logAction && window.logAction("attendance",
+    logAction("attendance",
       `${note ? "บันทึก" : "ลบ"}หมายเหตุ "${studentName}" วันที่ ${dateStr}`,
       { action:"editNote", studentId, studentName, date:dateStr, note, classId, className:clsName, subjectId:subjectId||"" }
     );
@@ -1804,7 +1804,7 @@ function logSummaryFilterChange() {
     const clsName = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
     const subName = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
     const [year,mon] = month.split("-").map(Number);
-    window.logAction && window.logAction("attendance",
+    logAction("attendance",
       `เปลี่ยน filter สรุปเช็คชื่อ — ${clsName}${subName?" / "+subName:""} เดือน ${THAI_MONTHS[mon]} ${year+543}`,
       {
         action:"changeFilter", page:"summary", month, year,
@@ -2062,7 +2062,7 @@ window.saveColorPanel = async function() {
   try {
     await setDoc(doc(db, "settings", "tableColors"), { ...colorSettings, savedAt: new Date().toISOString() });
     showToast("บันทึกลง Database แล้ว ✓","success");
-    window.logAction && window.logAction("attendance","บันทึกตั้งค่าสีตาราง",
+    logAction("attendance","บันทึกตั้งค่าสีตาราง",
       { action:"saveColorSettings", savedTo:"firestore", settingsKeys:Object.keys(colorSettings) });
   } catch(err) {
     console.error("Save color to Firestore failed:", err);

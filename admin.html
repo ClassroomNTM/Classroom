@@ -296,7 +296,7 @@ input:focus,select.modal-sel:focus{border-color:var(--blue);box-shadow:0 0 0 3px
 <div id="toast"></div>
 
 <script type="module">
-import { initAuth, doLogout, db, auth } from "./auth-guard.js";
+import { initAuth, doLogout, db, auth, logAction } from "./auth-guard.js";
 import {
   collection, doc, getDocs, setDoc, deleteDoc, query, orderBy
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -417,7 +417,7 @@ window.createUser = async function() {
       email, displayName: name, role, createdAt: new Date().toISOString()
     });
 
-    window.logAction && window.logAction("user_manage",
+    logAction("user_manage",
       `สร้างบัญชีผู้ใช้ใหม่ "${name}" (${email})`,
       {
         action:      "createUser",
@@ -438,7 +438,7 @@ window.createUser = async function() {
     let msg = e.message;
     if (e.code === "auth/email-already-in-use") msg = "อีเมลนี้มีบัญชีอยู่แล้ว";
     if (e.code === "auth/invalid-email") msg = "รูปแบบอีเมลไม่ถูกต้อง";
-    window.logAction && window.logAction("user_manage",
+    logAction("user_manage",
       `สร้างบัญชีล้มเหลว "${name}" (${email})`,
       { action:"createUser", name, email, role, error: msg },
       "error", msg
@@ -468,7 +468,7 @@ window.saveRole = async function() {
     await setDoc(doc(db,"users",id), {role: newRole},{merge:true});
     closeRoleModal();
 
-    window.logAction && window.logAction("user_manage",
+    logAction("user_manage",
       `เปลี่ยนสิทธิ์ "${uName}" จาก ${oldRole} → ${newRole}`,
       {
         action:      "changeRole",
@@ -485,7 +485,7 @@ window.saveRole = async function() {
     showToast("อัพเดตสิทธิ์เรียบร้อย ✓","success");
     await loadUsers();
   } catch(e) {
-    window.logAction && window.logAction("user_manage",
+    logAction("user_manage",
       `เปลี่ยนสิทธิ์ล้มเหลว "${uName}"`,
       { action:"changeRole", targetUserId:id, targetUserName:uName, before:oldRole, after:newRole, error:e.message },
       "error", e.message
@@ -501,7 +501,7 @@ window.removeUser = async function(id, name) {
   try {
     await deleteDoc(doc(db,"users",id));
 
-    window.logAction && window.logAction("user_manage",
+    logAction("user_manage",
       `ลบบัญชีผู้ใช้ "${name}"`,
       {
         action:          "deleteUser",
@@ -516,7 +516,7 @@ window.removeUser = async function(id, name) {
     showToast("ลบข้อมูลผู้ใช้เรียบร้อย","success");
     await loadUsers();
   } catch(e) {
-    window.logAction && window.logAction("user_manage",
+    logAction("user_manage",
       `ลบบัญชีล้มเหลว "${name}"`,
       { action:"deleteUser", targetUserId:id, targetUserName:name, error:e.message },
       "error", e.message
