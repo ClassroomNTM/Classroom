@@ -186,6 +186,10 @@ td.cell-no{padding:6px 4px;background:#fafafa;color:var(--muted);font-size:11px;
 tr.ghost-row{opacity:var(--ghost-row-opacity);}
 tr.ghost-row td{background:var(--ghost-row-bg)!important;}
 tr.ghost-row td.cell-name{background:var(--ghost-row-bg)!important;color:var(--ghost-row-name-color);}
+/* Override day-column colors for ghost rows */
+tr.ghost-row td.cell.col-sun,tr.ghost-row td.cell.col-mon,tr.ghost-row td.cell.col-tue,
+tr.ghost-row td.cell.col-wed,tr.ghost-row td.cell.col-thu,tr.ghost-row td.cell.col-fri,
+tr.ghost-row td.cell.col-sat,tr.ghost-row td.cell.col-today{background:var(--ghost-row-bg)!important;}
 .ghost-strikethrough{text-decoration:line-through;color:var(--ghost-row-strike-color);}
 .dot{display:inline-flex;width:22px;height:22px;border-radius:4px;align-items:center;justify-content:center;font-size:11px;font-weight:700;transition:transform .1s,box-shadow .1s;}
 .dot-present{background:var(--present-lt);color:var(--present);}
