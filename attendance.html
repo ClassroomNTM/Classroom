@@ -58,9 +58,14 @@ tr:last-child td{border-bottom:none;}
 .stat-btn.present{background:#f0fdf4;color:#166534;border-color:#bbf7d0;}
 .stat-btn.late   {background:#fffbeb;color:#92400e;border-color:#fde68a;}
 .stat-btn.absent {background:#fef2f2;color:#b91c1c;border-color:#fecaca;}
+.stat-btn.leave  {background:#f3e8ff;color:#6d28d9;border-color:#c4b5fd;}
+.stat-btn.ghost  {background:#f3f4f6;color:#6b7280;border-color:#d1d5db;}
+.stat-btn.clear  {background:#f9fafb;color:#374151;border-color:#e5e7eb;}
 .stat-btn.active-present{background:#166534;color:white;}
 .stat-btn.active-late   {background:#92400e;color:white;}
 .stat-btn.active-absent {background:#b91c1c;color:white;}
+.stat-btn.active-leave  {background:#6d28d9;color:white;}
+.stat-btn.active-ghost  {background:#4b5563;color:white;}
 /* ปุ่มแก้เป็นมีตัวตน */
 .btn-restore{padding:4px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;transition:all .15s;font-family:'Sarabun',sans-serif;}
 .btn-restore:hover{background:#dbeafe;}
@@ -131,7 +136,6 @@ tr:last-child td{border-bottom:none;}
 
   /* table columns tighter */
   th:nth-child(1),td:nth-child(1){width:36px;padding-left:6px;padding-right:4px;}
-  th:nth-child(4),td:nth-child(4){display:none;}
 
   /* note input appears below name instead */
   .note-input{display:block;width:100%;margin-top:6px;}
@@ -238,6 +242,7 @@ tr:last-child td{border-bottom:none;}
     <div class="s-chip s-green" id="presentCount">มา: 0</div>
     <div class="s-chip s-amber" id="lateCount">สาย: 0</div>
     <div class="s-chip s-red"   id="absentCount">ขาด: 0</div>
+    <div class="s-chip" id="leaveCount" style="background:#f3e8ff;color:#6d28d9;border:1px solid #c4b5fd;">ลา: 0</div>
     <div class="s-chip s-gray"  id="totalCount">ทั้งหมด: 0</div>
   </div>
 
@@ -526,11 +531,13 @@ function renderTable() {
   tbody.innerHTML = students.map(s => {
     const isGhost = s.ghost === true;
     const existingRec = attendance[s.id];
-    const defaultStatus = isGhost ? "ghost" : "present";
+    // ไม่ตั้ง default เป็น present — แสดงว่างถ้ายังไม่ได้เช็ค
+    const defaultStatus = isGhost ? "ghost" : "";
     const resolvedStatus = (existingRec && existingRec.status === "ghost" && !isGhost)
-      ? "present" : (existingRec?.status || defaultStatus);
+      ? "" : (existingRec?.status || defaultStatus);
     const cur = { status: resolvedStatus, note: existingRec?.note || "" };
-    attendance[s.id] = { status: resolvedStatus, note: cur.note };
+    if (!attendance[s.id]) attendance[s.id] = { status: resolvedStatus, note: cur.note };
+    else attendance[s.id].status = resolvedStatus;
 
     const nameHtml = isGhost
       ? `<span class="ghost-name-att">${s.prefix?s.prefix+" ":""}${s.name}</span><span class="ghost-tag-att">ไม่มีตัวตน</span>`
@@ -546,37 +553,45 @@ function renderTable() {
       return `<tr style="${isGhost?"opacity:.6;":""}"><td>${s.number||"—"}</td><td>${nameHtml}</td><td>${chip}</td><td style="color:var(--muted);font-size:12px;">${cur.note||"—"}</td></tr>`;
     }
 
-    // ── admin: ghost row → แสดงแค่ปุ่ม "แก้เป็นมีตัวตน" ──
+    // ── admin: ghost row → ปุ่มแก้เป็นมีตัวตน ──
     if (isGhost) {
       return `<tr id="row-${s.id}" style="background:#fff8f8;opacity:.7;">
         <td>${s.number||"—"}</td>
         <td>${nameHtml}</td>
         <td>
-          <button class="btn-restore" onclick="restoreStudent('${s.id}')">
-            ✦ แก้เป็นมีตัวตน
-          </button>
+          <div class="status-btns">
+            <button class="stat-btn ghost active-ghost" style="pointer-events:none;">ไม่มีตัวตน</button>
+            <button class="btn-restore" onclick="restoreStudent('${s.id}')">✦ แก้เป็นมีตัวตน</button>
+          </div>
         </td>
         <td style="color:var(--muted);font-size:12px;">—</td>
       </tr>`;
     }
 
     // ── admin: นักเรียนปกติ → ปุ่มเช็คชื่อ ──
+    const cur2Status = cur.status;
     return `<tr id="row-${s.id}">
       <td>${s.number||"—"}</td>
       <td>${nameHtml}</td>
       <td>
         <div class="status-btns">
-          <button class="stat-btn present ${cur.status==='present'?'active-present':''}"
+          <button class="stat-btn present ${cur2Status==='present'?'active-present':''}"
             onclick="setStatus('${s.id}','present')">มาเรียน</button>
-          <button class="stat-btn late ${cur.status==='late'?'active-late':''}"
+          <button class="stat-btn late ${cur2Status==='late'?'active-late':''}"
             onclick="setStatus('${s.id}','late')">สาย</button>
-          <button class="stat-btn absent ${cur.status==='absent'?'active-absent':''}"
+          <button class="stat-btn absent ${cur2Status==='absent'?'active-absent':''}"
             onclick="setStatus('${s.id}','absent')">ขาด</button>
+          <button class="stat-btn leave ${cur2Status==='leave'?'active-leave':''}"
+            onclick="setStatus('${s.id}','leave')">ลา</button>
+          <button class="stat-btn ghost ${cur2Status==='ghost'?'active-ghost':''}"
+            onclick="setStatus('${s.id}','ghost')">ไม่มีตัวตน</button>
+          <button class="stat-btn clear" style="opacity:.7;"
+            onclick="clearStatus('${s.id}')">ลบสถานะ</button>
         </div>
       </td>
       <td>
         <input class="note-input" id="note-${s.id}" value="${cur.note||""}" placeholder="หมายเหตุ"
-          oninput="window.attendance['${s.id}'].note=this.value">
+          oninput="window.attendance['${s.id}'].note=this.value;autoSaveOne('${s.id}')">
       </td>
     </tr>`;
   }).join("");
@@ -624,15 +639,16 @@ window.restoreStudent = async function(sid) {
 
 // ─── setStatus ────────────────────────────────────────────────
 window.setStatus = function(sid, status) {
-  const prevStatus = attendance[sid]?.status || "present";
+  const prevStatus = attendance[sid]?.status || "";
+  if (!attendance[sid]) attendance[sid] = { status: "", note: "" };
   attendance[sid].status = status;
   const row = document.getElementById("row-"+sid);
   row.querySelectorAll(".stat-btn").forEach(b => {
-    b.classList.remove("active-present","active-late","active-absent");
+    b.classList.remove("active-present","active-late","active-absent","active-leave","active-ghost");
   });
-  const map = {present:"active-present",late:"active-late",absent:"active-absent"};
+  const map = {present:"active-present",late:"active-late",absent:"active-absent",leave:"active-leave",ghost:"active-ghost"};
   const btn = row.querySelector(".stat-btn."+status);
-  if (btn) btn.classList.add(map[status]);
+  if (btn && map[status]) btn.classList.add(map[status]);
   row.style.background = "";
   updateSummary();
 
@@ -645,7 +661,7 @@ window.setStatus = function(sid, status) {
     const subjectId = document.getElementById("subjectSelect").value;
     const clsName = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
     const subName = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
-    const statusLabel = { present:"มาเรียน", late:"สาย", absent:"ขาดเรียน" };
+    const statusLabel = { present:"มาเรียน", late:"สาย", absent:"ขาดเรียน", leave:"ลา", ghost:"ไม่มีตัวตน", "":"ยังไม่ได้เช็ค" };
     window.logAction && window.logAction("attendance",
       `เปลี่ยนสถานะ "${sName}" จาก ${statusLabel[prevStatus]||prevStatus} → ${statusLabel[status]||status}`,
       {
@@ -662,6 +678,72 @@ window.setStatus = function(sid, status) {
         subjectName: subName,
       }
     );
+  }
+
+  // บันทึกอัตโนมัติทันที
+  autoSaveOne(sid);
+};
+
+// ─── clearStatus: ลบสถานะ ────────────────────────────────────
+window.clearStatus = function(sid) {
+  if (!attendance[sid]) attendance[sid] = { status: "", note: "" };
+  attendance[sid].status = "";
+  const row = document.getElementById("row-"+sid);
+  row.querySelectorAll(".stat-btn").forEach(b => {
+    b.classList.remove("active-present","active-late","active-absent","active-leave","active-ghost");
+  });
+  updateSummary();
+  // ลบ record จาก Firestore
+  autoDeleteOne(sid);
+};
+
+// ─── autoSaveOne: บันทึกนักเรียน 1 คนทันที ──────────────────
+let _autoSaveTimers = {};
+window.autoSaveOne = async function(sid) {
+  clearTimeout(_autoSaveTimers[sid]);
+  _autoSaveTimers[sid] = setTimeout(async () => {
+    if (userRole !== "admin") return;
+    const classId   = document.getElementById("classSelect").value;
+    const subjectId = document.getElementById("subjectSelect").value;
+    const date      = document.getElementById("dateInput").value;
+    if (!classId || !date) return;
+    const a = attendance[sid];
+    if (!a || !a.status) return; // ไม่บันทึกถ้ายังไม่มีสถานะ
+    const s = students.find(x => x.id === sid);
+    if (!s || s.ghost) return;
+    try {
+      const docId = `${classId}_${subjectId||"none"}_${date}_${sid}`;
+      await setDoc(doc(db, "attendance", docId), {
+        studentId:   sid,
+        studentName: (s.prefix ? s.prefix+" " : "") + (s.name||""),
+        classId,
+        subjectId:   subjectId || "",
+        date,
+        status:      a.status,
+        note:        a.note || "",
+        savedAt:     new Date().toISOString(),
+      });
+      showToast(`บันทึก ${(s.prefix?s.prefix+" ":"") + s.name} → ${({present:"มาเรียน",late:"สาย",absent:"ขาด",leave:"ลา",ghost:"ไม่มีตัวตน"})[a.status]||a.status} ✓`, "success");
+    } catch(e) {
+      showToast("บันทึกไม่สำเร็จ: " + e.message, "error");
+    }
+  }, 400);
+};
+
+// ─── autoDeleteOne: ลบ record นักเรียน 1 คน ─────────────────
+window.autoDeleteOne = async function(sid) {
+  if (userRole !== "admin") return;
+  const classId   = document.getElementById("classSelect").value;
+  const subjectId = document.getElementById("subjectSelect").value;
+  const date      = document.getElementById("dateInput").value;
+  if (!classId || !date) return;
+  try {
+    const { deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const docId = `${classId}_${subjectId||"none"}_${date}_${sid}`;
+    await deleteDoc(doc(db, "attendance", docId));
+    showToast("ลบสถานะแล้ว", "success");
+  } catch(e) {
+    // ignore if not found
   }
 };
 
@@ -718,9 +800,11 @@ function updateSummary() {
   const p = activeStudents.filter(s => attendance[s.id]?.status==="present").length;
   const l = activeStudents.filter(s => attendance[s.id]?.status==="late").length;
   const a = activeStudents.filter(s => attendance[s.id]?.status==="absent").length;
+  const lv = activeStudents.filter(s => attendance[s.id]?.status==="leave").length;
   document.getElementById("presentCount").textContent = "มา: "+p;
   document.getElementById("lateCount").textContent    = "สาย: "+l;
   document.getElementById("absentCount").textContent  = "ขาด: "+a;
+  document.getElementById("leaveCount").textContent   = "ลา: "+lv;
   document.getElementById("totalCount").textContent   = "ทั้งหมด: "+activeStudents.length+(ghostCount>0?" (ไม่มีตัวตน: "+ghostCount+")":"");
 }
 
@@ -749,10 +833,11 @@ window.saveAll = async function() {
       return Promise.resolve();
     });
 
-    // บันทึก attendance เฉพาะ non-ghost
+    // บันทึก attendance เฉพาะ non-ghost ที่มีสถานะ
     const activeStudents = students.filter(s => !s.ghost);
     const writes = activeStudents.map(s => {
-      const a   = attendance[s.id] || { status: "present", note: "" };
+      const a   = attendance[s.id] || { status: "", note: "" };
+      if (!a.status) return Promise.resolve(); // ข้ามถ้ายังไม่มีสถานะ
       const docId = `${classId}_${subjectId||"none"}_${date}_${s.id}`;
       return setDoc(doc(db, "attendance", docId), {
         studentId:   s.id,
@@ -788,8 +873,8 @@ window.saveAll = async function() {
 
     // สรุปยอดที่บันทึก
     const summary = activeStudents.reduce((acc, s) => {
-      const st = attendance[s.id]?.status || "present";
-      acc[st] = (acc[st] || 0) + 1;
+      const st = attendance[s.id]?.status || "";
+      if (st) acc[st] = (acc[st] || 0) + 1;
       return acc;
     }, {});
 
@@ -807,11 +892,12 @@ window.saveAll = async function() {
           present: summary["present"] || 0,
           late:    summary["late"]    || 0,
           absent:  summary["absent"]  || 0,
+          leave:   summary["leave"]   || 0,
         },
         students: activeStudents.map(s => ({
           studentId:   s.id,
           studentName: (s.prefix ? s.prefix+" " : "") + (s.name||""),
-          status:      attendance[s.id]?.status || "present",
+          status:      attendance[s.id]?.status || "",
           note:        attendance[s.id]?.note   || "",
         })),
       }
