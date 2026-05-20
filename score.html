@@ -119,6 +119,7 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);bac
 .rank-3{background:#fff7ed;color:#9a3412;}
 .loading-spinner{display:flex;align-items:center;justify-content:center;padding:40px;gap:10px;color:var(--muted);font-size:13px;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+@keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
 /* ── GHOST ROW (ไม่มีตัวตน) ── */
 :root{--ghost-row-bg:#f9f9f9;--ghost-row-opacity:0.65;--ghost-row-name-color:#9ca3af;--ghost-row-strike-color:#b91c1c;}
 tr.ghost-row{opacity:var(--ghost-row-opacity);}
@@ -219,11 +220,8 @@ tr.ghost-row td{background:var(--ghost-row-bg)!important;}
   <div class="content-area">
     <div class="page-header">
       <div class="page-title" id="pageTitle">คะแนนนักเรียน</div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-primary" id="saveScoreBtn" onclick="saveScores()" style="display:none;">
-          <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-          บันทึกคะแนน
-        </button>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span id="autoSaveIndicator" style="display:none;font-size:12px;color:var(--muted);gap:5px;align-items:center;"></span>
       </div>
     </div>
 
@@ -308,11 +306,13 @@ window.__db = db;
 window.doLogout = doLogout;
 
 let userRole = "", currentClassId = "", currentSubjectId = "", currentTopicId = "", currentMaxScore = 100;
-let students = [], scores = {}, topics = [], allClasses = [];
+let students = [], scores = {}, topics = [];
 const VIEW_TOPIC = "topic", VIEW_SUMMARY = "summary";
 let currentView = VIEW_TOPIC;
 let currentUserId = "";
 let savedDefaultClassId = "", savedDefaultSubjectId = "";
+let autoSaveTimer = null;
+let allClasses = [];
 
 const CACHE_TTL = 30 * 60 * 1000;
 function cacheSet(key, data) { sessionStorage.setItem(key, JSON.stringify({ ts: Date.now(), data })); }
@@ -336,7 +336,7 @@ initAuth({ requireAdmin: true, onReady: async ({ role, user }) => {
   document.getElementById("adminNavItem").style.display = "flex";
   document.getElementById("logsNavItem") && (document.getElementById("logsNavItem").style.display = "flex");
   document.getElementById("addTopicBtn").style.display = "inline-flex";
-  document.getElementById("saveScoreBtn").style.display = "inline-flex";
+  document.getElementById("saveScoreBtn").style.display = "none";
 
   // โหลดค่าเริ่มต้นจาก Firestore
   if (currentUserId) {
@@ -359,11 +359,7 @@ initAuth({ requireAdmin: true, onReady: async ({ role, user }) => {
     classEl.value = savedDefaultClassId;
     if (savedDefaultSubjectId) subjectEl.value = savedDefaultSubjectId;
   }
-  if (classEl.value) {
-    currentClassId   = classEl.value;
-    currentSubjectId = subjectEl.value;
-    await window.onClassChange();
-  }
+  if (classEl.value) await window.onClassChange();
   updateDefaultUI();
 }});
 
@@ -431,10 +427,9 @@ async function loadClasses() {
     classes = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.name||"").localeCompare(b.name||"", "th"));
     cacheSet("classes", classes);
   }
-  allClasses = classes;
   const sel = document.getElementById("classSelect");
   classes.forEach(c => { const o = document.createElement("option"); o.value = c.id; o.textContent = c.name; sel.appendChild(o); });
-  if (classes.length > 0 && !savedDefaultClassId) sel.value = classes[0].id;
+  if (classes.length > 0) sel.value = classes[0].id;
 }
 
 window.onClassChange = async function() {
@@ -443,23 +438,18 @@ window.onClassChange = async function() {
   if (!currentClassId) return;
 
   let cached = studentsCacheGet(currentClassId);
-  if (!Array.isArray(cached)) {
-    // ลองหา class name จาก allClasses ก่อน
-    const cls = allClasses.find(c => c.id === currentClassId);
-    const className = cls?.name || "";
-
-    // query ด้วย classId (document ID)
+  if (!cached) {
     let sSnap = await getDocs(query(collection(db, "students"), where("classId", "==", currentClassId)));
-
-    // fallback: query ด้วยชื่อห้องเรียน ถ้าไม่เจอ
-    if (sSnap.empty && className) {
-      sSnap = await getDocs(query(collection(db, "students"), where("classId", "==", className)));
+    if (sSnap.empty) {
+      const allClasses = cacheGet("classes") || [];
+      const cls = allClasses.find(c => c.id === currentClassId);
+      const className = cls?.name || "";
+      if (className) sSnap = await getDocs(query(collection(db, "students"), where("classId", "==", className)));
     }
-
     cached = sSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (a.number||0)-(b.number||0));
     studentsCacheSet(currentClassId, cached);
   }
-  students = Array.isArray(cached) ? cached : [];
+  students = cached;
   currentView = VIEW_TOPIC;
   updateDefaultUI();
   logAction("score", "เปิดดูคะแนนชั้นเรียน", { action:"loadScore", classId: currentClassId, subjectId: currentSubjectId||"", studentCount: students.length });
@@ -515,7 +505,7 @@ window.selectTopic = async function(topicId) {
   if (!topic) return;
   currentMaxScore = topic.maxScore || 100;
   renderTopicsList();
-  document.getElementById("saveScoreBtn").style.display = userRole === "admin" ? "inline-flex" : "none";
+  // autosave: no manual save button needed
   document.getElementById("pageTitle").textContent = "คะแนนนักเรียน";
   const snap = await getDocs(query(collection(db,"scores"), where("topicId","==",topicId), where("classId","==",currentClassId)));
   scores = {};
@@ -736,7 +726,7 @@ function renderScoreTable(topic) {
       <td>
         <input class="score-input" type="number" id="sc-${s.id}" min="0" max="${topic.maxScore}"
           value="${hasScore ? sc : ''}" placeholder="—"
-          oninput="previewGrade('${s.id}',${topic.maxScore})">
+          oninput="previewGrade('${s.id}',${topic.maxScore}); scheduleAutoSave('${s.id}',${topic.maxScore})">
         <span style="font-size:11px;color:var(--muted);margin-left:4px;">/ ${topic.maxScore}</span>
       </td>
       <td><span class="grade-badge ${hasScore ? getGrade(sc, topic.maxScore).cls : 'g-none'}" id="grade-${s.id}">${hasScore ? getGrade(sc, topic.maxScore).label : '—'}</span></td>
@@ -762,11 +752,66 @@ window.previewGrade = function(sid, max) {
   el.className = "grade-badge " + g.cls; el.textContent = g.label;
 };
 
+function setAutoSaveIndicator(state) {
+  const el = document.getElementById("autoSaveIndicator");
+  if (!el) return;
+  if (state === "saving") {
+    el.style.display = "inline-flex";
+    el.innerHTML = `<svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:var(--muted);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> กำลังบันทึก...`;
+    el.style.color = "var(--muted)";
+  } else if (state === "saved") {
+    el.style.display = "inline-flex";
+    el.innerHTML = `<svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:#166534;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><polyline points="20 6 9 17 4 12"/></svg> บันทึกแล้ว`;
+    el.style.color = "#166534";
+    setTimeout(() => { el.style.display = "none"; }, 2500);
+  } else if (state === "error") {
+    el.style.display = "inline-flex";
+    el.innerHTML = `<svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:#b91c1c;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> บันทึกไม่สำเร็จ`;
+    el.style.color = "#b91c1c";
+    setTimeout(() => { el.style.display = "none"; }, 3000);
+  } else {
+    el.style.display = "none";
+  }
+}
+
+window.scheduleAutoSave = function(sid, max) {
+  if (userRole !== "admin") return;
+  clearTimeout(autoSaveTimer);
+  setAutoSaveIndicator("pending");
+  autoSaveTimer = setTimeout(() => autoSaveSingle(sid, max), 800);
+};
+
+async function autoSaveSingle(sid, max) {
+  const input = document.getElementById("sc-"+sid);
+  if (!input || input.value === "") return;
+  const val = parseFloat(input.value);
+  if (isNaN(val)) return;
+  const score = Math.min(Math.max(0, val), max);
+  const s = students.find(x => x.id === sid);
+  if (!s) return;
+  setAutoSaveIndicator("saving");
+  try {
+    await setDoc(doc(db, "scores", `${sid}_${currentTopicId}`), {
+      studentId: sid,
+      studentName: (s.prefix ? s.prefix + ' ' : '') + (s.name || (s.firstName ? s.firstName + (s.lastName ? ' ' + s.lastName : '') : '')) || '',
+      topicId: currentTopicId,
+      score,
+      classId: currentClassId,
+      updatedAt: new Date().toISOString()
+    });
+    scores[sid] = score;
+    updateMetrics();
+    setAutoSaveIndicator("saved");
+  } catch(e) {
+    setAutoSaveIndicator("error");
+    console.error("autoSave error:", e);
+  }
+}
+
 window.saveScores = async function() {
   if (userRole !== "admin") return;
   if (!currentTopicId || !currentClassId) { showToast("กรุณาเลือกชั้นเรียนและหัวข้อ","error"); return; }
-  const btn = document.getElementById("saveScoreBtn");
-  btn.disabled = true; btn.textContent = "กำลังบันทึก...";
+  setAutoSaveIndicator("saving");
   const topic = topics.find(t => t.id === currentTopicId);
   try {
     const writes = students.map(s => {
@@ -780,15 +825,14 @@ window.saveScores = async function() {
     }).filter(Boolean);
     await Promise.all(writes);
     logAction("score", `บันทึกคะแนน: ${topic.title}`, { action:"saveScore", topicId: currentTopicId, topicTitle: topic.title, classId: currentClassId, count: writes.length });
-    showToast("บันทึกคะแนนเรียบร้อย ✓", "success");
-    await selectTopic(currentTopicId);
-  } catch(e) { logAction("score", "บันทึกคะแนนล้มเหลว", { action:"saveScore", topicId: currentTopicId, classId: currentClassId, error: e.message }, "error"); showToast("เกิดข้อผิดพลาด: "+e.message, "error"); }
-  btn.disabled = false;
-  btn.innerHTML = `<svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:white;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> บันทึกคะแนน`;
+    setAutoSaveIndicator("saved");
+  } catch(e) {
+    logAction("score", "บันทึกคะแนนล้มเหลว", { action:"saveScore", topicId: currentTopicId, classId: currentClassId, error: e.message }, "error");
+    setAutoSaveIndicator("error");
+  }
 };
 
 function updateMetrics() {
-  if (!Array.isArray(students)) return;
   const vals = students.map(s => scores[s.id]).filter(v => v !== undefined && v !== null);
   document.getElementById("mTotal").textContent = students.length;
   document.getElementById("mAvg").textContent = vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1) : "—";
