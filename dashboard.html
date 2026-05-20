@@ -15,9 +15,10 @@
 body { font-family:'Sarabun',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
 
 /* topbar */
-.topbar { position:fixed; top:0; left:0; right:0; height:var(--topbar-h); background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 20px; z-index:100; }
+.topbar { position:fixed; top:0; left:0; right:0; height:var(--topbar-h); background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 16px; z-index:200; }
 .brand { display:flex; align-items:center; gap:10px; font-size:15px; font-weight:600; color:var(--text); text-decoration:none; }
-.brand-dot { width:32px; height:32px; background:var(--blue); border-radius:8px; display:flex; align-items:center; justify-content:center; }
+.brand-dot { width:32px; height:32px; background:var(--blue); border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.brand-name { white-space:nowrap; }
 .brand-dot svg { width:18px; height:18px; fill:white; }
 .topbar-right { display:flex; align-items:center; gap:14px; }
 .user-info { font-size:13px; color:var(--text); display:flex; align-items:center; gap:8px; }
@@ -106,8 +107,9 @@ tr:hover td { background:#fafafa; }
   .sidebar.mobile-open{transform:translateX(0);}
   .hamburger{display:flex;}
   .main,.main-content{margin-left:0!important;}
-  .brand-name-hide{display:none;}
-  .topbar-username{display:none;}
+  .brand-name{display:none;}
+  .user-name-text{display:none;}
+
   .page-title{font-size:17px!important;}
 
   /* metrics: 2×2 grid on tablet */
@@ -118,7 +120,7 @@ tr:hover td { background:#fafafa; }
   .card canvas{height:160px!important;}
 }
 @media(max-width:480px){
-  .topbar{padding:0 10px!important;}
+  .topbar{padding:0 12px;}
   .btn-logout{display:none;}
   .role-badge{display:none;}
 
@@ -156,13 +158,13 @@ tr:hover td { background:#fafafa; }
       <div class="brand-dot">
         <svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg>
       </div>
-      <span class="brand-name-hide">ระบบจัดการนักเรียน</span>
+      <span class="brand-name">ระบบจัดการนักเรียน</span>
     </a>
   </div>
   <div class="topbar-right">
     <div class="user-info">
       <div class="avatar" id="avatarEl">?</div>
-      <span id="userNameEl">ผู้ใช้</span>
+      <span id="userNameEl" class="user-name-text">ผู้ใช้</span>
       <span class="role-badge role-admin" id="roleBadgeEl">—</span>
     </div>
     <button class="btn-logout" onclick="doLogout()">ออกจากระบบ</button>
