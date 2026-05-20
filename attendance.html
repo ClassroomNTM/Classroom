@@ -61,10 +61,19 @@ tr:last-child td{border-bottom:none;}
 .stat-btn.active-present{background:#166534;color:white;}
 .stat-btn.active-late   {background:#92400e;color:white;}
 .stat-btn.active-absent {background:#b91c1c;color:white;}
+.stat-btn.leave {background:#f5f3ff;color:#6D28D9;border-color:#ddd6fe;}
+.stat-btn.active-leave  {background:#6D28D9;color:white;}
+.stat-btn.ghost {background:#fff0f0;color:#b91c1c;border-color:#fecaca;}
+.stat-btn.active-ghost  {background:#b91c1c;color:white;}
+.stat-btn.clear {background:#f9fafb;color:#6b7280;border-color:#e5e7eb;}
+.stat-btn.clear:hover   {background:#f3f4f6;color:#374151;}
 /* ปุ่มแก้เป็นมีตัวตน */
 .btn-restore{padding:4px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;transition:all .15s;font-family:'Sarabun',sans-serif;}
 .btn-restore:hover{background:#dbeafe;}
 .note-input{width:120px;height:30px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-family:'Sarabun',sans-serif;font-size:12px;background:#fafafa;}
+.note-inline{display:none;}
+.s-purple{background:#f5f3ff;color:#6D28D9;border:1px solid #ddd6fe;}
+@keyframes spin{to{transform:rotate(360deg);}}
 #toast{position:fixed;bottom:24px;right:24px;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;}
 #toast.show{opacity:1;transform:translateY(0);}
 #toast.success{background:#052e16;color:#86efac;}
@@ -214,7 +223,7 @@ tr:last-child td{border-bottom:none;}
   <div class="filters">
     <div class="fgroup">
       <div class="flabel">วิชา</div>
-      <select id="subjectSelect" onchange="updateDefaultUI();loadStudents()">
+      <select id="subjectSelect" onchange="loadStudents()">
         <option value="">— เลือกวิชา —</option>
       </select>
     </div>
@@ -272,8 +281,7 @@ window.doLogout = doLogout;
 
 let userRole   = "user";
 let currentUserId = "";
-let savedDefaultClassId   = "";
-let savedDefaultSubjectId = "";
+let savedDefaultClassId = "";
 let students   = [];
 let attendance = {};
 window.attendance = attendance; // expose for inline oninput handlers
@@ -322,8 +330,7 @@ initAuth({ requireAdmin: true, onReady: async ({ role, user }) => {
     try {
       const prefSnap = await getDoc(doc(db, "userPrefs", currentUserId));
       if (prefSnap.exists()) {
-        savedDefaultClassId   = prefSnap.data().defaultClassId_attendance   || "";
-        savedDefaultSubjectId = prefSnap.data().defaultSubjectId_attendance || "";
+        savedDefaultClassId = prefSnap.data().defaultClassId_attendance || "";
       }
     } catch(e) { console.warn("load pref attendance:", e); }
   }
@@ -332,13 +339,9 @@ initAuth({ requireAdmin: true, onReady: async ({ role, user }) => {
   await loadClasses();
 
   // apply ค่าเริ่มต้น
-  const sel    = document.getElementById("classSelect");
-  const selSub = document.getElementById("subjectSelect");
+  const sel = document.getElementById("classSelect");
   if (savedDefaultClassId && [...sel.options].some(o => o.value === savedDefaultClassId)) {
     sel.value = savedDefaultClassId;
-  }
-  if (savedDefaultSubjectId && [...selSub.options].some(o => o.value === savedDefaultSubjectId)) {
-    selSub.value = savedDefaultSubjectId;
   }
   document.getElementById("defaultBar").style.display = "flex";
   updateDefaultUI();
@@ -393,19 +396,16 @@ async function loadClasses() {
 
 // ─── Default Class ────────────────────────────────────────────
 window.setDefaultClass = async function() {
-  const classId   = document.getElementById("classSelect").value;
-  const subjectId = document.getElementById("subjectSelect").value;
+  const classId = document.getElementById("classSelect").value;
   if (!classId) { showToast("กรุณาเลือกห้องเรียนก่อน","error"); return; }
   if (!currentUserId) { showToast("ไม่พบข้อมูลผู้ใช้","error"); return; }
   try {
     await setDoc(doc(db,"userPrefs",currentUserId), {
       uid: currentUserId,
-      defaultClassId_attendance:   classId,
-      defaultSubjectId_attendance: subjectId,
+      defaultClassId_attendance: classId,
       updatedAt: new Date().toISOString()
     }, { merge: true });
-    savedDefaultClassId   = classId;
-    savedDefaultSubjectId = subjectId;
+    savedDefaultClassId = classId;
     showToast("ตั้งค่าเริ่มต้นเรียบร้อย ✓","success");
     updateDefaultUI();
   } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
@@ -415,26 +415,20 @@ window.clearDefaultClass = async function() {
   if (!currentUserId) return;
   try {
     await setDoc(doc(db,"userPrefs",currentUserId), {
-      defaultClassId_attendance:   "",
-      defaultSubjectId_attendance: "",
+      defaultClassId_attendance: "",
       updatedAt: new Date().toISOString()
     }, { merge: true });
-    savedDefaultClassId   = "";
-    savedDefaultSubjectId = "";
+    savedDefaultClassId = "";
     showToast("ล้างค่าเริ่มต้นแล้ว","success");
     updateDefaultUI();
   } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
 };
 
 function updateDefaultUI() {
-  const currentClassId   = document.getElementById("classSelect").value;
-  const currentSubjectId = document.getElementById("subjectSelect").value;
-  const isDefault = savedDefaultClassId
-    && savedDefaultClassId   === currentClassId
-    && savedDefaultSubjectId === currentSubjectId;
-  const hasDefault = !!savedDefaultClassId;
-  document.getElementById("clearDefaultBtn").style.display  = hasDefault ? "inline-flex" : "none";
-  document.getElementById("defaultIndicator").style.display = isDefault  ? "inline-flex" : "none";
+  const currentClassId = document.getElementById("classSelect").value;
+  const isDefault = savedDefaultClassId && savedDefaultClassId === currentClassId;
+  document.getElementById("clearDefaultBtn").style.display  = savedDefaultClassId ? "inline-flex" : "none";
+  document.getElementById("defaultIndicator").style.display = isDefault ? "inline-flex" : "none";
   const setBtn = document.getElementById("setDefaultBtn");
   if (isDefault) {
     setBtn.style.background  = "#f0fdf4";
