@@ -46,6 +46,7 @@ select:focus,input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,5
 .s-green{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;}
 .s-amber{background:#fffbeb;color:#92400e;border:1px solid #fde68a;}
 .s-red  {background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;}
+.s-purple{background:#f5f3ff;color:#6D28D9;border:1px solid #ddd6fe;}
 .s-gray {background:#f9fafb;color:#374151;border:1px solid #e5e7eb;}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
 .tbl-wrap{overflow-x:auto;}
@@ -61,6 +62,12 @@ tr:last-child td{border-bottom:none;}
 .stat-btn.active-present{background:#166534;color:white;}
 .stat-btn.active-late   {background:#92400e;color:white;}
 .stat-btn.active-absent {background:#b91c1c;color:white;}
+.stat-btn.leave {background:#f5f3ff;color:#6D28D9;border-color:#ddd6fe;}
+.stat-btn.active-leave  {background:#6D28D9;color:white;}
+.stat-btn.ghost {background:#fff0f0;color:#b91c1c;border-color:#fecaca;}
+.stat-btn.active-ghost  {background:#b91c1c;color:white;}
+.stat-btn.clear {background:#f9fafb;color:#6b7280;border-color:#e5e7eb;}
+.stat-btn.clear:hover   {background:#f3f4f6;color:#374151;}
 /* ปุ่มแก้เป็นมีตัวตน */
 .btn-restore{padding:4px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;transition:all .15s;font-family:'Sarabun',sans-serif;}
 .btn-restore:hover{background:#dbeafe;}
@@ -69,6 +76,7 @@ tr:last-child td{border-bottom:none;}
 #toast.show{opacity:1;transform:translateY(0);}
 #toast.success{background:#052e16;color:#86efac;}
 #toast.error{background:#450a0a;color:#fca5a5;}
+@keyframes spin{to{transform:rotate(360deg);}}
 .readonly-banner{background:#fffbeb;border:1px solid #fde68a;color:#92400e;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:16px;display:none;}
 .default-bar{display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
 .btn-sm{padding:5px 10px;font-size:12px;}
@@ -190,6 +198,11 @@ tr:last-child td{border-bottom:none;}
       <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
       บันทึกการเช็คชื่อ
     </button>
+    <div id="autoSaveIndicator" style="font-size:12px;color:var(--muted);display:none;align-items:center;gap:5px;">
+      <svg id="autoSaveSpinner" viewBox="0 0 24 24" style="width:13px;height:13px;stroke:#6b7280;fill:none;stroke-width:2;stroke-linecap:round;display:none;animation:spin .7s linear infinite;"><path d="M21 12a9 9 0 11-6.22-8.56"/></svg>
+      <svg id="autoSaveCheck" viewBox="0 0 24 24" style="width:13px;height:13px;stroke:#166534;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;display:none;"><polyline points="20 6 9 17 4 12"/></svg>
+      <span id="autoSaveText">บันทึกอัตโนมัติ...</span>
+    </div>
   </div>
 
   <div class="readonly-banner" id="readonlyBanner">
@@ -235,10 +248,11 @@ tr:last-child td{border-bottom:none;}
   </div>
 
   <div class="summary-row" id="summaryRow" style="display:none;">
-    <div class="s-chip s-green" id="presentCount">มา: 0</div>
-    <div class="s-chip s-amber" id="lateCount">สาย: 0</div>
-    <div class="s-chip s-red"   id="absentCount">ขาด: 0</div>
-    <div class="s-chip s-gray"  id="totalCount">ทั้งหมด: 0</div>
+    <div class="s-chip s-green"  id="presentCount">มา: 0</div>
+    <div class="s-chip s-amber"  id="lateCount">สาย: 0</div>
+    <div class="s-chip s-red"    id="absentCount">ขาด: 0</div>
+    <div class="s-chip s-purple" id="leaveCount">ลา: 0</div>
+    <div class="s-chip s-gray"   id="totalCount">ทั้งหมด: 0</div>
   </div>
 
   <div class="card">
@@ -314,7 +328,8 @@ initAuth({ requireAdmin: true, onReady: async ({ role, user }) => {
   userRole = role;
   currentUserId = user?.uid || "";
   document.getElementById("adminNavItem").style.display = "flex";
-  document.getElementById("saveBtn").style.display = "inline-flex";
+  // ไม่มีปุ่มบันทึกแล้ว — ใช้ auto-save แทน
+  document.getElementById("autoSaveIndicator").style.display = "none";
 
   // โหลด default class จาก Firestore
   if (currentUserId) {
@@ -527,41 +542,40 @@ function renderTable() {
       if (isGhost) chip = '<span style="background:#fef2f2;color:#b91c1c;padding:3px 10px;border-radius:99px;font-size:12px;">ไม่มีตัวตน</span>';
       else if (cur.status==="present") chip = '<span style="background:#f0fdf4;color:#166534;padding:3px 10px;border-radius:99px;font-size:12px;">มาเรียน</span>';
       else if (cur.status==="late")    chip = '<span style="background:#fffbeb;color:#92400e;padding:3px 10px;border-radius:99px;font-size:12px;">สาย</span>';
+      else if (cur.status==="leave")   chip = '<span style="background:#f5f3ff;color:#6D28D9;padding:3px 10px;border-radius:99px;font-size:12px;">ลา</span>';
       else chip = '<span style="background:#fef2f2;color:#b91c1c;padding:3px 10px;border-radius:99px;font-size:12px;">ขาด</span>';
       return `<tr style="${isGhost?"opacity:.6;":""}"><td>${s.number||"—"}</td><td>${nameHtml}</td><td>${chip}</td><td style="color:var(--muted);font-size:12px;">${cur.note||"—"}</td></tr>`;
     }
 
-    // ── admin: ghost row → แสดงแค่ปุ่ม "แก้เป็นมีตัวตน" ──
-    if (isGhost) {
-      return `<tr id="row-${s.id}" style="background:#fff8f8;opacity:.7;">
-        <td>${s.number||"—"}</td>
-        <td>${nameHtml}</td>
-        <td>
-          <button class="btn-restore" onclick="restoreStudent('${s.id}')">
-            ✦ แก้เป็นมีตัวตน
-          </button>
-        </td>
-        <td style="color:var(--muted);font-size:12px;">—</td>
-      </tr>`;
-    }
+    // ── admin: ทุก row มีปุ่มชุดเดียวกัน ──
+    // ชื่อ: ถ้าเป็น ghost แสดงขีดทับ + tag
+    const nameHtmlAdmin = isGhost
+      ? `<span class="ghost-name-att">${s.prefix?s.prefix+" ":""}${s.name}</span><span class="ghost-tag-att">ไม่มีตัวตน</span>`
+      : `${s.prefix?s.prefix+" ":""}${s.name}`;
 
-    // ── admin: นักเรียนปกติ → ปุ่มเช็คชื่อ ──
-    return `<tr id="row-${s.id}">
+    const cs = cur.status; // shorthand
+    return `<tr id="row-${s.id}"${isGhost?' style="background:#fff8f8;"':''}>
       <td>${s.number||"—"}</td>
-      <td>${nameHtml}</td>
+      <td>${nameHtmlAdmin}</td>
       <td>
         <div class="status-btns">
-          <button class="stat-btn present ${cur.status==='present'?'active-present':''}"
+          <button class="stat-btn present ${cs==='present'?'active-present':''}"
             onclick="setStatus('${s.id}','present')">มาเรียน</button>
-          <button class="stat-btn late ${cur.status==='late'?'active-late':''}"
+          <button class="stat-btn late ${cs==='late'?'active-late':''}"
             onclick="setStatus('${s.id}','late')">สาย</button>
-          <button class="stat-btn absent ${cur.status==='absent'?'active-absent':''}"
+          <button class="stat-btn absent ${cs==='absent'?'active-absent':''}"
             onclick="setStatus('${s.id}','absent')">ขาด</button>
+          <button class="stat-btn leave ${cs==='leave'?'active-leave':''}"
+            onclick="setStatus('${s.id}','leave')">ลา</button>
+          <button class="stat-btn ghost ${cs==='ghost'?'active-ghost':''}"
+            onclick="setStatus('${s.id}','ghost')">ไม่มีตัวตน</button>
+          <button class="stat-btn clear"
+            onclick="clearStatus('${s.id}')">ลบสถานะ</button>
         </div>
       </td>
       <td>
         <input class="note-input" id="note-${s.id}" value="${cur.note||""}" placeholder="หมายเหตุ"
-          oninput="window.attendance['${s.id}'].note=this.value">
+          oninput="window.attendance['${s.id}'].note=this.value;scheduleSave('${s.id}')">
       </td>
     </tr>`;
   }).join("");
@@ -607,47 +621,131 @@ window.restoreStudent = async function(sid) {
   }
 };
 
+// ─── autoSave: บันทึกนักเรียน 1 คน ทันทีหลังกดปุ่ม ──────────
+async function autoSaveStudent(sid) {
+  if (userRole !== "admin") return;
+  const classId   = document.getElementById("classSelect").value;
+  const subjectId = document.getElementById("subjectSelect").value;
+  const date      = document.getElementById("dateInput").value;
+  if (!classId || !date) return;
+
+  const ind     = document.getElementById("autoSaveIndicator");
+  const spinner = document.getElementById("autoSaveSpinner");
+  const check   = document.getElementById("autoSaveCheck");
+  const txt     = document.getElementById("autoSaveText");
+  ind.style.display     = "flex";
+  spinner.style.display = "inline";
+  check.style.display   = "none";
+  txt.textContent       = "กำลังบันทึก...";
+
+  try {
+    const s = students.find(x => x.id === sid);
+    const a = attendance[sid] || { status: "present", note: "" };
+    const isGhostStatus = a.status === "ghost";
+
+    // อัพเดต ghost field ใน students collection ถ้าเปลี่ยน
+    const wasGhost = s?.ghost === true;
+    if (isGhostStatus !== wasGhost) {
+      await updateDoc(doc(db, "students", sid), { ghost: isGhostStatus });
+      const idx = students.findIndex(x => x.id === sid);
+      if (idx > -1) students[idx] = { ...students[idx], ghost: isGhostStatus };
+      sessionStorage.removeItem("students_" + classId);
+    }
+
+    // บันทึก attendance doc
+    const docId = `${classId}_${subjectId||"none"}_${date}_${sid}`;
+    if (a.status === null) {
+      // ลบสถานะ → ลบ doc ออก
+      const { deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+      await deleteDoc(doc(db, "attendance", docId));
+    } else {
+      await setDoc(doc(db, "attendance", docId), {
+        studentId:   sid,
+        studentName: (s?.prefix ? s.prefix+" " : "") + (s?.name || ""),
+        classId,
+        subjectId:   subjectId || "",
+        date,
+        status:      a.status,
+        note:        a.note || "",
+        savedAt:     new Date().toISOString(),
+      });
+    }
+
+    spinner.style.display = "none";
+    check.style.display   = "inline";
+    txt.textContent       = "บันทึกแล้ว ✓";
+    setTimeout(() => { ind.style.display = "none"; }, 2000);
+
+    // re-render row เพื่ออัพเดตชื่อ/สี ถ้า ghost เปลี่ยน
+    if (isGhostStatus !== wasGhost) { renderTable(); updateSummary(); }
+
+  } catch(e) {
+    spinner.style.display = "none";
+    txt.textContent       = "บันทึกไม่สำเร็จ ⚠";
+    setTimeout(() => { ind.style.display = "none"; }, 3000);
+    showToast("บันทึกไม่สำเร็จ: " + e.message, "error");
+  }
+}
+
+// debounce สำหรับ note input (รอ 800ms หลังพิมพ์)
+const _saveTimers = {};
+window.scheduleSave = function(sid) {
+  clearTimeout(_saveTimers[sid]);
+  _saveTimers[sid] = setTimeout(() => autoSaveStudent(sid), 800);
+};
+
+// ─── clearStatus: ลบสถานะออกจาก attendance ──────────────────
+window.clearStatus = function(sid) {
+  if (userRole !== "admin") return;
+  attendance[sid] = { status: null, note: "" };
+  // visual: ล้าง active class ทุกปุ่ม
+  const row = document.getElementById("row-"+sid);
+  if (row) {
+    row.querySelectorAll(".stat-btn").forEach(b =>
+      b.classList.remove("active-present","active-late","active-absent","active-leave","active-ghost")
+    );
+    row.style.background = "";
+  }
+  updateSummary();
+  autoSaveStudent(sid);
+};
+
 // ─── setStatus ────────────────────────────────────────────────
 window.setStatus = function(sid, status) {
   const prevStatus = attendance[sid]?.status || "present";
-  attendance[sid].status = status;
-  const row = document.getElementById("row-"+sid);
-  row.querySelectorAll(".stat-btn").forEach(b => {
-    b.classList.remove("active-present","active-late","active-absent");
-  });
-  const map = {present:"active-present",late:"active-late",absent:"active-absent"};
-  const btn = row.querySelector(".stat-btn."+status);
-  if (btn) btn.classList.add(map[status]);
-  row.style.background = "";
-  updateSummary();
+  if (prevStatus === status) return; // กดซ้ำ ไม่ต้องทำอะไร
 
-  // Log only if status actually changed
-  if (prevStatus !== status) {
-    const s      = students.find(x => x.id === sid);
-    const sName  = s ? (s.prefix ? s.prefix+" " : "") + s.name : sid;
-    const date   = document.getElementById("dateInput").value;
-    const classId   = document.getElementById("classSelect").value;
-    const subjectId = document.getElementById("subjectSelect").value;
-    const clsName = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
-    const subName = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
-    const statusLabel = { present:"มาเรียน", late:"สาย", absent:"ขาดเรียน" };
-    window.logAction && window.logAction("attendance",
-      `เปลี่ยนสถานะ "${sName}" จาก ${statusLabel[prevStatus]||prevStatus} → ${statusLabel[status]||status}`,
-      {
-        studentId:   sid,
-        studentName: sName,
-        date,
-        before:      prevStatus,
-        after:       status,
-        beforeLabel: statusLabel[prevStatus] || prevStatus,
-        afterLabel:  statusLabel[status]     || status,
-        classId,
-        className:   clsName,
-        subjectId:   subjectId || "",
-        subjectName: subName,
-      }
+  attendance[sid] = { status, note: attendance[sid]?.note || "" };
+
+  const row = document.getElementById("row-"+sid);
+  if (row) {
+    row.querySelectorAll(".stat-btn").forEach(b =>
+      b.classList.remove("active-present","active-late","active-absent","active-leave","active-ghost")
     );
+    const map = { present:"active-present", late:"active-late", absent:"active-absent", leave:"active-leave", ghost:"active-ghost" };
+    const btn = row.querySelector(".stat-btn."+status);
+    if (btn && map[status]) btn.classList.add(map[status]);
+    // ghost row → พื้นหลังชมพูอ่อน
+    row.style.background = status === "ghost" ? "#fff8f8" : "";
   }
+  updateSummary();
+  autoSaveStudent(sid);
+
+  // log
+  const s      = students.find(x => x.id === sid);
+  const sName  = s ? (s.prefix ? s.prefix+" " : "") + s.name : sid;
+  const date      = document.getElementById("dateInput").value;
+  const classId   = document.getElementById("classSelect").value;
+  const subjectId = document.getElementById("subjectSelect").value;
+  const clsName   = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
+  const subName   = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
+  const statusLabel = { present:"มาเรียน", late:"สาย", absent:"ขาดเรียน", leave:"ลา", ghost:"ไม่มีตัวตน" };
+  window.logAction && window.logAction("attendance",
+    `เปลี่ยนสถานะ "${sName}" จาก ${statusLabel[prevStatus]||prevStatus} → ${statusLabel[status]||status}`,
+    { studentId:sid, studentName:sName, date, before:prevStatus, after:status,
+      beforeLabel:statusLabel[prevStatus]||prevStatus, afterLabel:statusLabel[status]||status,
+      classId, className:clsName, subjectId:subjectId||"", subjectName:subName }
+  );
 };
 
 // ─── markAllPresent ───────────────────────────────────────────
@@ -698,15 +796,17 @@ window.markAllPresent = function() {
 
 // ─── updateSummary ────────────────────────────────────────────
 function updateSummary() {
-  const activeStudents = students.filter(s => !s.ghost);
-  const ghostCount     = students.length - activeStudents.length;
-  const p = activeStudents.filter(s => attendance[s.id]?.status==="present").length;
-  const l = activeStudents.filter(s => attendance[s.id]?.status==="late").length;
-  const a = activeStudents.filter(s => attendance[s.id]?.status==="absent").length;
+  const activeStudents = students.filter(s => !s.ghost && attendance[s.id]?.status !== "ghost");
+  const ghostCount = students.filter(s => s.ghost || attendance[s.id]?.status === "ghost").length;
+  const p  = activeStudents.filter(s => attendance[s.id]?.status==="present").length;
+  const l  = activeStudents.filter(s => attendance[s.id]?.status==="late").length;
+  const a  = activeStudents.filter(s => attendance[s.id]?.status==="absent").length;
+  const lv = activeStudents.filter(s => attendance[s.id]?.status==="leave").length;
   document.getElementById("presentCount").textContent = "มา: "+p;
   document.getElementById("lateCount").textContent    = "สาย: "+l;
   document.getElementById("absentCount").textContent  = "ขาด: "+a;
-  document.getElementById("totalCount").textContent   = "ทั้งหมด: "+activeStudents.length+(ghostCount>0?" (ไม่มีตัวตน: "+ghostCount+")":"");
+  document.getElementById("leaveCount").textContent   = "ลา: "+lv;
+  document.getElementById("totalCount").textContent   = "ทั้งหมด: "+students.length+(ghostCount>0?" (ไม่มีตัวตน: "+ghostCount+")":"");
 }
 
 // ─── saveAll ──────────────────────────────────────────────────
