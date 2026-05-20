@@ -119,6 +119,11 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);bac
 .rank-3{background:#fff7ed;color:#9a3412;}
 .loading-spinner{display:flex;align-items:center;justify-content:center;padding:40px;gap:10px;color:var(--muted);font-size:13px;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+/* ── GHOST ROW (ไม่มีตัวตน) ── */
+:root{--ghost-row-bg:#f9f9f9;--ghost-row-opacity:0.65;--ghost-row-name-color:#9ca3af;--ghost-row-strike-color:#b91c1c;}
+tr.ghost-row{opacity:var(--ghost-row-opacity);}
+tr.ghost-row td{background:var(--ghost-row-bg)!important;}
+.ghost-strikethrough{text-decoration:line-through;color:var(--ghost-row-strike-color);}
 .hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:6px;border:none;background:transparent;margin-right:4px;}
 .hamburger span{display:block;width:22px;height:2px;background:var(--text);border-radius:2px;transition:.25s;}
 .hamburger.open span:nth-child(1){transform:rotate(45deg) translate(5px,5px);}
@@ -593,9 +598,14 @@ function renderSummary(topicStats, studentRows, rankMap, totalMax) {
     const totalPct = s.total !== null ? Math.round((s.total/totalMax)*100) : null;
     const totalColor = totalPct !== null ? (totalPct>=70?"#1D9E75":totalPct>=50?"#EF9F27":"#E24B4A") : "#9ca3af";
 
-    return `<tr>
+    const isGhost = s.ghost === true;
+    const fullName = (s.prefix ? s.prefix + ' ' : '') + (s.name || s.firstName && (s.firstName + (s.lastName ? ' ' + s.lastName : '')) || '—');
+    const nameCell = isGhost
+      ? `<span class="ghost-strikethrough">${fullName}</span> <span style="margin-left:4px;padding:1px 6px;border-radius:99px;font-size:10px;font-weight:600;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;">ไม่มีตัวตน</span>`
+      : fullName;
+    return `<tr class="${isGhost ? 'ghost-row' : ''}">
       <td style="color:var(--muted);font-size:12px;">${s.number||"—"}</td>
-      <td>${s.name||"—"}</td>
+      <td>${nameCell}</td>
       ${scoreCells}
       <td class="score-cell total-col">
         <span style="color:${totalColor};font-weight:700;">${s.total ?? "—"}</span>
@@ -687,13 +697,19 @@ function renderScoreTable(topic) {
   const rows = students.map(s => {
     const sc = scores[s.id];
     const hasScore = sc !== undefined && sc !== null;
+    const isGhost = s.ghost === true;
+    const fullName = (s.prefix ? s.prefix + ' ' : '') + (s.name || s.firstName && (s.firstName + (s.lastName ? ' ' + s.lastName : '')) || '—');
+    const nameHtml = isGhost
+      ? `<span class="ghost-strikethrough">${fullName}</span> <span style="margin-left:5px;padding:1px 7px;border-radius:99px;font-size:10px;font-weight:600;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;">ไม่มีตัวตน</span>`
+      : fullName;
+
     if (!isAdmin) {
       const g = hasScore ? getGrade(sc, topic.maxScore) : null;
       const color = hasScore ? scoreColor(sc, topic.maxScore) : "#9ca3af";
       const pct = hasScore ? Math.round((sc/topic.maxScore)*100) : 0;
-      return `<tr>
+      return `<tr class="${isGhost ? 'ghost-row' : ''}">
         <td style="color:var(--muted);font-size:12px;">${s.number||"—"}</td>
-        <td>${s.name}</td>
+        <td>${nameHtml}</td>
         <td><div class="score-bar-wrap">
           <span style="font-weight:600;color:${color};min-width:36px;">${hasScore ? sc : '—'}</span>
           <div class="score-bar"><div class="score-bar-fill" style="width:${pct}%;background:${color};"></div></div>
@@ -701,9 +717,9 @@ function renderScoreTable(topic) {
         <td>${g ? `<span class="grade-badge ${g.cls}">${g.label}</span>` : '<span class="grade-badge g-none">—</span>'}</td>
       </tr>`;
     }
-    return `<tr>
+    return `<tr class="${isGhost ? 'ghost-row' : ''}">
       <td style="color:var(--muted);font-size:12px;">${s.number||"—"}</td>
-      <td>${s.name}</td>
+      <td>${nameHtml}</td>
       <td>
         <input class="score-input" type="number" id="sc-${s.id}" min="0" max="${topic.maxScore}"
           value="${hasScore ? sc : ''}" placeholder="—"
@@ -745,7 +761,7 @@ window.saveScores = async function() {
       if (!input || input.value === "") return null;
       const score = Math.min(Math.max(0, parseFloat(input.value)||0), topic.maxScore);
       return setDoc(doc(db, "scores", `${s.id}_${currentTopicId}`), {
-        studentId: s.id, studentName: s.name, topicId: currentTopicId,
+        studentId: s.id, studentName: (s.prefix ? s.prefix + ' ' : '') + (s.name || s.firstName && (s.firstName + (s.lastName ? ' ' + s.lastName : '')) || ''), topicId: currentTopicId,
         score, classId: currentClassId, updatedAt: new Date().toISOString()
       });
     }).filter(Boolean);
