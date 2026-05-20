@@ -1361,7 +1361,8 @@ window.doDeleteDay = async function() {
     );
     btn.disabled=false; btn.textContent="ลบข้อมูล";
   }
-}; = async function() {
+};
+window.confirmDeleteMonth = async function() {
   const classId   = document.getElementById("classSelect").value;
   const subjectId = document.getElementById("subjectSelect").value;
   const month     = document.getElementById("monthInput").value;
