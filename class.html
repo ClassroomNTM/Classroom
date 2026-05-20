@@ -376,7 +376,7 @@ input:focus,select.modal-sel:focus{border-color:var(--blue);box-shadow:0 0 0 3px
 <div id="toast"></div>
 
 <script type="module">
-import { initAuth, doLogout, db } from "./auth-guard.js";
+import { initAuth, doLogout, db, logAction } from "./auth-guard.js";
 import {
   collection, doc, getDocs, setDoc, deleteDoc, addDoc, writeBatch, query, where
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -528,8 +528,10 @@ window.saveClass = async function() {
   try {
     if (editId) await setDoc(doc(db,"classes",editId),{name,teacher},{merge:true});
     else await addDoc(collection(db,"classes"),{name,teacher,studentCount:0,createdAt:new Date().toISOString()});
-    closeClassModal(); showToast("บันทึกชั้นเรียนเรียบร้อย ✓","success"); await loadClasses();
-  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
+    closeClassModal(); showToast("บันทึกชั้นเรียนเรียบร้อย ✓","success");
+    logAction("class", editId ? "แก้ไขชั้นเรียน" : "เพิ่มชั้นเรียน", {className:name, teacher});
+    await loadClasses();
+  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); logAction("class", "บันทึกชั้นเรียนล้มเหลว", {className:name}, "error", e.message); }
 };
 window.deleteClass = async function(id) {
   if (!confirm("ยืนยันลบชั้นเรียนนี้? ข้อมูลนักเรียนทั้งหมดจะถูกลบด้วย")) return;
@@ -538,9 +540,10 @@ window.deleteClass = async function(id) {
     const sSnap=await getDocs(query(collection(db,"students"),where("classId","==",id)));
     await Promise.all(sSnap.docs.map(d=>deleteDoc(d.ref)));
     showToast("ลบชั้นเรียนเรียบร้อย","success");
+    logAction("class", "ลบชั้นเรียน", {classId:id});
     if (currentClassId===id) { currentClassId=""; document.getElementById("studentsSection").style.display="none"; }
     await loadClasses();
-  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
+  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); logAction("class", "ลบชั้นเรียนล้มเหลว", {classId:id}, "error", e.message); }
 };
 
 // ══════════════════════════════
@@ -614,8 +617,10 @@ window.saveStudent = async function() {
     dupConfirmed = false;
     document.getElementById("dupWarn").style.display = "none";
     clearStudentsCache(currentClassId);
-    closeStudentModal(); showToast("บันทึกนักเรียนเรียบร้อย ✓","success"); await loadStudents(currentClassId);
-  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
+    closeStudentModal(); showToast("บันทึกนักเรียนเรียบร้อย ✓","success");
+    logAction("class", editId ? "แก้ไขข้อมูลนักเรียน" : "เพิ่มนักเรียน", {studentName:name, className:cls?.name||""});
+    await loadStudents(currentClassId);
+  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); logAction("class", "บันทึกนักเรียนล้มเหลว", {studentName:name}, "error", e.message); }
 };
 
 // ล้าง students cache ทุก classId ที่เกี่ยวข้อง เพื่อให้ attendance.html โหลดใหม่
@@ -631,6 +636,7 @@ window.toggleGhost = async function(id, isGhost) {
     await setDoc(doc(db,"students",id),{ghost:isGhost},{merge:true});
     clearStudentsCache(currentClassId);
     showToast(isGhost ? "มาร์ก 'ไม่มีตัวตน' เรียบร้อย" : "คืนสถานะปกติแล้ว","success");
+    logAction("class", isGhost ? "มาร์กนักเรียนไม่มีตัวตน" : "คืนสถานะนักเรียน", {studentId:id});
     await loadStudents(currentClassId);
   } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
 };
@@ -642,8 +648,10 @@ window.deleteStudent = async function(id) {
     const cls=classes.find(c=>c.id===currentClassId);
     if (cls) await setDoc(doc(db,"classes",currentClassId),{studentCount:Math.max(0,(cls.studentCount||1)-1)},{merge:true});
     clearStudentsCache(currentClassId);
-    showToast("ลบนักเรียนเรียบร้อย","success"); await loadStudents(currentClassId);
-  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
+    showToast("ลบนักเรียนเรียบร้อย","success");
+    logAction("class", "ลบนักเรียน", {studentId:id});
+    await loadStudents(currentClassId);
+  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); logAction("class", "ลบนักเรียนล้มเหลว", {studentId:id}, "error", e.message); }
 };
 
 // ══════════════════════════════
