@@ -113,6 +113,16 @@ tr:hover td{background:#fafafa;}
 .empty-state{padding:40px;text-align:center;color:var(--muted);}
 .empty-state svg{width:40px;height:40px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;margin:0 auto 10px;display:block;opacity:.4;}
 .empty-state p{font-size:13px;}
+/* ── GHOST ROW (ไม่มีตัวตน) ── */
+:root{
+  --ghost-row-bg:#f9f9f9;
+  --ghost-row-opacity:0.65;
+  --ghost-row-name-color:#9ca3af;
+  --ghost-row-strike-color:#b91c1c;
+}
+tr.ghost-row{opacity:var(--ghost-row-opacity);}
+tr.ghost-row td{background:var(--ghost-row-bg)!important;}
+.ghost-strikethrough{text-decoration:line-through;color:var(--ghost-row-strike-color);}
 #toast{position:fixed;bottom:24px;right:24px;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;}
 #toast.show{opacity:1;transform:translateY(0);}
 #toast.success{background:#052e16;color:#86efac;}
@@ -582,8 +592,10 @@ function renderAll(){
   const totalIncome  = Object.values(payments).reduce((s,p)=>s+(p.amount||0),0);
   const totalExpense = expenses.reduce((s,e)=>s+(e.amount||0),0);
   const balance      = totalIncome - totalExpense;
-  const paidCount    = Object.values(payments).filter(p=>p.paid).length;
-  const total        = students.length;
+  const activeStudents = students.filter(s => !s.ghost);
+  const ghostStudents  = students.filter(s => s.ghost === true);
+  const paidCount    = activeStudents.filter(s=>payments[s.id]?.paid).length;
+  const total        = activeStudents.length;
   const pct          = total>0 ? Math.round((paidCount/total)*100) : 0;
 
   const dueStr = round.dueDate
@@ -616,7 +628,7 @@ function renderAll(){
       <div class="metric">
         <div class="m-label"><svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>รายรับรวม</div>
         <div class="m-val m-val-blue">฿${num(totalIncome)}</div>
-        <div class="m-sub">${paidCount} / ${total} คน</div>
+        <div class="m-sub">${paidCount} / ${total} คน${ghostStudents.length>0?` (ไม่มีตัวตน ${ghostStudents.length} คน)`:""}</div>
       </div>
       <div class="metric">
         <div class="m-label"><svg viewBox="0 0 24 24"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>รายจ่ายรวม</div>
@@ -688,9 +700,12 @@ window.renderStudentRows = function(){
   const round = rounds.find(r=>r.id===currentRoundId);
   if(!round) return;
 
+  const activeStudents = students.filter(s => !s.ghost);
+  const ghostStudents  = students.filter(s => s.ghost === true);
+
   let list = students;
-  if(filter==="paid")   list = students.filter(s=>payments[s.id]?.paid);
-  if(filter==="unpaid") list = students.filter(s=>!payments[s.id]?.paid);
+  if(filter==="paid")   list = students.filter(s=>payments[s.id]?.paid || s.ghost);
+  if(filter==="unpaid") list = students.filter(s=>(!payments[s.id]?.paid) || s.ghost);
 
   if(!list.length){
     tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted);">ไม่มีรายการ</td></tr>`;
@@ -704,10 +719,9 @@ window.renderStudentRows = function(){
     const amount   = paid ? `฿${num(p.amount)}` : "—";
     const note     = paid && p.note ? esc(p.note) : "—";
     const initials = (s.name||"?").substring(0,2);
-    // ถ้าเป็น ghost: avatar สีแดงอ่อน, ชื่อขีดฆ่า + badge
     const avStyle  = isGhost ? 'background:#fef2f2;color:#b91c1c;' : '';
     const nameHtml = isGhost
-      ? `<span style="text-decoration:line-through;color:#9ca3af;">${esc((s.prefix?s.prefix+' ':'')+s.name)}</span>
+      ? `<span class="ghost-strikethrough">${esc((s.prefix?s.prefix+' ':'')+s.name)}</span>
          <span style="margin-left:5px;padding:1px 7px;border-radius:99px;font-size:10px;font-weight:600;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;">ไม่มีตัวตน</span>`
       : `${esc((s.prefix?s.prefix+' ':'')+s.name)}`;
     const chipCls  = isGhost ? "chip chip-gray" : (paid ? "chip chip-green" : "chip chip-red");
@@ -716,7 +730,7 @@ window.renderStudentRows = function(){
       : (paid
         ? `<button class="btn btn-sm btn-danger" onclick="cancelPay('${s.id}')">ยกเลิก</button>`
         : `<button class="btn btn-sm btn-success" onclick="openPayModal('${s.id}','${esc((s.prefix?s.prefix+' ':'')+s.name)}',${round.amountPerPerson||0})">บันทึก</button>`);
-    return `<tr style="${isGhost?'opacity:.65;background:#fffafa;':''}">
+    return `<tr class="${isGhost?'ghost-row':''}">
       <td style="color:var(--muted);font-size:12px;">${s.number||"—"}</td>
       <td><div class="stu-cell"><div class="stu-av" style="${avStyle}">${initials}</div><span class="stu-name">${nameHtml}</span></div></td>
       <td>${isGhost?"—":amount}</td><td>${isGhost?"—":paidDate}</td>
