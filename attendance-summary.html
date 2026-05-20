@@ -177,9 +177,15 @@ td.cell.col-today{outline:1px solid var(--dc-today-h);outline-offset:-1px;}
 td.cell{padding:3px 2px;background:#fafafa;}
 td.cell-name{padding:6px 10px;text-align:left;background:white;position:sticky;left:0;z-index:2;border-right:2px solid rgba(0,0,0,0.1);}
 td.cell-no{padding:6px 4px;background:#fafafa;color:var(--muted);font-size:11px;}
-tr.ghost-row td{background:#f9f9f9!important;opacity:.7;}
-tr.ghost-row td.cell-name{color:#9ca3af;}
-.ghost-strikethrough{text-decoration:line-through;color:#b91c1c;}
+:root{
+  --ghost-row-bg:#f9f9f9;
+  --ghost-row-opacity:0.7;
+  --ghost-row-name-color:#9ca3af;
+  --ghost-row-strike-color:#b91c1c;
+}
+tr.ghost-row td{background:var(--ghost-row-bg)!important;opacity:var(--ghost-row-opacity);}
+tr.ghost-row td.cell-name{color:var(--ghost-row-name-color);}
+.ghost-strikethrough{text-decoration:line-through;color:var(--ghost-row-strike-color);}
 .dot{display:inline-flex;width:22px;height:22px;border-radius:4px;align-items:center;justify-content:center;font-size:11px;font-weight:700;transition:transform .1s,box-shadow .1s;}
 .dot-present{background:var(--present-lt);color:var(--present);}
 .dot-late{background:var(--late-lt);color:var(--late);}
@@ -518,6 +524,35 @@ tr.footer-row td.f-leave{background:#f3e8ff;color:#6D28D9;}
           </div>
           <span>ตัวอักษร</span>
         </div>
+      </div>
+    </div>
+    <div>
+      <div class="cp-section-title">แถวไม่มีตัวตน (Ghost)</div>
+      <div class="cp-row-single">
+        <div class="cp-row-label">สีพื้นแถว</div>
+        <div class="cp-swatch" id="swGhostBg" style="background:#f9f9f9;border:1.5px solid rgba(0,0,0,.15);">
+          <input type="color" value="#f9f9f9" oninput="onGhostInput('bg',this.value)">
+          <div class="cp-swatch-fill" style="background:#f9f9f9;"></div>
+        </div>
+      </div>
+      <div class="cp-row-single">
+        <div class="cp-row-label">สีชื่อ</div>
+        <div class="cp-swatch" id="swGhostName" style="background:#9ca3af;">
+          <input type="color" value="#9ca3af" oninput="onGhostInput('name',this.value)">
+          <div class="cp-swatch-fill" style="background:#9ca3af;"></div>
+        </div>
+      </div>
+      <div class="cp-row-single">
+        <div class="cp-row-label">สีขีดทับ</div>
+        <div class="cp-swatch" id="swGhostStrike" style="background:#b91c1c;">
+          <input type="color" value="#b91c1c" oninput="onGhostInput('strike',this.value)">
+          <div class="cp-swatch-fill" style="background:#b91c1c;"></div>
+        </div>
+      </div>
+      <div class="cp-row-single" style="margin-top:2px;">
+        <div class="cp-row-label" style="font-size:11px;color:var(--muted);">ความเข้มแถว</div>
+        <input type="range" min="10" max="100" value="70" id="ghostOpacity" oninput="onGhostOpacityInput(this.value)" style="width:80px;accent-color:var(--blue);">
+        <span id="ghostOpacityVal" style="font-size:10px;color:var(--muted);min-width:26px;">70%</span>
       </div>
     </div>
     <div>
@@ -1808,7 +1843,8 @@ function blendToWhite(hex, intensity) {
 
 let colorSettings = null;
 function defaultSettings() {
-  const s = { today_h:"#0f3460", today_t:"#ffffff", focus:"#2563eb", focusIntensity:7, days:{} };
+  const s = { today_h:"#0f3460", today_t:"#ffffff", focus:"#2563eb", focusIntensity:7, days:{},
+    ghost_bg:"#f9f9f9", ghost_name:"#9ca3af", ghost_strike:"#b91c1c", ghost_opacity:70 };
   DAY_DEFS.forEach(d => { s.days[d.key] = { base: d.defH, txt: d.defT, intensity: 60 }; });
   return s;
 }
@@ -1853,6 +1889,11 @@ function applyColorSettings() {
   const {r,g,b} = hexToRgb(fc);
   root.style.setProperty("--dc-focus-row", `rgba(${r},${g},${b},${fi/100})`);
   root.style.setProperty("--dc-focus-col", `rgba(${r},${g},${b},${fi/100})`);
+  // Ghost row
+  root.style.setProperty("--ghost-row-bg", s.ghost_bg||"#f9f9f9");
+  root.style.setProperty("--ghost-row-opacity", ((s.ghost_opacity??70)/100).toFixed(2));
+  root.style.setProperty("--ghost-row-name-color", s.ghost_name||"#9ca3af");
+  root.style.setProperty("--ghost-row-strike-color", s.ghost_strike||"#b91c1c");
 }
 
 function buildColorPanel() {
@@ -1910,6 +1951,17 @@ function buildColorPanel() {
   const fiValEl = document.getElementById("focusIntensityVal");
   if (fiEl) fiEl.value = s.focusIntensity??7;
   if (fiValEl) fiValEl.textContent = (s.focusIntensity??7)+"%";
+  // Ghost
+  const ghSwBg = document.getElementById("swGhostBg");
+  const ghSwName = document.getElementById("swGhostName");
+  const ghSwStrike = document.getElementById("swGhostStrike");
+  const ghOpEl = document.getElementById("ghostOpacity");
+  const ghOpValEl = document.getElementById("ghostOpacityVal");
+  if (ghSwBg) { const v=s.ghost_bg||"#f9f9f9"; ghSwBg.style.background=v; ghSwBg.querySelector(".cp-swatch-fill").style.background=v; ghSwBg.querySelector("input").value=v; }
+  if (ghSwName) { const v=s.ghost_name||"#9ca3af"; ghSwName.style.background=v; ghSwName.querySelector(".cp-swatch-fill").style.background=v; ghSwName.querySelector("input").value=v; }
+  if (ghSwStrike) { const v=s.ghost_strike||"#b91c1c"; ghSwStrike.style.background=v; ghSwStrike.querySelector(".cp-swatch-fill").style.background=v; ghSwStrike.querySelector("input").value=v; }
+  if (ghOpEl) ghOpEl.value = s.ghost_opacity??70;
+  if (ghOpValEl) ghOpValEl.textContent = (s.ghost_opacity??70)+"%";
 }
 
 function updatePreviewStrip() {
@@ -1963,6 +2015,18 @@ window.onIntensityInput = function(key, val) {
   applyColorSettings();
 };
 
+window.onGhostInput = function(part, val) {
+  if (part === 'bg') { colorSettings.ghost_bg = val; const sw = document.getElementById("swGhostBg"); if(sw){sw.style.background=val;sw.querySelector(".cp-swatch-fill").style.background=val;} }
+  if (part === 'name') { colorSettings.ghost_name = val; const sw = document.getElementById("swGhostName"); if(sw){sw.style.background=val;sw.querySelector(".cp-swatch-fill").style.background=val;} }
+  if (part === 'strike') { colorSettings.ghost_strike = val; const sw = document.getElementById("swGhostStrike"); if(sw){sw.style.background=val;sw.querySelector(".cp-swatch-fill").style.background=val;} }
+  applyColorSettings();
+};
+window.onGhostOpacityInput = function(val) {
+  colorSettings.ghost_opacity = parseInt(val);
+  const el = document.getElementById("ghostOpacityVal");
+  if (el) el.textContent = val+"%";
+  applyColorSettings();
+};
 window.onFocusColorInput = function(val) {
   colorSettings.focus = val;
   const sw = document.getElementById("swFocus");
