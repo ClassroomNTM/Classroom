@@ -295,10 +295,19 @@ tr:hover td { background:#fafafa; }
         <option value="attendance">เช็คชื่อ</option>
         <option value="score">คะแนน</option>
         <option value="submit">ส่งงาน</option>
+        <option value="fund">เงินเก็บห้อง</option>
         <option value="class">ชั้นเรียน</option>
         <option value="subject">รายวิชา</option>
         <option value="user_manage">จัดการผู้ใช้</option>
         <option value="error">Error</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">กิจกรรม:</span>
+      <select id="fActivityKind" onchange="applyFilters()">
+        <option value="">ทั้งหมด</option>
+        <option value="action">มีการเปลี่ยนแปลง</option>
+        <option value="view">เข้าดูเท่านั้น</option>
       </select>
     </div>
     <div class="filter-sep"></div>
@@ -353,23 +362,9 @@ tr:hover td { background:#fafafa; }
 <div id="toast"></div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { logAction } from "./auth-guard.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyCBXMi3sy-3iDDzHDXVvlmaa6szcmnFbwQ",
-  authDomain: "classroom-93c8b.firebaseapp.com",
-  projectId: "classroom-93c8b",
-  storageBucket: "classroom-93c8b.firebasestorage.app",
-  messagingSenderId: "659092749098",
-  appId: "1:659092749098:web:36f249557c4badc088fc53"
-};
-
-const app  = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db   = getFirestore(app);
+import { app, auth, db, logAction } from "./auth-guard.js";
 
 // ── State ──
 let currentUser = null;
@@ -438,8 +433,11 @@ onAuthStateChanged(auth, async (user) => {
   sessionStorage.setItem("userRole", data.role);
 
   updateConfigBanner();
-  await loadLogs();
+  loadLogs();
 });
+
+// แสดง connected banner ทันทีที่โหลดหน้า
+updateConfigBanner();
 
 // ── Load logs from Google Sheet ──
 window.loadLogs = async function() {
@@ -484,18 +482,41 @@ function updateMetrics(logs) {
   document.getElementById("mErrors").textContent   = errors.toLocaleString();
 }
 
+// action ที่ถือว่า "เข้าดูเท่านั้น" ไม่มีการเปลี่ยนแปลงข้อมูล
+const VIEW_ACTIONS = new Set([
+  "pageView", "loadAttendance", "viewSummary", "viewRound", "viewUsers",
+  "changeFilter", "login", "logout"
+]);
+
+function isViewOnly(log) {
+  // ดูจาก detail.action ก่อน ถ้าไม่มีค่อยดู actionType
+  let detailAction = "";
+  if (log.detail) {
+    try {
+      const d = typeof log.detail === "string" ? JSON.parse(log.detail) : log.detail;
+      detailAction = d?.action || "";
+    } catch {}
+  }
+  if (detailAction) return VIEW_ACTIONS.has(detailAction);
+  // login/logout ดูจาก actionType
+  return log.actionType === "login" || log.actionType === "logout";
+}
+
 // ── Filter ──
 window.applyFilters = function() {
-  const role   = document.getElementById("fRole").value;
-  const action = document.getElementById("fAction").value;
-  const from   = document.getElementById("fFrom").value;
-  const to     = document.getElementById("fTo").value;
-  const search = document.getElementById("fSearch").value.toLowerCase();
+  const role         = document.getElementById("fRole").value;
+  const action       = document.getElementById("fAction").value;
+  const activityKind = document.getElementById("fActivityKind").value;
+  const from         = document.getElementById("fFrom").value;
+  const to           = document.getElementById("fTo").value;
+  const search       = document.getElementById("fSearch").value.toLowerCase();
 
   filtered = allLogs.filter(l => {
     const dateStr = (l.timestamp||"").slice(0,10);
     if (role   && l.userRole   !== role)   return false;
     if (action && l.actionType !== action) return false;
+    if (activityKind === "view")   { if (!isViewOnly(l))  return false; }
+    if (activityKind === "action") { if (isViewOnly(l))   return false; }
     if (from   && dateStr < from)          return false;
     if (to     && dateStr > to)            return false;
     if (search) {
@@ -509,7 +530,7 @@ window.applyFilters = function() {
 };
 
 window.clearFilters = function() {
-  ["fRole","fAction","fFrom","fTo","fSearch"].forEach(id => {
+  ["fRole","fAction","fActivityKind","fFrom","fTo","fSearch"].forEach(id => {
     document.getElementById(id).value = "";
   });
   applyFilters();
@@ -540,9 +561,13 @@ function renderTable() {
     const dateStr = formatDate(ts);
     const timeStr = formatTime(ts);
     const detId   = `detail-${log.id || idx}`;
+    const viewOnly = isViewOnly(log);
+    const viewBadge = viewOnly
+      ? `<span style="margin-left:5px;padding:1px 6px;border-radius:99px;font-size:10px;font-weight:500;background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd;vertical-align:middle;">เข้าดู</span>`
+      : "";
 
     return `
-      <tr onclick="toggleDetail('${detId}')" style="cursor:pointer;">
+      <tr onclick="toggleDetail('${detId}')" style="cursor:pointer;${viewOnly?'opacity:.75;':''}">
         <td><div class="action-ico" style="${getActionBg(log.actionType)}">${getActionSvg(log.actionType)}</div></td>
         <td>
           <div style="font-size:13px;font-weight:500;">${dateStr}</div>
@@ -554,7 +579,7 @@ function renderTable() {
         </td>
         <td>${log.userRole==="admin"?`<span class="rbadge rbadge-admin">Admin</span>`:`<span class="rbadge rbadge-user">User</span>`}</td>
         <td>${getActionChip(log.actionType)}</td>
-        <td style="max-width:220px;"><div style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(log.description||"–")}</div></td>
+        <td style="max-width:220px;"><div style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(log.description||"–")}${viewBadge}</div></td>
         <td style="max-width:200px;"><div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${humanDetail(log.detail, log.actionType)}</div></td>
         <td>${getStatusChip(log.status)}</td>
       </tr>
