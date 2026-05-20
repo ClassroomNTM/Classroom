@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>เช็คชื่อ — ระบบจัดการนักเรียน</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--bg:#f5f4f0;--surface:#ffffff;--blue:#0f3460;--blue-lt:#e6eef7;--text:#1a1a2e;--muted:#6b7280;--border:rgba(0,0,0,0.08);--radius:12px;--sidebar-w:200px;--topbar-h:56px;}
+body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+.topbar{position:fixed;top:0;left:0;right:0;height:var(--topbar-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:100;}
+.brand{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;color:var(--text);text-decoration:none;}
+.brand-dot{width:32px;height:32px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;}
+.brand-dot svg{width:18px;height:18px;fill:white;}
+.topbar-right{display:flex;align-items:center;gap:14px;}
+.user-info{font-size:13px;display:flex;align-items:center;gap:8px;}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--blue);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;}
+.role-badge{padding:2px 8px;border-radius:99px;font-size:11px;font-weight:500;}
+.role-admin{background:#fef2f2;color:#b91c1c;}.role-user{background:#f0fdf4;color:#166534;}
+.btn-logout{padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:transparent;font-family:'Sarabun',sans-serif;font-size:13px;color:var(--muted);cursor:pointer;}
+.btn-logout:hover{background:var(--bg);}
+.sidebar{position:fixed;top:var(--topbar-h);left:0;bottom:0;width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);padding:16px 10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;}
+.sidebar-label{font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--muted);padding:8px 10px 4px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;font-size:13px;color:var(--muted);text-decoration:none;transition:all .15s;}
+.nav-item svg{width:17px;height:17px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.nav-item:hover{background:var(--bg);color:var(--text);}
+.nav-item.active{background:var(--blue-lt);color:var(--blue);font-weight:500;}
+.nav-sep{height:1px;background:var(--border);margin:8px 0;}
+.main{margin-left:var(--sidebar-w);margin-top:var(--topbar-h);padding:24px;}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.page-title{font-size:20px;font-weight:600;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid var(--border);border-radius:8px;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:500;cursor:pointer;background:var(--surface);color:var(--text);transition:all .15s;}
+.btn:hover{background:var(--bg);}
+.btn:active{transform:scale(.97);}
+.btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.btn-primary{background:var(--blue);color:white;border-color:var(--blue);}
+.btn-primary:hover{background:#0a2847;}
+.filters{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;align-items:flex-end;}
+.fgroup{display:flex;flex-direction:column;gap:4px;}
+.flabel{font-size:11px;font-weight:500;color:var(--muted);}
+select,input[type="date"]{height:38px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-family:'Sarabun',sans-serif;font-size:13px;color:var(--text);background:white;outline:none;}
+select:focus,input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,52,96,.08);}
+.summary-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.s-chip{padding:6px 14px;border-radius:99px;font-size:12px;font-weight:500;}
+.s-green{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;}
+.s-amber{background:#fffbeb;color:#92400e;border:1px solid #fde68a;}
+.s-red  {background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;}
+.s-gray {background:#f9fafb;color:#374151;border:1px solid #e5e7eb;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;padding:10px 12px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--border);background:#fafafa;}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+.status-btns{display:flex;gap:6px;flex-wrap:wrap;}
+.stat-btn{padding:4px 10px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .15s;font-family:'Sarabun',sans-serif;}
+.stat-btn.present{background:#f0fdf4;color:#166534;border-color:#bbf7d0;}
+.stat-btn.late   {background:#fffbeb;color:#92400e;border-color:#fde68a;}
+.stat-btn.absent {background:#fef2f2;color:#b91c1c;border-color:#fecaca;}
+.stat-btn.active-present{background:#166534;color:white;}
+.stat-btn.active-late   {background:#92400e;color:white;}
+.stat-btn.active-absent {background:#b91c1c;color:white;}
+/* ปุ่มแก้เป็นมีตัวตน */
+.btn-restore{padding:4px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;transition:all .15s;font-family:'Sarabun',sans-serif;}
+.btn-restore:hover{background:#dbeafe;}
+.note-input{width:120px;height:30px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-family:'Sarabun',sans-serif;font-size:12px;background:#fafafa;}
+#toast{position:fixed;bottom:24px;right:24px;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;}
+#toast.show{opacity:1;transform:translateY(0);}
+#toast.success{background:#052e16;color:#86efac;}
+#toast.error{background:#450a0a;color:#fca5a5;}
+.readonly-banner{background:#fffbeb;border:1px solid #fde68a;color:#92400e;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:16px;display:none;}
+.default-bar{display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
+.btn-sm{padding:5px 10px;font-size:12px;}
+.ghost-name-att{color:#b91c1c;text-decoration:line-through;font-style:italic;}
+.ghost-tag-att{background:#fef2f2;color:#b91c1c;padding:2px 6px;border-radius:99px;font-size:10px;font-weight:500;margin-left:5px;}
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:6px;border:none;background:transparent;margin-right:4px;}
+.hamburger span{display:block;width:22px;height:2px;background:var(--text);border-radius:2px;transition:.25s;}
+.hamburger.open span:nth-child(1){transform:rotate(45deg) translate(5px,5px);}
+.hamburger.open span:nth-child(2){opacity:0;}
+.hamburger.open span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px);}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:150;}
+.sidebar-overlay.open{display:block;}
+.nav-subject-section{padding:8px 10px 4px;}
+.nav-subject-label{font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-bottom:6px;padding:0 2px;}
+.nav-subject-select{width:100%;height:34px;border:1px solid var(--border);border-radius:8px;padding:0 10px;font-family:'Sarabun',sans-serif;font-size:12px;color:var(--text);background:white;outline:none;}
+.nav-subject-select:focus{border-color:var(--blue);}
+@media(max-width:768px){
+  :root{--sidebar-w:220px;}
+  .sidebar{transform:translateX(-100%);z-index:160;transition:transform .25s ease;}
+  .sidebar.mobile-open{transform:translateX(0);}
+  .hamburger{display:flex;}
+  .main,.main-content{margin-left:0!important;}
+  .brand-name-hide{display:none;}
+  .topbar-username{display:none;}
+  .page-title{font-size:17px!important;}
+
+  /* filters stack vertically */
+  .filters{flex-direction:column;gap:10px;align-items:stretch;}
+  .fgroup{flex-direction:column;}
+  .filters select,.filters input[type="date"]{width:100%;height:42px;font-size:14px;}
+  .filters .btn{width:100%;justify-content:center;height:42px;}
+
+  /* page-header stack */
+  .page-header{flex-direction:column;align-items:flex-start;gap:10px;}
+  .page-header .btn{width:100%;justify-content:center;}
+
+  /* summary chips */
+  .summary-row{gap:6px;}
+  .s-chip{font-size:11px;padding:5px 10px;}
+
+  /* status buttons bigger for touch */
+  .stat-btn{padding:7px 14px;font-size:13px;}
+  .note-input{width:100%;margin-top:4px;}
+
+  /* table: hide หมายเหตุ col, show inline */
+  table{font-size:12px;}
+  th,td{padding:8px 8px;}
+}
+@media(max-width:480px){
+  .topbar{padding:0 10px!important;}
+  .btn-logout{display:none;}
+  .role-badge{display:none;}
+
+  .main{padding:12px 10px;}
+  .page-title{font-size:16px!important;}
+
+  /* status buttons: full width row */
+  .status-btns{flex-direction:row;flex-wrap:wrap;gap:5px;}
+  .stat-btn{flex:1;min-width:60px;text-align:center;padding:8px 6px;}
+
+  /* table columns tighter */
+  th:nth-child(1),td:nth-child(1){width:36px;padding-left:6px;padding-right:4px;}
+  th:nth-child(4),td:nth-child(4){display:none;}
+
+  /* note input appears below name instead */
+  .note-input{display:block;width:100%;margin-top:6px;}
+}
+</style>
+</head>
+<body>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="_closeSidebar()"></div>
+
+<header class="topbar">
+  <div style="display:flex;align-items:center;gap:4px;">
+    <button class="hamburger" id="hamburger" onclick="_sidebarToggle()" aria-label="เมนู">
+      <span></span><span></span><span></span>
+    </button>
+    <a href="dashboard.html" class="brand">
+      <div class="brand-dot"><svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg></div>
+      <span class="brand-name-hide">ระบบจัดการนักเรียน</span>
+    </a>
+  </div>
+  <div class="topbar-right">
+    <div class="user-info">
+      <div class="avatar" id="avatarEl">?</div>
+      <span id="userNameEl">ผู้ใช้</span>
+      <span class="role-badge" id="roleBadgeEl">—</span>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">ออกจากระบบ</button>
+  </div>
+</header>
+
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-label">เมนูหลัก</div>
+  <a href="dashboard.html" class="nav-item"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
+  <a href="attendance.html" class="nav-item active"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>เช็คชื่อ</a>
+  <a href="attendance-summary.html" class="nav-item"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>สรุปเช็คชื่อ</a>
+  <a href="score.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>คะแนน</a>
+  <a href="submit.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>ส่งงาน</a>
+  <a href="fund.html" class="nav-item"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>เงินเก็บห้อง</a>
+  <div class="nav-sep"></div>
+  <div class="sidebar-label">จัดการ</div>
+  <a href="class.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>ชั้นเรียน</a>
+  <a href="subject.html" class="nav-item" id="subjectNavItem"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>รายวิชา</a>
+  <a href="admin.html" class="nav-item" id="adminNavItem" style="display:none;"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>จัดการผู้ใช้</a>
+  <div class="nav-sep"></div>
+  <div class="nav-subject-section">
+    <div class="nav-subject-label">รายวิชา</div>
+    <select class="nav-subject-select" id="navSubjectSelect" onchange="_onNavSubjectChange()">
+      <option value="">— ทุกวิชา —</option>
+    </select>
+  </div>
+</nav>
+
+<main class="main">
+  <div class="page-header">
+    <div class="page-title">เช็คชื่อนักเรียน</div>
+    <button class="btn btn-primary" id="saveBtn" onclick="saveAll()" style="display:none;">
+      <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      บันทึกการเช็คชื่อ
+    </button>
+  </div>
+
+  <div class="readonly-banner" id="readonlyBanner">
+    <strong>โหมดดูอย่างเดียว:</strong> คุณไม่มีสิทธิ์แก้ไขข้อมูล กรุณาติดต่อ Admin
+  </div>
+
+  <div class="default-bar" id="defaultBar" style="display:none;">
+    <button class="btn btn-sm" id="setDefaultBtn" onclick="setDefaultClass()" title="ตั้งห้องนี้เป็นค่าเริ่มต้น">
+      <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      ตั้งเป็นค่าเริ่มต้น
+    </button>
+    <button class="btn btn-sm" id="clearDefaultBtn" onclick="clearDefaultClass()" style="display:none;" title="ล้างค่าเริ่มต้น">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      ล้างค่าเริ่มต้น
+    </button>
+    <span id="defaultIndicator" style="font-size:11px;color:var(--muted);display:none;align-items:center;gap:3px;">
+      <svg viewBox="0 0 24 24" style="width:11px;height:11px;stroke:#1D9E75;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;"><polyline points="20 6 9 17 4 12"/></svg>
+      ค่าเริ่มต้น
+    </span>
+  </div>
+
+  <div class="filters">
+    <div class="fgroup">
+      <div class="flabel">วิชา</div>
+      <select id="subjectSelect" onchange="updateDefaultUI();loadStudents()">
+        <option value="">— เลือกวิชา —</option>
+      </select>
+    </div>
+    <div class="fgroup">
+      <div class="flabel">ชั้นเรียน</div>
+      <select id="classSelect" onchange="updateDefaultUI();loadStudents()">
+        <option value="">— เลือกชั้น —</option>
+      </select>
+    </div>
+    <div class="fgroup">
+      <div class="flabel">วันที่</div>
+      <input type="date" id="dateInput" onchange="loadStudents()">
+    </div>
+    <button class="btn" onclick="markAllPresent()">
+      <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/></svg>
+      มาทุกคน
+    </button>
+  </div>
+
+  <div class="summary-row" id="summaryRow" style="display:none;">
+    <div class="s-chip s-green" id="presentCount">มา: 0</div>
+    <div class="s-chip s-amber" id="lateCount">สาย: 0</div>
+    <div class="s-chip s-red"   id="absentCount">ขาด: 0</div>
+    <div class="s-chip s-gray"  id="totalCount">ทั้งหมด: 0</div>
+  </div>
+
+  <div class="card">
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:50px;">เลขที่</th>
+            <th>ชื่อ-สกุล</th>
+            <th>สถานะ</th>
+            <th>หมายเหตุ</th>
+          </tr>
+        </thead>
+        <tbody id="studentTbody">
+          <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:30px;">เลือกชั้นเรียนและวันที่ก่อน</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script type="module">
+import { initAuth, doLogout, db } from "./auth-guard.js";
+import { collection, getDocs, doc, setDoc, getDoc, query, where, updateDoc, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+window.__db = db;
+window.doLogout = doLogout;
+
+let userRole   = "user";
+let currentUserId = "";
+let savedDefaultClassId   = "";
+let savedDefaultSubjectId = "";
+let students   = [];
+let attendance = {};
+window.attendance = attendance; // expose for inline oninput handlers
+
+const today = new Date().toISOString().split("T")[0];
+document.getElementById("dateInput").value = today;
+
+// ─── cache helpers ────────────────────────────────────────────
+const CACHE_TTL = 30 * 60 * 1000;
+function cacheSet(key, data) {
+  sessionStorage.setItem(key, JSON.stringify({ ts: Date.now(), data }));
+}
+function cacheGet(key) {
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    if (Date.now() - obj.ts > CACHE_TTL) { sessionStorage.removeItem(key); return null; }
+    return obj.data;
+  } catch { return null; }
+}
+const STUDENTS_CACHE_TTL = 5 * 60 * 1000;
+function studentsCacheSet(classId, data) {
+  sessionStorage.setItem("students_" + classId, JSON.stringify({ ts: Date.now(), data }));
+}
+function studentsCacheGet(classId) {
+  try {
+    const raw = sessionStorage.getItem("students_" + classId);
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    if (Array.isArray(obj)) { sessionStorage.removeItem("students_" + classId); return null; }
+    if (!obj.ts || Date.now() - obj.ts > STUDENTS_CACHE_TTL) { sessionStorage.removeItem("students_" + classId); return null; }
+    return obj.data;
+  } catch { return null; }
+}
+
+// ─── init ─────────────────────────────────────────────────────
+initAuth({ requireAdmin: true, onReady: async ({ role, user }) => {
+  userRole = role;
+  currentUserId = user?.uid || "";
+  document.getElementById("adminNavItem").style.display = "flex";
+  document.getElementById("saveBtn").style.display = "inline-flex";
+
+  // โหลด default class จาก Firestore
+  if (currentUserId) {
+    try {
+      const prefSnap = await getDoc(doc(db, "userPrefs", currentUserId));
+      if (prefSnap.exists()) {
+        savedDefaultClassId   = prefSnap.data().defaultClassId_attendance   || "";
+        savedDefaultSubjectId = prefSnap.data().defaultSubjectId_attendance || "";
+      }
+    } catch(e) { console.warn("load pref attendance:", e); }
+  }
+
+  await loadSubjects();
+  await loadClasses();
+
+  // apply ค่าเริ่มต้น
+  const sel    = document.getElementById("classSelect");
+  const selSub = document.getElementById("subjectSelect");
+  if (savedDefaultClassId && [...sel.options].some(o => o.value === savedDefaultClassId)) {
+    sel.value = savedDefaultClassId;
+  }
+  if (savedDefaultSubjectId && [...selSub.options].some(o => o.value === savedDefaultSubjectId)) {
+    selSub.value = savedDefaultSubjectId;
+  }
+  document.getElementById("defaultBar").style.display = "flex";
+  updateDefaultUI();
+  window.loadStudents();
+}});
+
+// ─── loadSubjects ─────────────────────────────────────────────
+async function loadSubjects() {
+  let subjects = cacheGet("subjects");
+  if (!subjects) {
+    const snap = await getDocs(collection(db, "subjects"));
+    subjects = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (a.name||"").localeCompare(b.name||"", "th"));
+    cacheSet("subjects", subjects);
+  }
+  const sel = document.getElementById("subjectSelect");
+  subjects.forEach(s => {
+    const opt = document.createElement("option");
+    opt.value = s.id; opt.textContent = s.name;
+    sel.appendChild(opt);
+  });
+  const navSel = document.getElementById("navSubjectSelect");
+  if (navSel) {
+    subjects.forEach(s => {
+      const opt = document.createElement("option");
+      opt.value = s.id; opt.textContent = s.name;
+      navSel.appendChild(opt);
+    });
+  }
+  const defId = subjects[0]?.id || "";
+  sel.value = defId;
+  if (navSel) navSel.value = defId;
+}
+
+// ─── loadClasses ──────────────────────────────────────────────
+async function loadClasses() {
+  let classes = cacheGet("classes");
+  if (!classes) {
+    const snap = await getDocs(collection(db, "classes"));
+    classes = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (a.name||"").localeCompare(b.name||"", "th"));
+    cacheSet("classes", classes);
+  }
+  const sel = document.getElementById("classSelect");
+  classes.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c.id; opt.textContent = c.name;
+    sel.appendChild(opt);
+  });
+  if (classes.length > 0) sel.value = classes[0].id;
+}
+
+// ─── Default Class ────────────────────────────────────────────
+window.setDefaultClass = async function() {
+  const classId   = document.getElementById("classSelect").value;
+  const subjectId = document.getElementById("subjectSelect").value;
+  if (!classId) { showToast("กรุณาเลือกห้องเรียนก่อน","error"); return; }
+  if (!currentUserId) { showToast("ไม่พบข้อมูลผู้ใช้","error"); return; }
+  try {
+    await setDoc(doc(db,"userPrefs",currentUserId), {
+      uid: currentUserId,
+      defaultClassId_attendance:   classId,
+      defaultSubjectId_attendance: subjectId,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    savedDefaultClassId   = classId;
+    savedDefaultSubjectId = subjectId;
+    showToast("ตั้งค่าเริ่มต้นเรียบร้อย ✓","success");
+    updateDefaultUI();
+  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
+};
+
+window.clearDefaultClass = async function() {
+  if (!currentUserId) return;
+  try {
+    await setDoc(doc(db,"userPrefs",currentUserId), {
+      defaultClassId_attendance:   "",
+      defaultSubjectId_attendance: "",
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    savedDefaultClassId   = "";
+    savedDefaultSubjectId = "";
+    showToast("ล้างค่าเริ่มต้นแล้ว","success");
+    updateDefaultUI();
+  } catch(e) { showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
+};
+
+function updateDefaultUI() {
+  const currentClassId   = document.getElementById("classSelect").value;
+  const currentSubjectId = document.getElementById("subjectSelect").value;
+  const isDefault = savedDefaultClassId
+    && savedDefaultClassId   === currentClassId
+    && savedDefaultSubjectId === currentSubjectId;
+  const hasDefault = !!savedDefaultClassId;
+  document.getElementById("clearDefaultBtn").style.display  = hasDefault ? "inline-flex" : "none";
+  document.getElementById("defaultIndicator").style.display = isDefault  ? "inline-flex" : "none";
+  const setBtn = document.getElementById("setDefaultBtn");
+  if (isDefault) {
+    setBtn.style.background  = "#f0fdf4";
+    setBtn.style.color       = "#166534";
+    setBtn.style.borderColor = "#bbf7d0";
+  } else {
+    setBtn.style.background  = "";
+    setBtn.style.color       = "";
+    setBtn.style.borderColor = "";
+  }
+}
+window.updateDefaultUI = updateDefaultUI;
+window.loadStudents = async function() {
+  const classId   = document.getElementById("classSelect").value;
+  const subjectId = document.getElementById("subjectSelect").value;
+  const date      = document.getElementById("dateInput").value;
+  if (!classId || !date) return;
+
+  document.getElementById("studentTbody").innerHTML =
+    '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px;">กำลังโหลด...</td></tr>';
+
+  try {
+    let cachedStudents = studentsCacheGet(classId);
+    if (!cachedStudents) {
+      const snap = await getDocs(query(collection(db, "students"), where("classId", "==", classId)));
+      cachedStudents = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => (a.number||0) - (b.number||0));
+      studentsCacheSet(classId, cachedStudents);
+    }
+    students = cachedStudents;
+
+    const attQuery = subjectId
+      ? query(collection(db, "attendance"), where("classId","==",classId), where("date","==",date), where("subjectId","==",subjectId))
+      : query(collection(db, "attendance"), where("classId","==",classId), where("date","==",date));
+    const attSnap = await getDocs(attQuery);
+
+    attendance = {};
+    window.attendance = attendance; // keep window ref in sync
+    attSnap.docs.forEach(d => {
+      const r = d.data();
+      attendance[r.studentId] = { status: r.status, note: r.note||"" };
+    });
+
+    renderTable();
+    document.getElementById("summaryRow").style.display = "flex";
+    updateSummary();
+
+    // ── Log: โหลดข้อมูลสำเร็จ ──
+    const clsNameLoad = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
+    const subNameLoad = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
+    const activeLoad  = students.filter(s => !s.ghost);
+    window.logAction && window.logAction("attendance",
+      `เปิดดูเช็คชื่อ — ${clsNameLoad}${subNameLoad?" / "+subNameLoad:""} วันที่ ${date}`,
+      {
+        action:       "loadAttendance",
+        date,
+        classId,
+        className:    clsNameLoad,
+        subjectId:    subjectId || "",
+        subjectName:  subNameLoad,
+        totalStudents: students.length,
+        activeStudents: activeLoad.length,
+        ghostStudents:  students.length - activeLoad.length,
+        hasExistingData: attSnap.docs.length > 0,
+        existingRecords: attSnap.docs.length,
+      }
+    );
+  } catch(err) {
+    document.getElementById("studentTbody").innerHTML =
+      `<tr><td colspan="4" style="text-align:center;color:#b91c1c;padding:20px;">⚠ โหลดไม่ได้: ${err.message}</td></tr>`;
+    window.logAction && window.logAction("attendance",
+      `โหลดข้อมูลเช็คชื่อล้มเหลว: ${err.message}`,
+      { action:"loadAttendance", error: err.message, classId, date },
+      "error", err.message
+    );
+  }
+};
+
+// ─── renderTable ──────────────────────────────────────────────
+function renderTable() {
+  const isAdmin = userRole === "admin";
+  const tbody   = document.getElementById("studentTbody");
+
+  if (!students.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px;">ยังไม่มีนักเรียนในชั้นนี้</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = students.map(s => {
+    const isGhost = s.ghost === true;
+    const existingRec = attendance[s.id];
+    const defaultStatus = isGhost ? "ghost" : "present";
+    const resolvedStatus = (existingRec && existingRec.status === "ghost" && !isGhost)
+      ? "present" : (existingRec?.status || defaultStatus);
+    const cur = { status: resolvedStatus, note: existingRec?.note || "" };
+    attendance[s.id] = { status: resolvedStatus, note: cur.note };
+
+    const nameHtml = isGhost
+      ? `<span class="ghost-name-att">${s.prefix?s.prefix+" ":""}${s.name}</span><span class="ghost-tag-att">ไม่มีตัวตน</span>`
+      : `${s.prefix?s.prefix+" ":""}${s.name}`;
+
+    // ── non-admin: read-only ──
+    if (!isAdmin) {
+      let chip;
+      if (isGhost) chip = '<span style="background:#fef2f2;color:#b91c1c;padding:3px 10px;border-radius:99px;font-size:12px;">ไม่มีตัวตน</span>';
+      else if (cur.status==="present") chip = '<span style="background:#f0fdf4;color:#166534;padding:3px 10px;border-radius:99px;font-size:12px;">มาเรียน</span>';
+      else if (cur.status==="late")    chip = '<span style="background:#fffbeb;color:#92400e;padding:3px 10px;border-radius:99px;font-size:12px;">สาย</span>';
+      else chip = '<span style="background:#fef2f2;color:#b91c1c;padding:3px 10px;border-radius:99px;font-size:12px;">ขาด</span>';
+      return `<tr style="${isGhost?"opacity:.6;":""}"><td>${s.number||"—"}</td><td>${nameHtml}</td><td>${chip}</td><td style="color:var(--muted);font-size:12px;">${cur.note||"—"}</td></tr>`;
+    }
+
+    // ── admin: ghost row → แสดงแค่ปุ่ม "แก้เป็นมีตัวตน" ──
+    if (isGhost) {
+      return `<tr id="row-${s.id}" style="background:#fff8f8;opacity:.7;">
+        <td>${s.number||"—"}</td>
+        <td>${nameHtml}</td>
+        <td>
+          <button class="btn-restore" onclick="restoreStudent('${s.id}')">
+            ✦ แก้เป็นมีตัวตน
+          </button>
+        </td>
+        <td style="color:var(--muted);font-size:12px;">—</td>
+      </tr>`;
+    }
+
+    // ── admin: นักเรียนปกติ → ปุ่มเช็คชื่อ ──
+    return `<tr id="row-${s.id}">
+      <td>${s.number||"—"}</td>
+      <td>${nameHtml}</td>
+      <td>
+        <div class="status-btns">
+          <button class="stat-btn present ${cur.status==='present'?'active-present':''}"
+            onclick="setStatus('${s.id}','present')">มาเรียน</button>
+          <button class="stat-btn late ${cur.status==='late'?'active-late':''}"
+            onclick="setStatus('${s.id}','late')">สาย</button>
+          <button class="stat-btn absent ${cur.status==='absent'?'active-absent':''}"
+            onclick="setStatus('${s.id}','absent')">ขาด</button>
+        </div>
+      </td>
+      <td>
+        <input class="note-input" id="note-${s.id}" value="${cur.note||""}" placeholder="หมายเหตุ"
+          oninput="window.attendance['${s.id}'].note=this.value">
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+// ─── restoreStudent: แก้ ghost → present ทันที ───────────────
+window.restoreStudent = async function(sid) {
+  if (userRole !== "admin") return;
+  try {
+    const s = students.find(x => x.id === sid);
+    const sName = s ? (s.prefix ? s.prefix+" " : "") + s.name : sid;
+    const classId = document.getElementById("classSelect").value;
+    const clsName = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
+
+    await updateDoc(doc(db, "students", sid), { ghost: false });
+    sessionStorage.removeItem("students_" + classId);
+    // อัพเดต local array ด้วย
+    const idx = students.findIndex(s => s.id === sid);
+    if (idx > -1) students[idx] = { ...students[idx], ghost: false };
+    attendance[sid] = { status: "present", note: "" };
+    renderTable();
+    updateSummary();
+
+    window.logAction && window.logAction("attendance",
+      `แก้สถานะ "${sName}" จาก ไม่มีตัวตน → มีตัวตน`,
+      {
+        action:      "restoreStudent",
+        studentId:   sid,
+        studentName: sName,
+        classId,
+        className:   clsName,
+        before:      "ghost",
+        after:       "present",
+        beforeLabel: "ไม่มีตัวตน",
+        afterLabel:  "มีตัวตน (มาเรียน)",
+        date:        document.getElementById("dateInput").value,
+      }
+    );
+
+    showToast("แก้เป็นมีตัวตนเรียบร้อย ✓", "success");
+  } catch(e) {
+    showToast("เกิดข้อผิดพลาด: " + e.message, "error");
+  }
+};
+
+// ─── setStatus ────────────────────────────────────────────────
+window.setStatus = function(sid, status) {
+  const prevStatus = attendance[sid]?.status || "present";
+  attendance[sid].status = status;
+  const row = document.getElementById("row-"+sid);
+  row.querySelectorAll(".stat-btn").forEach(b => {
+    b.classList.remove("active-present","active-late","active-absent");
+  });
+  const map = {present:"active-present",late:"active-late",absent:"active-absent"};
+  const btn = row.querySelector(".stat-btn."+status);
+  if (btn) btn.classList.add(map[status]);
+  row.style.background = "";
+  updateSummary();
+
+  // Log only if status actually changed
+  if (prevStatus !== status) {
+    const s      = students.find(x => x.id === sid);
+    const sName  = s ? (s.prefix ? s.prefix+" " : "") + s.name : sid;
+    const date   = document.getElementById("dateInput").value;
+    const classId   = document.getElementById("classSelect").value;
+    const subjectId = document.getElementById("subjectSelect").value;
+    const clsName = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
+    const subName = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
+    const statusLabel = { present:"มาเรียน", late:"สาย", absent:"ขาดเรียน" };
+    window.logAction && window.logAction("attendance",
+      `เปลี่ยนสถานะ "${sName}" จาก ${statusLabel[prevStatus]||prevStatus} → ${statusLabel[status]||status}`,
+      {
+        studentId:   sid,
+        studentName: sName,
+        date,
+        before:      prevStatus,
+        after:       status,
+        beforeLabel: statusLabel[prevStatus] || prevStatus,
+        afterLabel:  statusLabel[status]     || status,
+        classId,
+        className:   clsName,
+        subjectId:   subjectId || "",
+        subjectName: subName,
+      }
+    );
+  }
+};
+
+// ─── markAllPresent ───────────────────────────────────────────
+window.markAllPresent = function() {
+  if (userRole !== "admin") return;
+  const date      = document.getElementById("dateInput").value;
+  const classId   = document.getElementById("classSelect").value;
+  const subjectId = document.getElementById("subjectSelect").value;
+  const clsName   = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
+  const subName   = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
+
+  // snapshot before
+  const changed = students.filter(s => !s.ghost && attendance[s.id]?.status !== "present");
+
+  students.forEach(s => {
+    if (!s.ghost) attendance[s.id] = { status: "present", note: "" };
+  });
+  renderTable();
+  updateSummary();
+
+  if (changed.length > 0) {
+    window.logAction && window.logAction("attendance",
+      `ตั้งมาเรียนทุกคน (${changed.length} คนที่เปลี่ยน)`,
+      {
+        action:      "markAllPresent",
+        date,
+        classId,
+        className:   clsName,
+        subjectId:   subjectId || "",
+        subjectName: subName,
+        changedCount: changed.length,
+        changedStudents: changed.map(s => ({
+          studentId:   s.id,
+          studentName: (s.prefix ? s.prefix+" " : "") + s.name,
+          before:      attendance[s.id]?.status || "present",
+          after:       "present",
+        })),
+      }
+    );
+  } else {
+    window.logAction && window.logAction("attendance",
+      `ตั้งมาเรียนทุกคน — ไม่มีการเปลี่ยนแปลง`,
+      { action:"markAllPresent", date, classId, className: clsName,
+        subjectId: subjectId||"", subjectName: subName, changedCount: 0 }
+    );
+  }
+};
+
+// ─── updateSummary ────────────────────────────────────────────
+function updateSummary() {
+  const activeStudents = students.filter(s => !s.ghost);
+  const ghostCount     = students.length - activeStudents.length;
+  const p = activeStudents.filter(s => attendance[s.id]?.status==="present").length;
+  const l = activeStudents.filter(s => attendance[s.id]?.status==="late").length;
+  const a = activeStudents.filter(s => attendance[s.id]?.status==="absent").length;
+  document.getElementById("presentCount").textContent = "มา: "+p;
+  document.getElementById("lateCount").textContent    = "สาย: "+l;
+  document.getElementById("absentCount").textContent  = "ขาด: "+a;
+  document.getElementById("totalCount").textContent   = "ทั้งหมด: "+activeStudents.length+(ghostCount>0?" (ไม่มีตัวตน: "+ghostCount+")":"");
+}
+
+// ─── saveAll ──────────────────────────────────────────────────
+window.saveAll = async function() {
+  if (userRole !== "admin") return;
+  const classId   = document.getElementById("classSelect").value;
+  const subjectId = document.getElementById("subjectSelect").value;
+  const date      = document.getElementById("dateInput").value;
+  if (!classId || !date) { showToast("กรุณาเลือกชั้นเรียนและวันที่","error"); return; }
+
+  const btn = document.getElementById("saveBtn");
+  btn.disabled = true;
+  btn.textContent = "กำลังบันทึก...";
+
+  try {
+    const savedAt = new Date().toISOString();
+
+    // อัพเดต ghost field ใน students (เฉพาะที่เปลี่ยน)
+    const ghostUpdates = students.map(s => {
+      const isGhostNow = s.ghost === true;
+      const attIsGhost = attendance[s.id]?.status === "ghost";
+      if (attIsGhost !== isGhostNow) {
+        return updateDoc(doc(db, "students", s.id), { ghost: attIsGhost });
+      }
+      return Promise.resolve();
+    });
+
+    // บันทึก attendance เฉพาะ non-ghost
+    const activeStudents = students.filter(s => !s.ghost);
+    const writes = activeStudents.map(s => {
+      const a   = attendance[s.id] || { status: "present", note: "" };
+      const docId = `${classId}_${subjectId||"none"}_${date}_${s.id}`;
+      return setDoc(doc(db, "attendance", docId), {
+        studentId:   s.id,
+        studentName: (s.prefix ? s.prefix+" " : "") + (s.name||""),
+        classId,
+        subjectId:   subjectId || "",
+        date,
+        status:      a.status,
+        note:        a.note || "",
+        savedAt,
+      });
+    });
+
+    await Promise.all([...ghostUpdates, ...writes]);
+    // Clear all caches so next load reads fresh from Firestore
+    sessionStorage.removeItem("students_" + classId);
+    // Reload attendance from Firestore to confirm data is saved correctly
+    const verifyQuery = subjectId
+      ? query(collection(db, "attendance"), where("classId","==",classId), where("date","==",date), where("subjectId","==",subjectId))
+      : query(collection(db, "attendance"), where("classId","==",classId), where("date","==",date));
+    const verifySnap = await getDocs(verifyQuery);
+    attendance = {};
+    window.attendance = attendance; // keep window ref in sync
+    verifySnap.docs.forEach(d => {
+      const r = d.data();
+      attendance[r.studentId] = { status: r.status, note: r.note||"" };
+    });
+    renderTable();
+    updateSummary();
+
+    const clsName = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
+    const subName = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
+
+    // สรุปยอดที่บันทึก
+    const summary = activeStudents.reduce((acc, s) => {
+      const st = attendance[s.id]?.status || "present";
+      acc[st] = (acc[st] || 0) + 1;
+      return acc;
+    }, {});
+
+    window.logAction && window.logAction("attendance",
+      `บันทึกเช็คชื่อ ${activeStudents.length} คน — ${clsName}${subName?" / "+subName:""}`,
+      {
+        action:      "saveAll",
+        date,
+        classId,
+        className:   clsName,
+        subjectId:   subjectId || "",
+        subjectName: subName,
+        totalStudents: activeStudents.length,
+        summary: {
+          present: summary["present"] || 0,
+          late:    summary["late"]    || 0,
+          absent:  summary["absent"]  || 0,
+        },
+        students: activeStudents.map(s => ({
+          studentId:   s.id,
+          studentName: (s.prefix ? s.prefix+" " : "") + (s.name||""),
+          status:      attendance[s.id]?.status || "present",
+          note:        attendance[s.id]?.note   || "",
+        })),
+      }
+    );
+
+    showToast(`บันทึกการเช็คชื่อเรียบร้อย ✓ (${activeStudents.length} คน)`, "success");
+  } catch(e) {
+    showToast("เกิดข้อผิดพลาด: " + e.message, "error");
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = `<svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:white;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> บันทึกการเช็คชื่อ`;
+};
+
+// ─── showToast ────────────────────────────────────────────────
+function showToast(msg, type) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className   = "show " + type;
+  setTimeout(() => { t.className = ""; }, 3000);
+}
+
+// ─── logFilterChange: บันทึกเมื่อเปลี่ยน filter ──────────────
+let _filterLogTimer = null;
+function logFilterChange() {
+  clearTimeout(_filterLogTimer);
+  _filterLogTimer = setTimeout(() => {
+    const classId   = document.getElementById("classSelect").value;
+    const subjectId = document.getElementById("subjectSelect").value;
+    const date      = document.getElementById("dateInput").value;
+    if (!classId || !date) return;
+    const clsName = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
+    const subName = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
+    window.logAction && window.logAction("attendance",
+      `เปลี่ยน filter เช็คชื่อ — ${clsName}${subName?" / "+subName:""} วันที่ ${date}`,
+      {
+        action:     "changeFilter",
+        classId,
+        className:  clsName,
+        subjectId:  subjectId || "",
+        subjectName: subName,
+        date,
+      }
+    );
+  }, 1500);
+}
+// Hook filter controls หลังจาก DOM พร้อม
+document.addEventListener("DOMContentLoaded", () => {
+  ["classSelect","subjectSelect","dateInput"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("change", logFilterChange);
+  });
+});
+
+// ── Mobile sidebar toggle ──
+window._sidebarToggle = function() {
+  const s = document.getElementById('sidebar');
+  const o = document.getElementById('sidebarOverlay');
+  const h = document.getElementById('hamburger');
+  if (!s) return;
+  const open = s.classList.toggle('mobile-open');
+  if (o) o.classList.toggle('open', open);
+  if (h) h.classList.toggle('open', open);
+};
+window._closeSidebar = function() {
+  const s = document.getElementById('sidebar');
+  const o = document.getElementById('sidebarOverlay');
+  const h = document.getElementById('hamburger');
+  if (s) s.classList.remove('mobile-open');
+  if (o) o.classList.remove('open');
+  if (h) h.classList.remove('open');
+};
+window._syncSidebarSubjectTo = function(val) {
+  const el = document.getElementById('navSubjectSelect');
+  if (el) el.value = val;
+};
+window._onNavSubjectChange = function() {
+  const el = document.getElementById('navSubjectSelect');
+  if (!el) return;
+  ['subjectSelect','subjectSelectPanel','subjectSelectFilter'].forEach(id => {
+    const s = document.getElementById(id);
+    if (s) { s.value = el.value; s.dispatchEvent(new Event('change')); }
+  });
+};
+</script>
+</body>
+</html>
