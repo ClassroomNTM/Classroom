@@ -359,7 +359,11 @@ initAuth({ requireAdmin: true, onReady: async ({ role, user }) => {
     classEl.value = savedDefaultClassId;
     if (savedDefaultSubjectId) subjectEl.value = savedDefaultSubjectId;
   }
-  if (classEl.value) await window.onClassChange();
+  if (classEl.value) {
+    currentClassId   = classEl.value;
+    currentSubjectId = subjectEl.value;
+    await window.onClassChange();
+  }
   updateDefaultUI();
 }});
 
@@ -429,7 +433,7 @@ async function loadClasses() {
   }
   const sel = document.getElementById("classSelect");
   classes.forEach(c => { const o = document.createElement("option"); o.value = c.id; o.textContent = c.name; sel.appendChild(o); });
-  if (classes.length > 0) sel.value = classes[0].id;
+  if (classes.length > 0 && !savedDefaultClassId) sel.value = classes[0].id;
 }
 
 window.onClassChange = async function() {
