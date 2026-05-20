@@ -15,10 +15,9 @@
 body { font-family:'Sarabun',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
 
 /* topbar */
-.topbar { position:fixed; top:0; left:0; right:0; height:var(--topbar-h); background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 16px; z-index:200; }
+.topbar { position:fixed; top:0; left:0; right:0; height:var(--topbar-h); background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 20px; z-index:100; }
 .brand { display:flex; align-items:center; gap:10px; font-size:15px; font-weight:600; color:var(--text); text-decoration:none; }
-.brand-dot { width:32px; height:32px; background:var(--blue); border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-.brand-name { white-space:nowrap; }
+.brand-dot { width:32px; height:32px; background:var(--blue); border-radius:8px; display:flex; align-items:center; justify-content:center; }
 .brand-dot svg { width:18px; height:18px; fill:white; }
 .topbar-right { display:flex; align-items:center; gap:14px; }
 .user-info { font-size:13px; color:var(--text); display:flex; align-items:center; gap:8px; }
@@ -107,9 +106,8 @@ tr:hover td { background:#fafafa; }
   .sidebar.mobile-open{transform:translateX(0);}
   .hamburger{display:flex;}
   .main,.main-content{margin-left:0!important;}
-  .brand-name{display:none;}
-  .user-name-text{display:none;}
-
+  .brand-name-hide{display:none;}
+  .topbar-username{display:none;}
   .page-title{font-size:17px!important;}
 
   /* metrics: 2×2 grid on tablet */
@@ -120,7 +118,7 @@ tr:hover td { background:#fafafa; }
   .card canvas{height:160px!important;}
 }
 @media(max-width:480px){
-  .topbar{padding:0 12px;}
+  .topbar{padding:0 10px!important;}
   .btn-logout{display:none;}
   .role-badge{display:none;}
 
@@ -158,13 +156,13 @@ tr:hover td { background:#fafafa; }
       <div class="brand-dot">
         <svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg>
       </div>
-      <span class="brand-name">ระบบจัดการนักเรียน</span>
+      <span class="brand-name-hide">ระบบจัดการนักเรียน</span>
     </a>
   </div>
   <div class="topbar-right">
     <div class="user-info">
       <div class="avatar" id="avatarEl">?</div>
-      <span id="userNameEl" class="user-name-text">ผู้ใช้</span>
+      <span id="userNameEl">ผู้ใช้</span>
       <span class="role-badge role-admin" id="roleBadgeEl">—</span>
     </div>
     <button class="btn-logout" onclick="doLogout()">ออกจากระบบ</button>
@@ -350,9 +348,12 @@ async function loadDashboard() {
     const attSnap = await getDocs(query(collection(db, "attendance"), where("date", "==", todayStr)));
     const attRecs = attSnap.docs.map(d => d.data());
     const present = attRecs.filter(r => r.status === "present").length;
-    const pct     = students.length ? Math.round(present / students.filter(s=>!s.ghost).length * 100) : 0;
+    // ใช้จำนวนนักเรียนที่ถูกเช็คชื่อวันนี้จริงๆ (unique studentId) เป็นตัวหาร
+    const checkedToday = new Set(attRecs.map(r => r.studentId)).size;
+    const pct = checkedToday > 0 ? Math.round(present / checkedToday * 100) : 0;
     document.getElementById("todayPresent").textContent = present;
-    document.getElementById("attendPct").textContent    = pct + "% ของทั้งหมด";
+    document.getElementById("attendPct").textContent    =
+      checkedToday > 0 ? `${pct}% (จาก ${checkedToday} คนที่เช็คชื่อ)` : "ยังไม่มีการเช็คชื่อ";
 
     // ── Scores: query เฉพาะ classId แรก ไม่ดึงทั้ง collection ──
     // รวม scores ตาม classId จาก students แทน
@@ -379,7 +380,7 @@ async function loadDashboard() {
     document.getElementById("pendingCount").textContent  = "ค้าง " + Math.max(0, pending) + " คน";
 
     // ── Attendance chart 7 วัน: 1 query range แทน 7 queries ──
-    await buildAttendChart(students.filter(s=>!s.ghost).length);
+    await buildAttendChart();
 
     // ── Submit donut ──────────────────────────────────────────
     const late = subs.filter(s => s.status === "late").length;
@@ -396,7 +397,7 @@ async function loadDashboard() {
   }
 }
 
-async function buildAttendChart(total) {
+async function buildAttendChart() {
   // คำนวณ dateFrom = 6 วันที่แล้ว
   const d6ago = new Date(today);
   d6ago.setDate(d6ago.getDate() - 6);
@@ -417,9 +418,12 @@ async function buildAttendChart(total) {
     const ds = d.toISOString().split("T")[0];
     const recs = allRecs.filter(r => r.date === ds);
     const p    = recs.filter(r => r.status === "present").length;
+    // ใช้จำนวนที่เช็คชื่อจริงในวันนั้น ไม่ใช่ total นักเรียนทั้งหมด
+    const checkedOnDay = new Set(recs.map(r => r.studentId)).size;
+    const absent = Math.max(0, checkedOnDay - p);
     labels.push(DAYS_TH[d.getDay()]);
     presentData.push(p);
-    absentData.push(Math.max(0, total - p));
+    absentData.push(absent);
   }
 
   const tc = "#6b7280", gc = "rgba(0,0,0,0.05)";
