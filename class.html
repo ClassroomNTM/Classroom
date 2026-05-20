@@ -1015,24 +1015,7 @@ function showToast(msg,type) {
   document.getElementById(id).addEventListener("click",function(e){if(e.target===this)this.classList.remove("open");});
 });
 
-// ── Mobile sidebar toggle ──
-window._sidebarToggle = function() {
-  const s = document.getElementById('sidebar');
-  const o = document.getElementById('sidebarOverlay');
-  const h = document.getElementById('hamburger');
-  if (!s) return;
-  const open = s.classList.toggle('mobile-open');
-  if (o) o.classList.toggle('open', open);
-  if (h) h.classList.toggle('open', open);
-};
-window._closeSidebar = function() {
-  const s = document.getElementById('sidebar');
-  const o = document.getElementById('sidebarOverlay');
-  const h = document.getElementById('hamburger');
-  if (s) s.classList.remove('mobile-open');
-  if (o) o.classList.remove('open');
-  if (h) h.classList.remove('open');
-};
+// ── Mobile sidebar toggle (defined in inline script below) ──
 // ── Subject selector sync ──
 window._syncSidebarSubjectTo = function(val) {
   const el = document.getElementById('navSubjectSelect');
