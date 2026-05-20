@@ -10,9 +10,10 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{--bg:#f5f4f0;--surface:#ffffff;--blue:#0f3460;--blue-lt:#e6eef7;--text:#1a1a2e;--muted:#6b7280;--border:rgba(0,0,0,0.08);--radius:12px;--sidebar-w:200px;--topbar-h:56px;}
 body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
-.topbar{position:fixed;top:0;left:0;right:0;height:var(--topbar-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:100;}
+.topbar{position:fixed;top:0;left:0;right:0;height:var(--topbar-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 16px;z-index:200;}
 .brand{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;color:var(--text);text-decoration:none;}
-.brand-dot{width:32px;height:32px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;}
+.brand-dot{width:32px;height:32px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.brand-name{white-space:nowrap;}
 .brand-dot svg{width:18px;height:18px;fill:white;}
 .topbar-right{display:flex;align-items:center;gap:14px;}
 .user-info{font-size:13px;display:flex;align-items:center;gap:8px;}
@@ -142,175 +143,47 @@ input:focus,select.modal-sel:focus{border-color:var(--blue);box-shadow:0 0 0 3px
   .sidebar.mobile-open{transform:translateX(0);}
   .hamburger{display:flex;}
   .main,.main-content{margin-left:0!important;}
-  .brand-name-hide{display:none;}
-  .topbar-username{display:none;}
+  .user-name-text{display:none;}
   .page-title{font-size:17px!important;}
+  .main{padding:14px;}
+  .classes-grid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));}
+  .panel-actions{flex-wrap:wrap;}
+  .header-actions{flex-wrap:wrap;}
 }
 @media(max-width:480px){
-  .topbar{padding:0 10px!important;}
+  .topbar{padding:0 12px;}
+  .brand-name{display:none;}
   .btn-logout{display:none;}
   .role-badge{display:none;}
+  .main{padding:10px;}
 }
 
-/* ═══════════════════════════════
-   MOBILE ENHANCEMENTS
-   ═══════════════════════════════ */
-
-/* ── Bottom Nav ── */
-.bottom-nav{display:none;}
-@media(max-width:768px){
-  body{padding-bottom:64px;}
-  .bottom-nav{
-    display:flex;position:fixed;bottom:0;left:0;right:0;
-    height:60px;background:var(--surface);border-top:1px solid var(--border);
-    z-index:180;padding:0 4px;
-    padding-bottom:env(safe-area-inset-bottom,0);
-  }
-  .bn-item{
-    flex:1;display:flex;flex-direction:column;align-items:center;
-    justify-content:center;gap:3px;font-size:10px;color:var(--muted);
-    text-decoration:none;border-radius:10px;margin:4px 2px;cursor:pointer;
-    transition:all .15s;border:none;background:transparent;
-    font-family:'Sarabun',sans-serif;padding:0;
-    -webkit-tap-highlight-color:transparent;
-  }
-  .bn-item svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
-  .bn-item.active{color:var(--blue);background:var(--blue-lt);}
-  .bn-item:active{transform:scale(.92);}
-
-  /* ── Topbar ── */
-  .topbar{padding:0 10px;}
-  .topbar-right .btn-logout{display:none;}
-  .role-badge{display:none;}
-  #userNameEl{display:none;}
-
-  /* ── Sidebar drawer ── */
-  .sidebar{top:var(--topbar-h);width:80vw;max-width:280px;box-shadow:4px 0 24px rgba(0,0,0,.18);}
-
-  /* ── Main ── */
-  .main{padding:12px;}
-
-  /* ── Page header ── */
-  .page-header{flex-direction:column;align-items:flex-start;gap:8px;}
-  .header-actions{width:100%;display:flex;flex-wrap:wrap;gap:6px;}
-  .header-actions .btn{flex:1;min-width:100px;justify-content:center;font-size:11px;padding:8px 8px;}
-
-  /* ── Classes grid: 1 col on small, 2 col on medium ── */
-  .classes-grid{grid-template-columns:1fr;gap:10px;margin-bottom:20px;}
-  .class-card{padding:14px 16px;}
-  .cc-name{font-size:15px;}
-  /* Always show action buttons on mobile (no hover) */
-  .cc-actions{opacity:1!important;}
-  .cc-actions .btn{padding:6px 10px;}
-
-  /* ── Import banner ── */
-  .import-banner{font-size:12px;padding:10px 14px;}
-
-  /* ── Students panel ── */
-  .panel-header{padding:12px 14px;flex-direction:column;align-items:flex-start;gap:8px;}
-  .panel-actions{display:flex;gap:6px;width:100%;}
-  .panel-actions .btn{flex:1;justify-content:center;font-size:12px;}
-
-  /* ── Table: compress columns ── */
-  table{font-size:12px;}
-  th{font-size:9px;padding:8px 8px;}
-  td{padding:9px 8px;}
-  /* hide student code col on mobile */
-  th:nth-child(2),td:nth-child(2){display:none;}
-  /* hide status col on mobile */
-  th:nth-child(5),td:nth-child(5){display:none;}
-  /* action buttons smaller */
-  .btn-sm{padding:5px 7px;font-size:11px;}
-  td:last-child > div{gap:4px;}
-
-  /* ── Modal: full screen bottom sheet ── */
-  .modal-overlay{align-items:flex-end;}
-  .modal{
-    width:100%!important;max-width:100%!important;
-    border-radius:20px 20px 0 0;
-    padding:20px 20px 32px;
-    max-height:90vh;
-    animation:slideUp .25s ease;
-  }
-  @keyframes slideUp{from{transform:translateY(40px);opacity:0;}to{transform:translateY(0);opacity:1;}}
-  .form-grid{grid-template-columns:1fr 1fr;gap:10px;}
-  .modal-title{font-size:15px;margin-bottom:16px;}
-  input[type="text"],input[type="number"],select.modal-sel{height:44px;font-size:14px;}
-  .modal-footer{margin-top:16px;gap:8px;}
-  .modal-footer .btn{flex:1;justify-content:center;height:44px;font-size:14px;}
-
-  /* Import modal drop zone */
-  .drop-zone{padding:24px 16px;}
-  .drop-zone svg{width:28px;height:28px;}
-  .drop-zone p{font-size:12px;}
-  .preview-table-wrap{max-height:160px;}
-  .sheet-btn{font-size:11px;padding:5px 10px;}
-}
-
-/* ── Tablet: 2-col class grid ── */
-@media(min-width:480px) and (max-width:768px){
-  .classes-grid{grid-template-columns:repeat(2,1fr);}
-}
-
-/* ── Readonly notice ── */
-@media(max-width:768px){
-  .readonly-notice{font-size:12px;padding:8px 12px;}
-}
-
-/* ── Toast: bottom above nav ── */
-@media(max-width:768px){
-  #toast{bottom:72px;right:12px;left:12px;right:12px;text-align:center;}
-}
 </style>
 </head>
 <body>
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="_closeSidebar()"></div>
 
-<!-- ── Bottom Nav (mobile) ── -->
-<nav class="bottom-nav">
-  <a href="dashboard.html" class="bn-item">
-    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-    Dashboard
-  </a>
-  <a href="attendance-summary.html" class="bn-item">
-    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-    สรุป
-  </a>
-  <a href="score.html" class="bn-item">
-    <svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
-    คะแนน
-  </a>
-  <a href="class.html" class="bn-item active">
-    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-    ชั้นเรียน
-  </a>
-  <button class="bn-item" onclick="_sidebarToggle()">
-    <svg viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-    เมนู
-  </button>
-</nav>
-
 <header class="topbar">
-  <div style="display:flex;align-items:center;gap:6px;">
+  <div style="display:flex;align-items:center;gap:8px;">
     <button class="hamburger" id="hamburger" onclick="_sidebarToggle()" aria-label="เปิดเมนู">
       <span></span><span></span><span></span>
     </button>
     <a href="dashboard.html" class="brand">
       <div class="brand-dot"><svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg></div>
-      <span class="brand-name-hide">ระบบจัดการนักเรียน</span>
+      <span class="brand-name">ระบบจัดการนักเรียน</span>
     </a>
   </div>
   <div class="topbar-right">
     <div class="user-info">
       <div class="avatar" id="avatarEl">?</div>
-      <span id="userNameEl">ผู้ใช้</span>
+      <span id="userNameEl" class="user-name-text">ผู้ใช้</span>
       <span class="role-badge" id="roleBadgeEl">—</span>
     </div>
     <button class="btn-logout" onclick="doLogout()">ออกจากระบบ</button>
   </div>
 </header>
 
-<nav class="sidebar">
+<nav class="sidebar" id="sidebar">
   <div class="sidebar-label">เมนูหลัก</div>
   <a href="dashboard.html" class="nav-item"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
   <a href="attendance.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>เช็คชื่อ</a>
@@ -1015,7 +888,24 @@ function showToast(msg,type) {
   document.getElementById(id).addEventListener("click",function(e){if(e.target===this)this.classList.remove("open");});
 });
 
-// ── Mobile sidebar toggle (defined in inline script below) ──
+// ── Mobile sidebar toggle ──
+window._sidebarToggle = function() {
+  const s = document.getElementById('sidebar');
+  const o = document.getElementById('sidebarOverlay');
+  const h = document.getElementById('hamburger');
+  if (!s) return;
+  const open = s.classList.toggle('mobile-open');
+  if (o) o.classList.toggle('open', open);
+  if (h) h.classList.toggle('open', open);
+};
+window._closeSidebar = function() {
+  const s = document.getElementById('sidebar');
+  const o = document.getElementById('sidebarOverlay');
+  const h = document.getElementById('hamburger');
+  if (s) s.classList.remove('mobile-open');
+  if (o) o.classList.remove('open');
+  if (h) h.classList.remove('open');
+};
 // ── Subject selector sync ──
 window._syncSidebarSubjectTo = function(val) {
   const el = document.getElementById('navSubjectSelect');
@@ -1063,56 +953,6 @@ window._onNavSubjectChange = function() {
   } catch(e) {}
 })();
 
-</script>
-<script>
-/* ── Mobile: sidebar toggle ── */
-window._sidebarToggle = function() {
-  const s = document.getElementById('sidebar') || document.querySelector('.sidebar');
-  const o = document.getElementById('sidebarOverlay');
-  const h = document.getElementById('hamburger');
-  if (!s) return;
-  const open = s.classList.toggle('mobile-open');
-  if (o) o.classList.toggle('open', open);
-  if (h) h.classList.toggle('open', open);
-};
-window._closeSidebar = function() {
-  ['sidebar','sidebarOverlay','hamburger'].forEach(id => {
-    const el = document.getElementById(id) || document.querySelector('.'+id);
-    if (el) el.classList.remove('mobile-open','open');
-  });
-};
-
-/* ── Mobile: scroll students table to top when selecting class ── */
-const origSelectClass = window.selectClass;
-window.selectClass = async function(id) {
-  await origSelectClass(id);
-  // scroll section into view on mobile
-  if (window.innerWidth <= 768) {
-    setTimeout(() => {
-      const sec = document.getElementById('studentsSection');
-      if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 300);
-  }
-};
-
-/* ── Mobile: close modal on backdrop tap ── */
-document.addEventListener('touchstart', function(e) {
-  // close sidebar on outside tap
-  const sidebar = document.querySelector('.sidebar');
-  const hamburger = document.getElementById('hamburger');
-  if (sidebar?.classList.contains('mobile-open') &&
-      !sidebar.contains(e.target) && !hamburger?.contains(e.target) &&
-      !e.target.closest('.bn-item')) {
-    window._closeSidebar();
-  }
-}, { passive: true });
-
-/* ── Mobile: fix vh for modals on iOS ── */
-function setVh() {
-  document.documentElement.style.setProperty('--vh', window.innerHeight * 0.01 + 'px');
-}
-setVh();
-window.addEventListener('resize', setVh);
 </script>
 </body>
 </html>
