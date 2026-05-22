@@ -417,8 +417,6 @@ initAuth({ requireAdmin: true, onReady: async ({ role, user }) => {
   document.getElementById("logsNavItem") && (document.getElementById("logsNavItem").style.display = "flex");
   document.getElementById("addRoundBtn").style.display = "inline-flex";
 
-  logAction("fund", "เปิดหน้าเงินเก็บห้อง",
-    { action: "pageView", page: "fund.html", role });
 
   // โหลด default class จาก Firestore
   if (currentUserId) {
@@ -570,9 +568,6 @@ window.selectRound = async function(roundId){
   const round = rounds.find(r=>r.id===roundId);
   if(round){
     const clsName = (cacheGet("classes")||[]).find(c=>c.id===currentClassId)?.name || currentClassId;
-    logAction("fund", `เปิดดูรอบ "${round.name}" — ${clsName}`,
-      { action:"viewRound", roundId, roundName:round.name, classId:currentClassId, className:clsName,
-        amountPerPerson:round.amountPerPerson });
   }
 };
 

@@ -393,8 +393,6 @@ initAuth({ requireAdmin: true, onReady: async ({ role, user }) => {
   document.getElementById("logsNavItem") && (document.getElementById("logsNavItem").style.display = "flex");
   document.getElementById("saveBtn").style.display = "inline-flex";
 
-  logAction("attendance", "เปิดหน้าเช็คชื่อ",
-    { action: "pageView", page: "attendance.html", role });
 
   // โหลด default class จาก Firestore
   if (currentUserId) {
@@ -567,22 +565,6 @@ window.loadStudents = async function() {
     const clsNameLoad = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
     const subNameLoad = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
     const activeLoad  = students.filter(s => !s.ghost);
-    logAction("attendance",
-      `เปิดดูเช็คชื่อ — ${clsNameLoad}${subNameLoad?" / "+subNameLoad:""} วันที่ ${date}`,
-      {
-        action:       "loadAttendance",
-        date,
-        classId,
-        className:    clsNameLoad,
-        subjectId:    subjectId || "",
-        subjectName:  subNameLoad,
-        totalStudents: students.length,
-        activeStudents: activeLoad.length,
-        ghostStudents:  students.length - activeLoad.length,
-        hasExistingData: attSnap.docs.length > 0,
-        existingRecords: attSnap.docs.length,
-      }
-    );
   } catch(err) {
     document.getElementById("studentTbody").innerHTML =
       `<tr><td colspan="4" style="text-align:center;color:#b91c1c;padding:20px;">⚠ โหลดไม่ได้: ${err.message}</td></tr>`;
@@ -1013,17 +995,6 @@ function logFilterChange() {
     if (!classId || !date) return;
     const clsName = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
     const subName = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
-    logAction("attendance",
-      `เปลี่ยน filter เช็คชื่อ — ${clsName}${subName?" / "+subName:""} วันที่ ${date}`,
-      {
-        action:     "changeFilter",
-        classId,
-        className:  clsName,
-        subjectId:  subjectId || "",
-        subjectName: subName,
-        date,
-      }
-    );
   }, 1500);
 }
 // Hook filter controls หลังจาก DOM พร้อม
@@ -1208,8 +1179,6 @@ window.saveClsColor = async function() {
     clsColorMap[classId] = clsPendingColor;
     setClassColorVars(clsPendingColor);
     showToast("บันทึกสีประจำห้องแล้ว ✓","success");
-    logAction("attendance", `ตั้งค่าสีประจำห้อง classId=${classId} color=${clsPendingColor}`,
-      { action:"setClassColor", classId, color: clsPendingColor });
   } catch(e) {
     showToast("เกิดข้อผิดพลาด: "+e.message,"error");
   }
