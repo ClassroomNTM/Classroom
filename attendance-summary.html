@@ -814,6 +814,8 @@ initAuth({ requireAdmin: true, onReady: async ({ role, user }) => {
   document.getElementById("colorPanelBtn").style.display   = "inline-flex";
   document.getElementById("focusToggleBtn").style.display  = "inline-flex";
 
+  logAction("attendance", "เปิดหน้าสรุปเช็คชื่อ",
+    { action: "pageView", page: "attendance-summary.html", role });
   // ── Parallel init: color + classColors + subjects + userPrefs ──────────────
   const prefFetch = currentUserId
     ? getDoc(doc(db, "userPrefs", currentUserId)).catch(() => null)
@@ -1044,6 +1046,16 @@ async function _loadDataAsync() {
     const subNameLD = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
     const activeLD  = allStudents.filter(s => !s.ghost);
     const daysLoadedCount = Object.keys(attMap).length;
+    logAction("attendance",
+      `เปิดดูสรุปเช็คชื่อ — ${clsNameLD}${subNameLD?" / "+subNameLD:""} เดือน ${THAI_MONTHS[mon]} ${year+543}`,
+      {
+        action:"viewSummary", month, year, monthName:THAI_MONTHS[mon],
+        classId, className:clsNameLD, subjectId:subjectId||"", subjectName:subNameLD,
+        totalStudents:allStudents.length, activeStudents:activeLD.length,
+        ghostStudents:allStudents.length-activeLD.length,
+        daysWithData:daysLoadedCount, totalRecords:attSnap.docs.length,
+      }
+    );
   } catch(err) {
     document.getElementById("tableArea").innerHTML =
       `<div class="state-box" style="color:#b91c1c;">⚠ โหลดข้อมูลไม่ได้: ${err.message}</div>`;
@@ -1886,6 +1898,14 @@ function logSummaryFilterChange() {
     const clsName = document.getElementById("classSelect").selectedOptions[0]?.text || classId;
     const subName = document.getElementById("subjectSelect").selectedOptions[0]?.text || "";
     const [year,mon] = month.split("-").map(Number);
+    logAction("attendance",
+      `เปลี่ยน filter สรุปเช็คชื่อ — ${clsName}${subName?" / "+subName:""} เดือน ${THAI_MONTHS[mon]} ${year+543}`,
+      {
+        action:"changeFilter", page:"summary", month, year,
+        monthName:THAI_MONTHS[mon], classId, className:clsName,
+        subjectId:subjectId||"", subjectName:subName,
+      }
+    );
   }, 1500);
 }
 document.addEventListener("DOMContentLoaded", () => {
@@ -2136,6 +2156,8 @@ window.saveColorPanel = async function() {
   try {
     await setDoc(doc(db, "settings", "tableColors"), { ...colorSettings, savedAt: new Date().toISOString() });
     showToast("บันทึกลง Database แล้ว ✓","success");
+    logAction("attendance","บันทึกตั้งค่าสีตาราง",
+      { action:"saveColorSettings", savedTo:"firestore", settingsKeys:Object.keys(colorSettings) });
   } catch(err) {
     console.error("Save color to Firestore failed:", err);
     showToast("บันทึก localStorage แล้ว (Firestore ขัดข้อง)","success");
@@ -2438,6 +2460,8 @@ window.saveClsColor = async function() {
     // Invalidate classColors sessionStorage cache
     try { sessionStorage.removeItem("classColors_map"); } catch {}
     showToast("บันทึกสีประจำห้องแล้ว ✓","success");
+    logAction("attendance", `ตั้งค่าสีประจำห้อง classId=${classId} color=${clsPendingColor}`,
+      { action:"setClassColor", classId, color: clsPendingColor });
   } catch(e) {
     showToast("เกิดข้อผิดพลาด: "+e.message,"error");
   }
