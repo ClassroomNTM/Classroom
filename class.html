@@ -406,6 +406,8 @@ initAuth({ requireAdmin: true, onReady: async ({ role }) => {
 // CLASSES
 // ══════════════════════════════
 async function loadClasses() {
+  // ล้าง shared cache เสมอ เพื่อให้หน้าอื่นได้ข้อมูลใหม่
+  sessionStorage.removeItem("classes");
   const snap = await getDocs(collection(db, "classes"));
   classes = snap.docs.map(d => ({id: d.id, ...d.data()}));
   classes.sort((a,b) => (a.name||"").localeCompare(b.name||"", "th"));
