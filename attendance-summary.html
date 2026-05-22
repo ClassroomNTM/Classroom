@@ -4,7 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>สรุปการเช็คชื่อรายเดือน — ระบบจัดการนักเรียน</title>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap"></noscript>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -813,19 +816,22 @@ initAuth({ requireAdmin: true, onReady: async ({ role, user }) => {
 
   logAction("attendance", "เปิดหน้าสรุปเช็คชื่อ",
     { action: "pageView", page: "attendance-summary.html", role });
-  await initColorSystem();
-  await loadAllClassColors();
-  await loadSubjects();
+  // ── Parallel init: color + classColors + subjects + userPrefs ──────────────
+  const prefFetch = currentUserId
+    ? getDoc(doc(db, "userPrefs", currentUserId)).catch(() => null)
+    : Promise.resolve(null);
 
-  if (currentUserId) {
-    try {
-      const prefSnap = await getDoc(doc(db, "userPrefs", currentUserId));
-      if (prefSnap.exists()) {
+  await Promise.all([
+    initColorSystem(),
+    loadAllClassColors(),
+    loadSubjects(),
+    prefFetch.then(prefSnap => {
+      if (prefSnap?.exists()) {
         savedDefaultClassId   = prefSnap.data().defaultClassId_summary   || "";
         savedDefaultSubjectId = prefSnap.data().defaultSubjectId_summary || "";
       }
-    } catch(e) { console.warn("load pref summary:", e); }
-  }
+    })
+  ]);
 
   await loadClasses();
 
@@ -990,30 +996,32 @@ async function _loadDataAsync() {
     const dateFrom    = `${year}-${String(mon).padStart(2,"0")}-01`;
     const dateTo      = `${year}-${String(mon).padStart(2,"0")}-${String(daysInMonth).padStart(2,"0")}`;
 
-    let cachedStudents = studentsCacheGet(classId);
-    if (!cachedStudents) {
-      const sSnap = await getDocs(query(collection(db, "students"), where("classId", "==", classId)));
-      cachedStudents = sSnap.docs.map(d => ({ id: d.id, ...d.data() }))
-        .sort((a, b) => (a.number||0) - (b.number||0));
-      studentsCacheSet(classId, cachedStudents);
-    }
-    allStudents = cachedStudents;
-    window.__allStudents = allStudents;
+    // ── Parallel fetch: students (or cache) + attendance ──────────────────────
+    const cachedStudents = studentsCacheGet(classId);
+    const studentsFetch = cachedStudents
+      ? Promise.resolve(cachedStudents)
+      : getDocs(query(collection(db, "students"), where("classId", "==", classId)))
+          .then(sSnap => {
+            const data = sSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+              .sort((a, b) => (a.number||0) - (b.number||0));
+            studentsCacheSet(classId, data);
+            return data;
+          });
 
-    let attQuery;
-    if (subjectId) {
-      attQuery = query(collection(db,"attendance"),
-        where("classId","==",classId),
-        where("subjectId","==",subjectId),
-        where("date",">=",dateFrom),
-        where("date","<=",dateTo));
-    } else {
-      attQuery = query(collection(db,"attendance"),
-        where("classId","==",classId),
-        where("date",">=",dateFrom),
-        where("date","<=",dateTo));
-    }
-    const attSnap = await getDocs(attQuery);
+    const attQuery = subjectId
+      ? query(collection(db,"attendance"),
+          where("classId","==",classId),
+          where("subjectId","==",subjectId),
+          where("date",">=",dateFrom),
+          where("date","<=",dateTo))
+      : query(collection(db,"attendance"),
+          where("classId","==",classId),
+          where("date",">=",dateFrom),
+          where("date","<=",dateTo));
+
+    const [resolvedStudents, attSnap] = await Promise.all([studentsFetch, getDocs(attQuery)]);
+    allStudents = resolvedStudents;
+    window.__allStudents = allStudents;
 
     attMap = {};
     const multiMode = !subjectId;
@@ -2352,9 +2360,21 @@ function setClassColorVars(hex) {
 }
 
 async function loadAllClassColors() {
+  // Try sessionStorage cache first (TTL 30 min)
+  try {
+    const raw = sessionStorage.getItem("classColors_map");
+    if (raw) {
+      const obj = JSON.parse(raw);
+      if (Date.now() - obj.ts < 30 * 60 * 1000) {
+        Object.assign(clsColorMap, obj.data);
+        return;
+      }
+    }
+  } catch {}
   try {
     const snap = await getDocs(collection(db, "classColors"));
     snap.docs.forEach(d => { clsColorMap[d.id] = d.data().color || "#0f3460"; });
+    try { sessionStorage.setItem("classColors_map", JSON.stringify({ ts: Date.now(), data: { ...clsColorMap } })); } catch {}
   } catch(e) { console.warn("classColors load:", e); }
 }
 
@@ -2437,6 +2457,8 @@ window.saveClsColor = async function() {
     }, { merge: true });
     clsColorMap[classId] = clsPendingColor;
     setClassColorVars(clsPendingColor);
+    // Invalidate classColors sessionStorage cache
+    try { sessionStorage.removeItem("classColors_map"); } catch {}
     showToast("บันทึกสีประจำห้องแล้ว ✓","success");
     logAction("attendance", `ตั้งค่าสีประจำห้อง classId=${classId} color=${clsPendingColor}`,
       { action:"setClassColor", classId, color: clsPendingColor });
