@@ -4,7 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>คะแนน — ระบบจัดการนักเรียน</title>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="dns-prefetch" href="https://www.gstatic.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet" fetchpriority="high">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{--bg:#f5f4f0;--surface:#ffffff;--blue:#0f3460;--blue-lt:#e6eef7;--text:#1a1a2e;--muted:#6b7280;--border:rgba(0,0,0,0.08);--radius:12px;--sidebar-w:200px;--topbar-h:56px;}
@@ -324,10 +327,14 @@ function cacheGet(key) {
     return obj.data;
   } catch { return null; }
 }
-function studentsCacheSet(classId, data) { sessionStorage.setItem("students_" + classId, JSON.stringify(data)); }
+function studentsCacheSet(classId, data) { sessionStorage.setItem("students_" + classId, JSON.stringify(Array.isArray(data) ? data : [])); }
 function studentsCacheGet(classId) {
-  try { const raw = sessionStorage.getItem("students_" + classId); return raw ? JSON.parse(raw) : null; }
-  catch { return null; }
+  try {
+    const raw = sessionStorage.getItem("students_" + classId);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch { return null; }
 }
 
 initAuth({ requireAdmin: true, onReady: async ({ role, user }) => {
@@ -454,7 +461,7 @@ window.onClassChange = async function() {
     cached = sSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (a.number||0)-(b.number||0));
     studentsCacheSet(currentClassId, cached);
   }
-  students = cached;
+  students = Array.isArray(cached) ? cached : [];
   currentView = VIEW_TOPIC;
   updateDefaultUI();
   logAction("score", "เปิดดูคะแนนชั้นเรียน", { action:"loadScore", classId: currentClassId, subjectId: currentSubjectId||"", studentCount: students.length });
@@ -816,6 +823,7 @@ async function autoSaveSingle(sid, max) {
 window.saveScores = async function() {
   if (userRole !== "admin") return;
   if (!currentTopicId || !currentClassId) { showToast("กรุณาเลือกชั้นเรียนและหัวข้อ","error"); return; }
+  if (!Array.isArray(students)) { showToast("ข้อมูลนักเรียนยังไม่โหลด กรุณาเลือกชั้นเรียนใหม่","error"); return; }
   setAutoSaveIndicator("saving");
   const topic = topics.find(t => t.id === currentTopicId);
   try {
@@ -838,6 +846,7 @@ window.saveScores = async function() {
 };
 
 function updateMetrics() {
+  if (!Array.isArray(students)) students = [];
   const vals = students.map(s => scores[s.id]).filter(v => v !== undefined && v !== null);
   document.getElementById("mTotal").textContent = students.length;
   document.getElementById("mAvg").textContent = vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1) : "—";
