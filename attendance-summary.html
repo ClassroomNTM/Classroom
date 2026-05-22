@@ -35,6 +35,11 @@ body{font-family:'Sarabun',sans-serif;background:var(--cls-bg);color:var(--text)
 .role-admin{background:rgba(255,255,255,0.2);color:rgba(255,255,255,0.95);}.role-user{background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.9);}
 .btn-logout{padding:6px 12px;border:1px solid rgba(255,255,255,0.35);border-radius:8px;background:rgba(255,255,255,0.12);font-family:'Sarabun',sans-serif;font-size:13px;color:rgba(255,255,255,0.9);cursor:pointer;white-space:nowrap;transition:background .15s;}
 .btn-logout:hover{background:rgba(255,255,255,0.22);}
+/* ── CLASS BADGE IN TOPBAR ── */
+.topbar-class-badge{display:none;align-items:center;gap:7px;padding:5px 11px 5px 8px;background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.3);border-radius:99px;font-size:12px;font-weight:600;color:rgba(255,255,255,0.95);white-space:nowrap;transition:all .3s;}
+.topbar-class-badge.visible{display:flex;}
+.topbar-class-dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.9);flex-shrink:0;transition:background .3s;box-shadow:0 0 0 2px rgba(255,255,255,0.4);}
+.topbar-class-name{max-width:160px;overflow:hidden;text-overflow:ellipsis;}
 
 /* ── HAMBURGER ── */
 .hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:6px;border:none;background:transparent;}
@@ -375,6 +380,10 @@ tr.footer-row td.f-leave{background:#f3e8ff;color:#6D28D9;}
     </a>
   </div>
   <div class="topbar-right">
+    <div class="topbar-class-badge" id="topbarClassBadge">
+      <span class="topbar-class-dot" id="topbarClassDot"></span>
+      <span class="topbar-class-name" id="topbarClassName"></span>
+    </div>
     <div class="user-info">
       <div class="avatar" id="avatarEl">?</div>
       <span id="userNameEl" class="user-name-text" style="font-size:13px;"></span>
@@ -2319,6 +2328,27 @@ function setClassColorVars(hex) {
   // Brand name color
   const brand = document.querySelector(".brand");
   if (brand) brand.style.color = isLight2(hex) ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.95)";
+
+  // ── Topbar class badge ──
+  const badge = document.getElementById("topbarClassBadge");
+  const dot   = document.getElementById("topbarClassDot");
+  const nameEl = document.getElementById("topbarClassName");
+  const classSelect = document.getElementById("classSelect");
+  const clsName = classSelect?.selectedOptions[0]?.text || "";
+  const clsId   = classSelect?.value || "";
+  if (badge && clsId) {
+    nameEl.textContent = clsName;
+    // dot ใช้สีตัดกับ topbar: ถ้าสีอ่อนให้ dot มืด ถ้าสีเข้มให้ dot ขาว
+    const dotColor = isLight2(hex) ? "rgba(0,0,0,0.65)" : "rgba(255,255,255,0.9)";
+    dot.style.background = dotColor;
+    badge.classList.add("visible");
+    // ปรับ text color badge ให้ตัดกับ topbar
+    badge.style.color = isLight2(hex) ? "rgba(0,0,0,0.8)" : "rgba(255,255,255,0.95)";
+    badge.style.background = isLight2(hex) ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.18)";
+    badge.style.borderColor = isLight2(hex) ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.3)";
+  } else if (badge) {
+    badge.classList.remove("visible");
+  }
 }
 
 async function loadAllClassColors() {
@@ -2332,6 +2362,11 @@ window.applyClassColor = function() {
   const classId = document.getElementById("classSelect").value;
   const color = (classId && clsColorMap[classId]) ? clsColorMap[classId] : "#0f3460";
   setClassColorVars(color);
+  // ถ้าไม่ได้เลือกห้อง ซ่อน badge
+  if (!classId) {
+    const badge = document.getElementById("topbarClassBadge");
+    if (badge) badge.classList.remove("visible");
+  }
 };
 
 window.openClsColorModal = function() {
