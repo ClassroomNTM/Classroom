@@ -121,8 +121,8 @@ select:focus,input:focus{border-color:var(--cls-primary);box-shadow:0 0 0 3px va
 
 /* ── TABLE ── */
 .table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:visible;}
-.table-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
-.table-title{font-size:14px;font-weight:600;}
+.table-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--cls-light);border-left:4px solid var(--cls-primary);transition:background .3s,border-color .3s;}
+.table-title{font-size:14px;font-weight:600;color:var(--cls-primary);transition:color .3s;}
 .tbl-outer{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:0 0 var(--radius) var(--radius);scrollbar-width:thin;scrollbar-color:rgba(0,0,0,0.25) #f0eeea;}
 .tbl-outer::-webkit-scrollbar{height:10px;}
 .tbl-outer::-webkit-scrollbar-track{background:#f0eeea;border-radius:99px;}
